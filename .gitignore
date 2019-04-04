@@ -1,0 +1,9 @@
+/.vscode/
+
+*.a
+*.o
+*.ll
+*.exe
+*.out
+
+nocc
