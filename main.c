@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "nocc.h"
 
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Core.h>
@@ -28,15 +27,13 @@ int main(int argc, char *argv[]) {
     entryBasicBlock = LLVMAppendBasicBlock(function, "entry");
 
     LLVMPositionBuilderAtEnd(builder, entryBasicBlock);
-    val = LLVMConstInt(LLVMInt32Type(), (unsigned long)value, 1);
+    val = LLVMConstInt(LLVMInt32Type(), value, 1);
     LLVMBuildRet(builder, val);
 
-    LLVMVerifyModule(module, LLVMPrintMessageAction, &error);
-
-    if (error) {
+    if (LLVMVerifyModule(module, LLVMPrintMessageAction, &error)) {
         fprintf(stderr, "error: %s\n", error);
-        LLVMDisposeMessage(error);
     }
+    LLVMDisposeMessage(error);
 
     LLVMDumpModule(module);
 

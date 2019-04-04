@@ -10,7 +10,7 @@ LDFLAGS += $(shell llvm-config --ldflags --system-libs --libs core support analy
 
 all: nocc
 
-nocc: main.o
+nocc: main.o vec.o
 	${CXX} ${CFLAGS} -o $@ $^ ${LDFLAGS}
 
 clean:
