@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+enum { token_number = 256, token_identifier };
+
 struct Vec {
     int capacity;
     int size;
@@ -19,5 +21,15 @@ void vec_reserve(Vec *v, int capacity);
 void vec_resize(Vec *v, int size);
 void vec_push(Vec *v, void *value);
 void *vec_pop(Vec *v);
+
+struct Token {
+    int kind;
+    char *text;
+    int line;
+};
+
+typedef struct Token Token;
+
+Vec *lex(const char *src);
 
 #endif
