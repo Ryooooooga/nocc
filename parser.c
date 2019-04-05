@@ -70,11 +70,58 @@ Node *parse_unary_expr(const Token **toks, int *n) {
     }
 }
 
+Node *parse_multiplicative_expr(const Token **toks, int *n) {
+    BinaryNode *p;
+    Node *left;
+
+    left = parse_unary_expr(toks, n);
+
+    while (toks[*n]->kind == '*' || toks[*n]->kind == '/' ||
+           toks[*n]->kind == '%') {
+        p = malloc(sizeof(*p));
+        p->kind = node_binary;
+        p->line = toks[*n]->line;
+        p->operator_ = toks[*n]->kind;
+        p->left = left;
+
+        *n += 1;
+
+        p->right = parse_unary_expr(toks, n);
+
+        left = (Node *)p;
+    }
+
+    return left;
+}
+
+Node *parse_additive_expr(const Token **toks, int *n) {
+    BinaryNode *p;
+    Node *left;
+
+    left = parse_multiplicative_expr(toks, n);
+
+    while (toks[*n]->kind == '+' || toks[*n]->kind == '-') {
+        p = malloc(sizeof(*p));
+        p->kind = node_binary;
+        p->line = toks[*n]->line;
+        p->operator_ = toks[*n]->kind;
+        p->left = left;
+
+        *n += 1;
+
+        p->right = parse_multiplicative_expr(toks, n);
+
+        left = (Node *)p;
+    }
+
+    return left;
+}
+
 Node *parse_expr(const Token **toks, int *n) {
     assert(toks);
     assert(toks[0]);
     assert(n);
     assert(*n >= 0);
 
-    return parse_unary_expr(toks, n);
+    return parse_additive_expr(toks, n);
 }
