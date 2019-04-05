@@ -121,9 +121,43 @@ void test_parsing_expr_stmt(void) {
     StmtNode *p = parse_stmt(tokens, &index);
     ExprStmtNode *q = (ExprStmtNode *)p;
 
-    assert(p->kind == node_expr_stmt);
+    assert(p->kind == node_expr);
     assert(p->line == 1);
     assert(q->expr->kind == node_integer);
+}
+
+void test_parsing_return_stmt(void) {
+    const Token *tokens[] = {
+        &(Token){token_return, "return", 1},
+        &(Token){token_number, "42", 1},
+        &(Token){';', ";", 1},
+        &(Token){'\0', "", 2},
+    };
+    int index = 0;
+
+    StmtNode *p = parse_stmt(tokens, &index);
+    ReturnStmtNode *q = (ReturnStmtNode *)p;
+
+    assert(p->kind == node_return);
+    assert(p->line == 1);
+    assert(q->return_value != NULL);
+    assert(q->return_value->kind == node_integer);
+}
+
+void test_parsing_return_void_stmt(void) {
+    const Token *tokens[] = {
+        &(Token){token_return, "return", 1},
+        &(Token){';', ";", 1},
+        &(Token){'\0', "", 2},
+    };
+    int index = 0;
+
+    StmtNode *p = parse_stmt(tokens, &index);
+    ReturnStmtNode *q = (ReturnStmtNode *)p;
+
+    assert(p->kind == node_return);
+    assert(p->line == 1);
+    assert(q->return_value == NULL);
 }
 
 void test_parser(void) {
@@ -134,4 +168,6 @@ void test_parser(void) {
     test_parsing_multiplication();
 
     test_parsing_expr_stmt();
+    test_parsing_return_stmt();
+    test_parsing_return_void_stmt();
 }

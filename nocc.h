@@ -11,7 +11,12 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Core.h>
 
-enum { token_number = 256, token_identifier, token_if };
+enum {
+    token_number = 256,
+    token_identifier,
+    token_if,
+    token_return,
+};
 
 struct Vec {
     int capacity;
@@ -43,7 +48,8 @@ enum {
     node_unary,
     node_binary,
 
-    node_expr_stmt,
+    node_expr,
+    node_return,
 };
 
 typedef struct ExprNode ExprNode;
@@ -54,6 +60,7 @@ typedef struct BinaryNode BinaryNode;
 
 typedef struct StmtNode StmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
+typedef struct ReturnStmtNode ReturnStmtNode;
 
 struct ExprNode {
     int kind;
@@ -96,6 +103,12 @@ struct ExprStmtNode {
     int kind;
     int line;
     ExprNode *expr;
+};
+
+struct ReturnStmtNode {
+    int kind;
+    int line;
+    ExprNode *return_value;
 };
 
 ExprNode *parse_expr(const Token **toks, int *n);

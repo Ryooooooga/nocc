@@ -1,5 +1,19 @@
 #include "nocc.h"
 
+ExprNode *binary_expr_new(const Token *op_tok, ExprNode *left,
+                          ExprNode *right) {
+    BinaryNode *p;
+
+    p = malloc(sizeof(*p));
+    p->kind = node_binary;
+    p->line = op_tok->line;
+    p->operator_ = op_tok->kind;
+    p->left = left;
+    p->right = right;
+
+    return (ExprNode *)p;
+}
+
 ExprNode *parse_number_expr(const Token **toks, int *n) {
     IntegerNode *p;
 
@@ -71,47 +85,39 @@ ExprNode *parse_unary_expr(const Token **toks, int *n) {
 }
 
 ExprNode *parse_multiplicative_expr(const Token **toks, int *n) {
-    BinaryNode *p;
+    const Token *op_tok;
     ExprNode *left;
+    ExprNode *right;
 
     left = parse_unary_expr(toks, n);
 
     while (toks[*n]->kind == '*' || toks[*n]->kind == '/' ||
            toks[*n]->kind == '%') {
-        p = malloc(sizeof(*p));
-        p->kind = node_binary;
-        p->line = toks[*n]->line;
-        p->operator_ = toks[*n]->kind;
-        p->left = left;
-
+        op_tok = toks[*n];
         *n += 1; /* eat binary operator */
 
-        p->right = parse_unary_expr(toks, n);
+        right = parse_unary_expr(toks, n);
 
-        left = (ExprNode *)p;
+        left = binary_expr_new(op_tok, left, right);
     }
 
     return left;
 }
 
 ExprNode *parse_additive_expr(const Token **toks, int *n) {
-    BinaryNode *p;
+    const Token *op_tok;
     ExprNode *left;
+    ExprNode *right;
 
     left = parse_multiplicative_expr(toks, n);
 
     while (toks[*n]->kind == '+' || toks[*n]->kind == '-') {
-        p = malloc(sizeof(*p));
-        p->kind = node_binary;
-        p->line = toks[*n]->line;
-        p->operator_ = toks[*n]->kind;
-        p->left = left;
-
+        op_tok = toks[*n];
         *n += 1; /* eat binary operator */
 
-        p->right = parse_multiplicative_expr(toks, n);
+        right = parse_multiplicative_expr(toks, n);
 
-        left = (ExprNode *)p;
+        left = binary_expr_new(op_tok, left, right);
     }
 
     return left;
@@ -126,6 +132,35 @@ ExprNode *parse_expr(const Token **toks, int *n) {
     return parse_additive_expr(toks, n);
 }
 
+StmtNode *parse_return_stmt(const Token **toks, int *n) {
+    ReturnStmtNode *p;
+
+    if (toks[*n]->kind != token_return) {
+        fprintf(stderr, "expected return, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+
+    p = malloc(sizeof(*p));
+    p->kind = node_return;
+    p->line = toks[*n]->line;
+    p->return_value = NULL;
+
+    *n += 1; /* eat return */
+
+    if (toks[*n]->kind != ';') {
+        p->return_value = parse_expr(toks, n);
+    }
+
+    if (toks[*n]->kind != ';') {
+        fprintf(stderr, "expected semicolon, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+
+    *n += 1; /* eat ; */
+
+    return (StmtNode *)p;
+}
+
 StmtNode *parse_expr_stmt(const Token **toks, int *n) {
     ExprNode *expr;
     ExprStmtNode *p;
@@ -133,7 +168,7 @@ StmtNode *parse_expr_stmt(const Token **toks, int *n) {
     expr = parse_expr(toks, n);
 
     p = malloc(sizeof(*p));
-    p->kind = node_expr_stmt;
+    p->kind = node_expr;
     p->expr = expr;
     p->line = toks[*n]->line;
 
@@ -149,6 +184,9 @@ StmtNode *parse_stmt(const Token **toks, int *n) {
     assert(*n >= 0);
 
     switch (toks[*n]->kind) {
+    case token_return:
+        return parse_return_stmt(toks, n);
+
     default:
         return parse_expr_stmt(toks, n);
     }
