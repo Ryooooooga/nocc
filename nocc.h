@@ -3,9 +3,13 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <llvm-c/Analysis.h>
+#include <llvm-c/Core.h>
 
 enum { token_number = 256, token_identifier, token_if };
 
@@ -65,5 +69,13 @@ struct UnaryNode {
 };
 
 Node *parse_expr(const Token **toks, int *n);
+
+struct GeneratorContext {
+    LLVMBuilderRef builder;
+};
+
+typedef struct GeneratorContext GeneratorContext;
+
+LLVMValueRef generate_expr(GeneratorContext *ctx, Node *p);
 
 #endif

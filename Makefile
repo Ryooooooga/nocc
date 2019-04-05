@@ -18,10 +18,10 @@ test: test_nocc
 nocc: main.o libnocc.a
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
 
-test_nocc: test.o test_vec.o test_lexer.o test_parser.o libnocc.a
+test_nocc: test.o test_vec.o test_lexer.o test_parser.o test_generator.o libnocc.a
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
 
-libnocc.a: lexer.o parser.o vec.o
+libnocc.a: generator.o lexer.o parser.o vec.o
 	${AR} rcv $@ $^
 
 clean:
