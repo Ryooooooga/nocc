@@ -2,11 +2,12 @@
 #define INCLUDE_nocc_h
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-enum { token_number = 256, token_identifier };
+enum { token_number = 256, token_identifier, token_if };
 
 struct Vec {
     int capacity;
