@@ -37,13 +37,23 @@ typedef struct Token Token;
 
 Vec *lex(const char *src);
 
-enum { node_integer, node_identifier, node_unary, node_binary };
+enum {
+    node_integer,
+    node_identifier,
+    node_unary,
+    node_binary,
+
+    node_expr_stmt,
+};
 
 typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
 typedef struct IdentifierNode IdentifierNode;
 typedef struct UnaryNode UnaryNode;
 typedef struct BinaryNode BinaryNode;
+
+typedef struct StmtNode StmtNode;
+typedef struct ExprStmtNode ExprStmtNode;
 
 struct ExprNode {
     int kind;
@@ -77,7 +87,19 @@ struct BinaryNode {
     ExprNode *right;
 };
 
+struct StmtNode {
+    int kind;
+    int line;
+};
+
+struct ExprStmtNode {
+    int kind;
+    int line;
+    ExprNode *expr;
+};
+
 ExprNode *parse_expr(const Token **toks, int *n);
+StmtNode *parse_stmt(const Token **toks, int *n);
 
 struct GeneratorContext {
     LLVMBuilderRef builder;

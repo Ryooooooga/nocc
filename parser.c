@@ -13,7 +13,7 @@ ExprNode *parse_number_expr(const Token **toks, int *n) {
     p->line = toks[*n]->line;
     p->value = atoi(toks[*n]->text);
 
-    *n += 1;
+    *n += 1; /* eat number */
 
     return (ExprNode *)p;
 }
@@ -31,7 +31,7 @@ ExprNode *parse_identifier_expr(const Token **toks, int *n) {
     p->line = toks[*n]->line;
     p->identifier = strdup(toks[*n]->text);
 
-    *n += 1;
+    *n += 1; /* eat identifier */
 
     return (ExprNode *)p;
 }
@@ -60,7 +60,7 @@ ExprNode *parse_unary_expr(const Token **toks, int *n) {
         p->line = toks[*n]->line;
         p->operator_ = toks[*n]->kind;
 
-        *n += 1;
+        *n += 1; /* eat unary operator */
         p->operand = parse_unary_expr(toks, n);
 
         return (ExprNode *)p;
@@ -84,7 +84,7 @@ ExprNode *parse_multiplicative_expr(const Token **toks, int *n) {
         p->operator_ = toks[*n]->kind;
         p->left = left;
 
-        *n += 1;
+        *n += 1; /* eat binary operator */
 
         p->right = parse_unary_expr(toks, n);
 
@@ -107,7 +107,7 @@ ExprNode *parse_additive_expr(const Token **toks, int *n) {
         p->operator_ = toks[*n]->kind;
         p->left = left;
 
-        *n += 1;
+        *n += 1; /* eat binary operator */
 
         p->right = parse_multiplicative_expr(toks, n);
 
@@ -124,4 +124,32 @@ ExprNode *parse_expr(const Token **toks, int *n) {
     assert(*n >= 0);
 
     return parse_additive_expr(toks, n);
+}
+
+StmtNode *parse_expr_stmt(const Token **toks, int *n) {
+    ExprNode *expr;
+    ExprStmtNode *p;
+
+    expr = parse_expr(toks, n);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_expr_stmt;
+    p->expr = expr;
+    p->line = toks[*n]->line;
+
+    *n += 1; /* eat ; */
+
+    return (StmtNode *)p;
+}
+
+StmtNode *parse_stmt(const Token **toks, int *n) {
+    assert(toks);
+    assert(toks[0]);
+    assert(n);
+    assert(*n >= 0);
+
+    switch (toks[*n]->kind) {
+    default:
+        return parse_expr_stmt(toks, n);
+    }
 }

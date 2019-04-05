@@ -110,10 +110,28 @@ void test_parsing_multiplication(void) {
     assert(right->right->kind == node_integer);
 }
 
+void test_parsing_expr_stmt(void) {
+    const Token *tokens[] = {
+        &(Token){token_number, "42", 1},
+        &(Token){';', ";", 1},
+        &(Token){'\0', "", 2},
+    };
+    int index = 0;
+
+    StmtNode *p = parse_stmt(tokens, &index);
+    ExprStmtNode *q = (ExprStmtNode *)p;
+
+    assert(p->kind == node_expr_stmt);
+    assert(p->line == 1);
+    assert(q->expr->kind == node_integer);
+}
+
 void test_parser(void) {
     test_parsing_integer();
     test_parsing_identifier();
     test_parsing_negative();
     test_parsing_addition();
     test_parsing_multiplication();
+
+    test_parsing_expr_stmt();
 }
