@@ -23,4 +23,4 @@ libnocc.a: lexer.o vec.o
 	${AR} rcv $@ $^
 
 clean:
-	${RM} nocc *.a *.o
+	${RM} nocc test_nocc *.a *.o
