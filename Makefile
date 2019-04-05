@@ -16,7 +16,7 @@ test: test_nocc
 nocc: main.o libnocc.a
 	${CXX} ${CFLAGS} -o $@ $^ ${LDFLAGS}
 
-test_nocc: test.o test_lexer.o libnocc.a
+test_nocc: test.o test_lexer.o test_vec.o libnocc.a
 	${CXX} ${CFLAGS} -o $@ $^ ${LDFLAGS}
 
 libnocc.a: lexer.o vec.o
