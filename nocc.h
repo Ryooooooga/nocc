@@ -33,4 +33,37 @@ typedef struct Token Token;
 
 Vec *lex(const char *src);
 
+enum { node_integer, node_identifier, node_unary };
+
+typedef struct Node Node;
+typedef struct IntegerNode IntegerNode;
+typedef struct IdentifierNode IdentifierNode;
+typedef struct UnaryNode UnaryNode;
+
+struct Node {
+    int kind;
+    int line;
+};
+
+struct IntegerNode {
+    int kind;
+    int line;
+    int value;
+};
+
+struct IdentifierNode {
+    int kind;
+    int line;
+    char *identifier;
+};
+
+struct UnaryNode {
+    int kind;
+    int line;
+    int operator_;
+    Node *operand;
+};
+
+Node *parse_expr(const Token **toks, int *n);
+
 #endif
