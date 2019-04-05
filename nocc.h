@@ -39,13 +39,13 @@ Vec *lex(const char *src);
 
 enum { node_integer, node_identifier, node_unary, node_binary };
 
-typedef struct Node Node;
+typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
 typedef struct IdentifierNode IdentifierNode;
 typedef struct UnaryNode UnaryNode;
 typedef struct BinaryNode BinaryNode;
 
-struct Node {
+struct ExprNode {
     int kind;
     int line;
 };
@@ -66,18 +66,18 @@ struct UnaryNode {
     int kind;
     int line;
     int operator_;
-    Node *operand;
+    ExprNode *operand;
 };
 
 struct BinaryNode {
     int kind;
     int line;
     int operator_;
-    Node *left;
-    Node *right;
+    ExprNode *left;
+    ExprNode *right;
 };
 
-Node *parse_expr(const Token **toks, int *n);
+ExprNode *parse_expr(const Token **toks, int *n);
 
 struct GeneratorContext {
     LLVMBuilderRef builder;
@@ -85,6 +85,6 @@ struct GeneratorContext {
 
 typedef struct GeneratorContext GeneratorContext;
 
-LLVMValueRef generate_expr(GeneratorContext *ctx, Node *p);
+LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p);
 
 #endif

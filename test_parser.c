@@ -7,7 +7,7 @@ void test_parsing_integer(void) {
     };
     int index = 0;
 
-    Node *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(tokens, &index);
     IntegerNode *q = (IntegerNode *)p;
 
     assert(p->kind == node_integer);
@@ -22,7 +22,7 @@ void test_parsing_identifier(void) {
     };
     int index = 0;
 
-    Node *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(tokens, &index);
     IdentifierNode *q = (IdentifierNode *)p;
 
     assert(p->kind == node_identifier);
@@ -38,14 +38,14 @@ void test_parsing_negative(void) {
     };
     int index = 0;
 
-    Node *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(tokens, &index);
     UnaryNode *q = (UnaryNode *)p;
 
     assert(p->kind == node_unary);
     assert(p->line == 1);
     assert(q->operator_ == '-');
 
-    Node *child = q->operand;
+    ExprNode *child = q->operand;
     IntegerNode *integer = (IntegerNode *)child;
 
     assert(child->kind == node_integer);
@@ -62,7 +62,7 @@ void test_parsing_addition(void) {
     };
     int index = 0;
 
-    Node *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(tokens, &index);
     BinaryNode *q = (BinaryNode *)p;
 
     assert(p->kind == node_binary);
@@ -89,7 +89,7 @@ void test_parsing_multiplication(void) {
     };
     int index = 0;
 
-    Node *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(tokens, &index);
     BinaryNode *q = (BinaryNode *)p;
 
     assert(p->kind == node_binary);

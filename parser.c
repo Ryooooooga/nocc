@@ -1,6 +1,6 @@
 #include "nocc.h"
 
-Node *parse_number_expr(const Token **toks, int *n) {
+ExprNode *parse_number_expr(const Token **toks, int *n) {
     IntegerNode *p;
 
     if (toks[*n]->kind != token_number) {
@@ -15,10 +15,10 @@ Node *parse_number_expr(const Token **toks, int *n) {
 
     *n += 1;
 
-    return (Node *)p;
+    return (ExprNode *)p;
 }
 
-Node *parse_identifier_expr(const Token **toks, int *n) {
+ExprNode *parse_identifier_expr(const Token **toks, int *n) {
     IdentifierNode *p;
 
     if (toks[*n]->kind != token_identifier) {
@@ -33,10 +33,10 @@ Node *parse_identifier_expr(const Token **toks, int *n) {
 
     *n += 1;
 
-    return (Node *)p;
+    return (ExprNode *)p;
 }
 
-Node *parse_primary_expr(const Token **toks, int *n) {
+ExprNode *parse_primary_expr(const Token **toks, int *n) {
     switch (toks[*n]->kind) {
     case token_number:
         return parse_number_expr(toks, n);
@@ -50,7 +50,7 @@ Node *parse_primary_expr(const Token **toks, int *n) {
     }
 }
 
-Node *parse_unary_expr(const Token **toks, int *n) {
+ExprNode *parse_unary_expr(const Token **toks, int *n) {
     UnaryNode *p;
 
     switch (toks[*n]->kind) {
@@ -63,16 +63,16 @@ Node *parse_unary_expr(const Token **toks, int *n) {
         *n += 1;
         p->operand = parse_unary_expr(toks, n);
 
-        return (Node *)p;
+        return (ExprNode *)p;
 
     default:
         return parse_primary_expr(toks, n);
     }
 }
 
-Node *parse_multiplicative_expr(const Token **toks, int *n) {
+ExprNode *parse_multiplicative_expr(const Token **toks, int *n) {
     BinaryNode *p;
-    Node *left;
+    ExprNode *left;
 
     left = parse_unary_expr(toks, n);
 
@@ -88,15 +88,15 @@ Node *parse_multiplicative_expr(const Token **toks, int *n) {
 
         p->right = parse_unary_expr(toks, n);
 
-        left = (Node *)p;
+        left = (ExprNode *)p;
     }
 
     return left;
 }
 
-Node *parse_additive_expr(const Token **toks, int *n) {
+ExprNode *parse_additive_expr(const Token **toks, int *n) {
     BinaryNode *p;
-    Node *left;
+    ExprNode *left;
 
     left = parse_multiplicative_expr(toks, n);
 
@@ -111,13 +111,13 @@ Node *parse_additive_expr(const Token **toks, int *n) {
 
         p->right = parse_multiplicative_expr(toks, n);
 
-        left = (Node *)p;
+        left = (ExprNode *)p;
     }
 
     return left;
 }
 
-Node *parse_expr(const Token **toks, int *n) {
+ExprNode *parse_expr(const Token **toks, int *n) {
     assert(toks);
     assert(toks[0]);
     assert(n);

@@ -48,7 +48,7 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
     }
 }
 
-LLVMValueRef generate_expr(GeneratorContext *ctx, Node *p) {
+LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
     assert(p);
     assert(ctx);
 

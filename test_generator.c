@@ -11,7 +11,7 @@ void test_generating_integer(void) {
         .value = 42,
     };
 
-    LLVMValueRef v = generate_expr(ctx, (Node *)p);
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
     assert(LLVMGetValueKind(v) == LLVMConstantIntValueKind);
     assert(LLVMConstIntGetSExtValue(v) == 42);
@@ -34,10 +34,10 @@ void test_generating_negative(void) {
         .kind = node_unary,
         .line = 1,
         .operator_ = '-',
-        .operand = (Node *)q,
+        .operand = (ExprNode *)q,
     };
 
-    LLVMValueRef v = generate_expr(ctx, (Node *)p);
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
     assert(LLVMGetValueKind(v) == LLVMConstantIntValueKind);
     assert(LLVMConstIntGetSExtValue(v) == -42);
@@ -66,11 +66,11 @@ void test_generating_addition(void) {
         .kind = node_binary,
         .line = 1,
         .operator_ = '+',
-        .left = (Node *)l,
-        .right = (Node *)r,
+        .left = (ExprNode *)l,
+        .right = (ExprNode *)r,
     };
 
-    LLVMValueRef v = generate_expr(ctx, (Node *)p);
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
     assert(LLVMGetValueKind(v) == LLVMConstantIntValueKind);
     assert(LLVMConstIntGetSExtValue(v) == 23);
@@ -99,11 +99,11 @@ void test_generating_subtraction(void) {
         .kind = node_binary,
         .line = 1,
         .operator_ = '-',
-        .left = (Node *)l,
-        .right = (Node *)r,
+        .left = (ExprNode *)l,
+        .right = (ExprNode *)r,
     };
 
-    LLVMValueRef v = generate_expr(ctx, (Node *)p);
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
     assert(LLVMGetValueKind(v) == LLVMConstantIntValueKind);
     assert(LLVMConstIntGetSExtValue(v) == 7);
@@ -132,11 +132,11 @@ void test_generating_multiplication(void) {
         .kind = node_binary,
         .line = 1,
         .operator_ = '*',
-        .left = (Node *)l,
-        .right = (Node *)r,
+        .left = (ExprNode *)l,
+        .right = (ExprNode *)r,
     };
 
-    LLVMValueRef v = generate_expr(ctx, (Node *)p);
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
     assert(LLVMGetValueKind(v) == LLVMConstantIntValueKind);
     assert(LLVMConstIntGetSExtValue(v) == 120);
@@ -165,11 +165,11 @@ void test_generating_division(void) {
         .kind = node_binary,
         .line = 1,
         .operator_ = '/',
-        .left = (Node *)l,
-        .right = (Node *)r,
+        .left = (ExprNode *)l,
+        .right = (ExprNode *)r,
     };
 
-    LLVMValueRef v = generate_expr(ctx, (Node *)p);
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
     assert(LLVMGetValueKind(v) == LLVMConstantIntValueKind);
     assert(LLVMConstIntGetSExtValue(v) == 1);
@@ -198,11 +198,11 @@ void test_generating_modulo(void) {
         .kind = node_binary,
         .line = 1,
         .operator_ = '%',
-        .left = (Node *)l,
-        .right = (Node *)r,
+        .left = (ExprNode *)l,
+        .right = (ExprNode *)r,
     };
 
-    LLVMValueRef v = generate_expr(ctx, (Node *)p);
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
     assert(LLVMGetValueKind(v) == LLVMConstantIntValueKind);
     assert(LLVMConstIntGetSExtValue(v) == 7);
