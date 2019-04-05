@@ -48,8 +48,9 @@ enum {
     node_unary,
     node_binary,
 
-    node_expr,
+    node_compound,
     node_return,
+    node_expr,
 };
 
 typedef struct ExprNode ExprNode;
@@ -59,8 +60,9 @@ typedef struct UnaryNode UnaryNode;
 typedef struct BinaryNode BinaryNode;
 
 typedef struct StmtNode StmtNode;
-typedef struct ExprStmtNode ExprStmtNode;
+typedef struct CompoundStmtNode CompoundStmtNode;
 typedef struct ReturnStmtNode ReturnStmtNode;
+typedef struct ExprStmtNode ExprStmtNode;
 
 struct ExprNode {
     int kind;
@@ -99,16 +101,22 @@ struct StmtNode {
     int line;
 };
 
-struct ExprStmtNode {
+struct CompoundStmtNode {
     int kind;
     int line;
-    ExprNode *expr;
+    Vec* stmts;
 };
 
 struct ReturnStmtNode {
     int kind;
     int line;
     ExprNode *return_value;
+};
+
+struct ExprStmtNode {
+    int kind;
+    int line;
+    ExprNode *expr;
 };
 
 ExprNode *parse_expr(const Token **toks, int *n);

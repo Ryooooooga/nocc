@@ -132,6 +132,33 @@ ExprNode *parse_expr(const Token **toks, int *n) {
     return parse_additive_expr(toks, n);
 }
 
+StmtNode *parse_compound_stmt(const Token **toks, int *n) {
+    CompoundStmtNode *p;
+
+    if (toks[*n]->kind != '{') {
+        fprintf(stderr, "expected {, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+
+    p = malloc(sizeof(*p));
+    p->kind = node_compound;
+    p->line = toks[*n]->line;
+    p->stmts = vec_new();
+
+    *n += 1; /* eat { */
+
+    while (toks[*n]->kind != '}') {
+        vec_push(p->stmts, parse_stmt(toks, n));
+    }
+
+    if (toks[*n]->kind != '}') {
+        fprintf(stderr, "expected }, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+
+    return (StmtNode *)p;
+}
+
 StmtNode *parse_return_stmt(const Token **toks, int *n) {
     ReturnStmtNode *p;
 
@@ -184,6 +211,9 @@ StmtNode *parse_stmt(const Token **toks, int *n) {
     assert(*n >= 0);
 
     switch (toks[*n]->kind) {
+    case '{':
+        return parse_compound_stmt(toks, n);
+
     case token_return:
         return parse_return_stmt(toks, n);
 

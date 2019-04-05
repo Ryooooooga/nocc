@@ -160,6 +160,41 @@ void test_parsing_return_void_stmt(void) {
     assert(q->return_value == NULL);
 }
 
+void test_parsing_compound_stmt(void) {
+    struct {
+        int kind;
+    } const suites[] = {
+        {node_expr},
+        {node_return},
+    };
+    const int len_suites = sizeof(suites) / sizeof(suites[0]);
+
+    const Token *tokens[] = {
+        &(Token){'{', "{", 1}, &(Token){token_number, "42", 1},
+        &(Token){';', ";", 1}, &(Token){token_return, "return", 1},
+        &(Token){';', ";", 1}, &(Token){'}', "}", 1},
+        &(Token){'\0', "", 2},
+    };
+    int index = 0;
+
+    StmtNode *p = parse_stmt(tokens, &index);
+    CompoundStmtNode *q = (CompoundStmtNode *)p;
+
+    assert(p->kind == node_compound);
+    assert(p->line == 1);
+    assert(q->stmts->size == len_suites);
+
+    for (int i = 0; i < len_suites; i++) {
+        StmtNode *s = q->stmts->data[i];
+
+        if (s->kind != suites[i].kind) {
+            fprintf(stderr, "%d: s->kind is expected %d, but got %d\n", i,
+                    suites[i].kind, s->kind);
+            exit(1);
+        }
+    }
+}
+
 void test_parser(void) {
     test_parsing_integer();
     test_parsing_identifier();
@@ -170,4 +205,5 @@ void test_parser(void) {
     test_parsing_expr_stmt();
     test_parsing_return_stmt();
     test_parsing_return_void_stmt();
+    test_parsing_compound_stmt();
 }
