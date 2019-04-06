@@ -149,25 +149,25 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     LLVMTypeRef function_type;
     LLVMValueRef function;
     LLVMBasicBlockRef entryBasicBlock;
-    
-    ParamNode* param;
+
+    FunctionType *type;
     bool is_terminated;
     int i;
 
     assert(ctx);
     assert(p);
+    assert(p->type->kind == type_function);
 
-    return_type = generate_type(ctx, p->return_type);
+    type = (FunctionType *)p->type;
+    return_type = generate_type(ctx, type->return_type);
 
-    param_types = malloc(sizeof(LLVMTypeRef) * p->params->size);
+    param_types = malloc(sizeof(LLVMTypeRef) * type->num_params);
 
-    for (i = 0; i < p->params->size; i++) {
-        param = p->params->data[i];
-
-        param_types[i] = generate_type(ctx, param->type);
+    for (i = 0; i < type->num_params; i++) {
+        param_types[i] = generate_type(ctx, type->param_types[i]);
     }
 
-    function_type = LLVMFunctionType(return_type, param_types, p->params->size,
+    function_type = LLVMFunctionType(return_type, param_types, type->num_params,
                                      p->var_args);
 
     function = LLVMAddFunction(ctx->module, p->identifier, function_type);

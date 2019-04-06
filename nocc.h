@@ -60,16 +60,26 @@ Vec *lex(const char *src);
 enum {
     type_void,
     type_int32,
+    type_function,
 };
+
+typedef struct Type Type;
+typedef struct FunctionType FunctionType;
 
 struct Type {
     int kind;
 };
 
-typedef struct Type Type;
+struct FunctionType {
+    int kind;
+    Type *return_type;
+    Type **param_types;
+    int num_params;
+};
 
 Type *type_get_void(void);
 Type *type_get_int32(void);
+Type *function_type_new(Type *return_type, Type **param_types, int num_params);
 
 enum {
     node_integer,
@@ -175,7 +185,7 @@ struct FunctionNode {
     int kind;
     int line;
     char *identifier;
-    Type *return_type;
+    Type *type;
     Vec *params;
     bool var_args;
     StmtNode *body;

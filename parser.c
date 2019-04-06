@@ -279,9 +279,11 @@ ParamNode *parse_param(const Token **toks, int *n) {
 
 DeclNode *parse_top_level(const Token **toks, int *n) {
     Type *return_type;
+    Type **param_types;
     const Token *identifier;
     Vec *params;
     FunctionNode *p;
+    int i;
 
     assert(toks);
     assert(toks[0]);
@@ -325,11 +327,18 @@ DeclNode *parse_top_level(const Token **toks, int *n) {
     }
     *n += 1; /* eat ) */
 
+    /* make function type */
+    param_types = malloc(sizeof(Type *) * params->size);
+
+    for (i = 0; i < params->size; i++) {
+        param_types[i] = ((ParamNode*)params->data[i])->type;
+    }
+
     p = malloc(sizeof(*p));
     p->kind = node_function;
     p->line = identifier->line;
     p->identifier = strdup(identifier->text);
-    p->return_type = return_type;
+    p->type = function_type_new(return_type, param_types, params->size);
     p->params = params;
     p->var_args = false;
     p->body = NULL;

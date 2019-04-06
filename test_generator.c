@@ -258,7 +258,7 @@ void test_generating_function_prototype(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "f",
-        .return_type = type_get_int32(),
+        .type = function_type_new(type_get_int32(), NULL, 0),
         .params = vec_new(),
         .var_args = false,
         .body = NULL,
@@ -285,7 +285,7 @@ void test_generating_function(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "f",
-        .return_type = type_get_void(),
+        .type = function_type_new(type_get_void(), NULL, 0),
         .params = vec_new(),
         .var_args = false,
         .body =
@@ -320,7 +320,8 @@ void test_generating_function_with_param(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "g",
-        .return_type = type_get_void(),
+        .type =
+            function_type_new(type_get_void(), (Type *[]){type_get_int32()}, 1),
         .params = vec_new(),
         .var_args = false,
         .body =
@@ -362,7 +363,8 @@ void test_generating_function_with_params(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "g",
-        .return_type = type_get_void(),
+        .type = function_type_new(
+            type_get_void(), (Type *[]){type_get_int32(), type_get_int32()}, 2),
         .params = vec_new(),
         .var_args = false,
         .body =

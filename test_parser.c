@@ -237,15 +237,19 @@ void test_parsing_function(void) {
 
     DeclNode *p = parse_top_level((const Token **)toks->data, &index);
     FunctionNode *q = (FunctionNode *)p;
+    FunctionType *t = (FunctionType *)q->type;
 
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->return_type == type_get_int32());
     assert(q->params->size == 0);
     assert(q->var_args == false);
     assert(q->body != NULL);
     assert(q->body->kind == node_compound);
+
+    assert(t->kind == type_function);
+    assert(t->return_type == type_get_int32());
+    assert(t->num_params == 0);
 }
 
 void test_parsing_function_prototype(void) {
@@ -254,14 +258,18 @@ void test_parsing_function_prototype(void) {
 
     DeclNode *p = parse_top_level((const Token **)toks->data, &index);
     FunctionNode *q = (FunctionNode *)p;
+    FunctionType *t = (FunctionType *)q->type;
 
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->return_type == type_get_int32());
     assert(q->params->size == 0);
     assert(q->var_args == false);
     assert(q->body == NULL);
+
+    assert(t->kind == type_function);
+    assert(t->return_type == type_get_int32());
+    assert(t->num_params == 0);
 }
 
 void test_parsing_function_param(void) {
@@ -270,14 +278,19 @@ void test_parsing_function_param(void) {
 
     DeclNode *p = parse_top_level((const Token **)toks->data, &index);
     FunctionNode *q = (FunctionNode *)p;
+    FunctionType *t = (FunctionType *)q->type;
 
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->return_type == type_get_int32());
     assert(q->params->size == 1);
     assert(q->var_args == false);
     assert(q->body == NULL);
+
+    assert(t->kind == type_function);
+    assert(t->return_type == type_get_int32());
+    assert(t->num_params == 1);
+    assert(t->param_types[0] == type_get_int32());
 
     ParamNode *a = q->params->data[0];
 
@@ -293,14 +306,20 @@ void test_parsing_function_params(void) {
 
     DeclNode *p = parse_top_level((const Token **)toks->data, &index);
     FunctionNode *q = (FunctionNode *)p;
+    FunctionType *t = (FunctionType *)q->type;
 
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->return_type == type_get_int32());
     assert(q->params->size == 2);
     assert(q->var_args == false);
     assert(q->body == NULL);
+
+    assert(t->kind == type_function);
+    assert(t->return_type == type_get_int32());
+    assert(t->num_params == 2);
+    assert(t->param_types[0] == type_get_int32());
+    assert(t->param_types[1] == type_get_int32());
 
     ParamNode *a = q->params->data[0];
     ParamNode *b = q->params->data[1];
@@ -324,15 +343,19 @@ void test_parsing_translation_unit(void) {
     assert(p->decls->size == 1);
 
     FunctionNode *f = p->decls->data[0];
+    FunctionType *t = (FunctionType *)f->type;
 
     assert(f->kind == node_function);
     assert(f->line == 1);
     assert(strcmp(f->identifier, "main") == 0);
-    assert(f->return_type == type_get_int32());
     assert(f->params->size == 0);
     assert(f->var_args == false);
     assert(f->body != NULL);
     assert(f->body->kind == node_compound);
+
+    assert(t->kind == type_function);
+    assert(t->return_type == type_get_int32());
+    assert(t->num_params == 0);
 }
 
 void test_parser(void) {
