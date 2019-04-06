@@ -435,130 +435,101 @@ StmtNode *parse_stmt(ParserContext *ctx) {
 
 ParamNode *parse_param(ParserContext *ctx) {
     Type *type;
-    const Token *identifier;
-    ParamNode *p;
+    const Token *t;
 
     assert(ctx);
 
+    /* type */
     type = parse_type(ctx);
 
-    /* TODO: type check */
+    /* identifier */
+    t = consume_token(ctx);
 
-    if (current_token(ctx)->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n",
-                current_token(ctx)->text);
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", t->text);
         exit(1);
     }
 
-    identifier = current_token(ctx);
-
-    consume_token(ctx); /* eat identifier */
-
-    p = malloc(sizeof(*p));
-    p->kind = node_param;
-    p->line = identifier->line;
-    p->identifier = strdup(identifier->text);
-    p->type = type;
-    p->generated_location = NULL;
-
-    return p;
+    /* make node */
+    return sema_param(ctx, type, t);
 }
 
 DeclNode *parse_top_level(ParserContext *ctx) {
+    const Token *t;
     Type *return_type;
-    Type **param_types;
-    const Token *identifier;
     Vec *params;
-    ParamNode *param;
+    StmtNode *body;
+
     FunctionNode *p;
-    int i;
 
     assert(ctx);
 
+    /* type */
     return_type = parse_type(ctx);
 
-    if (current_token(ctx)->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n",
-                current_token(ctx)->text);
+    /* identifier */
+    t = consume_token(ctx);
+
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", t->text);
         exit(1);
     }
 
-    identifier = current_token(ctx);
-    consume_token(ctx); /* eat identifier */
-
+    /* ( */
     if (current_token(ctx)->kind != '(') {
         fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    consume_token(ctx); /* eat ( */
+    consume_token(ctx);
 
+    /* enter parameter scope */
+    sema_function_enter_params(ctx);
+
+    /* parameters */
     params = vec_new();
 
     if (current_token(ctx)->kind == token_void) {
-        consume_token(ctx); /* eat void */
+        /* void */
+        consume_token(ctx);
     } else {
+        /* param {, param} */
+        /* param */
         vec_push(params, parse_param(ctx));
 
         while (current_token(ctx)->kind == ',') {
-            consume_token(ctx); /* eat , */
+            /* , */
+            consume_token(ctx);
 
+            /* param */
             vec_push(params, parse_param(ctx));
         }
     }
 
+    /* ) */
     if (current_token(ctx)->kind != ')') {
         fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    consume_token(ctx); /* eat ) */
+    consume_token(ctx);
 
-    /* make function type */
-    param_types = malloc(sizeof(Type *) * params->size);
-
-    for (i = 0; i < params->size; i++) {
-        param = params->data[i];
-        param_types[i] = param->type;
-    }
-
-    p = malloc(sizeof(*p));
-    p->kind = node_function;
-    p->line = identifier->line;
-    p->identifier = strdup(identifier->text);
-    p->type = function_type_new(return_type, param_types, params->size);
-    p->params = params;
-    p->var_args = false;
-    p->body = NULL;
-
-    /* register function symbol */
-    if (scope_stack_find(ctx->env, p->identifier, false)) {
-        fprintf(stderr, "function %s has already been declared\n",
-                p->identifier);
-        exit(1);
-    }
-
-    scope_stack_register(ctx->env, (DeclNode *)p);
+    /* leave parameter scope and make node */
+    p = sema_function_leave_params(
+        ctx, return_type, t, (ParamNode **)params->data, params->size, false);
 
     if (current_token(ctx)->kind == ';') {
         consume_token(ctx); /* eat ; */
+
         return (DeclNode *)p;
     }
 
-    /* register parameter symbols */
-    scope_stack_push(ctx->env);
+    /* enter function body */
+    sema_function_enter_body(ctx, p);
 
-    for (i = 0; i < params->size; i++) {
-        param = params->data[i];
+    /* body */
+    body = parse_compound_stmt(ctx);
 
-        /* TODO: redeclaration check */
-        scope_stack_register(ctx->env, (DeclNode *)param);
-    }
-
-    /* parse function body */
-    p->body = parse_compound_stmt(ctx);
-
-    scope_stack_pop(ctx->env);
-
-    return (DeclNode *)p;
+    /* leave function body */
+    return (DeclNode *)sema_function_leave_body(ctx, p, body);
 }
 
 TranslationUnitNode *parse(const char *filename, const char *src) {

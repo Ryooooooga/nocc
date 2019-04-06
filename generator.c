@@ -277,7 +277,6 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     LLVMBasicBlockRef entry_basic_block;
 
     FunctionType *type;
-    ParamNode *param;
     bool is_terminated;
     int i;
 
@@ -310,16 +309,14 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     LLVMPositionBuilderAtEnd(ctx->builder, entry_basic_block);
 
     /* prologue */
-    for (i = 0; i < p->params->size; i++) {
-        param = p->params->data[i];
-
+    for (i = 0; i < p->num_params; i++) {
         /* allocate parameter location */
-        param->generated_location =
-            LLVMBuildAlloca(ctx->builder, param_types[i], param->identifier);
+        p->params[i]->generated_location = LLVMBuildAlloca(
+            ctx->builder, param_types[i], p->params[i]->identifier);
 
         /* store parameter */
         LLVMBuildStore(ctx->builder, LLVMGetParam(function, i),
-                       param->generated_location);
+                       p->params[i]->generated_location);
     }
 
     /* body */

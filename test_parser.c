@@ -96,7 +96,8 @@ void test_parsing_call(void) {
         .line = 1,
         .identifier = "f",
         .type = function_type_new(type_get_int32(), NULL, 0),
-        .params = vec_new(),
+        .params = NULL,
+        .num_params = 0,
         .var_args = false,
         .body = NULL,
     };
@@ -133,7 +134,8 @@ void test_parsing_call_arg(void) {
                                       type_get_int32(),
                                   },
                                   1),
-        .params = vec_new(),
+        .params = NULL,
+        .num_params = 0,
         .var_args = false,
         .body = NULL,
     };
@@ -172,7 +174,8 @@ void test_parsing_call_args(void) {
                                       type_get_int32(),
                                   },
                                   3),
-        .params = vec_new(),
+        .params = NULL,
+        .num_params = 0,
         .var_args = false,
         .body = NULL,
     };
@@ -494,7 +497,7 @@ void test_parsing_function(void) {
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->params->size == 0);
+    assert(q->num_params == 0);
     assert(q->var_args == false);
     assert(q->body != NULL);
     assert(q->body->kind == node_compound);
@@ -518,7 +521,7 @@ void test_parsing_function_prototype(void) {
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->params->size == 0);
+    assert(q->num_params == 0);
     assert(q->var_args == false);
     assert(q->body == NULL);
 
@@ -541,7 +544,7 @@ void test_parsing_function_param(void) {
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->params->size == 1);
+    assert(q->num_params == 1);
     assert(q->var_args == false);
     assert(q->body == NULL);
 
@@ -550,7 +553,7 @@ void test_parsing_function_param(void) {
     assert(t->num_params == 1);
     assert(t->param_types[0] == type_get_int32());
 
-    ParamNode *a = q->params->data[0];
+    ParamNode *a = q->params[0];
 
     assert(a->kind == node_param);
     assert(a->line == 1);
@@ -572,7 +575,7 @@ void test_parsing_function_params(void) {
     assert(p->kind == node_function);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "main") == 0);
-    assert(q->params->size == 2);
+    assert(q->num_params == 2);
     assert(q->var_args == false);
     assert(q->body == NULL);
 
@@ -582,8 +585,8 @@ void test_parsing_function_params(void) {
     assert(t->param_types[0] == type_get_int32());
     assert(t->param_types[1] == type_get_int32());
 
-    ParamNode *a = q->params->data[0];
-    ParamNode *b = q->params->data[1];
+    ParamNode *a = q->params[0];
+    ParamNode *b = q->params[1];
 
     assert(a->kind == node_param);
     assert(a->line == 1);
@@ -609,7 +612,7 @@ void test_parsing_translation_unit(void) {
     assert(f->kind == node_function);
     assert(f->line == 1);
     assert(strcmp(f->identifier, "main") == 0);
-    assert(f->params->size == 0);
+    assert(f->num_params == 0);
     assert(f->var_args == false);
     assert(f->body != NULL);
     assert(f->body->kind == node_compound);

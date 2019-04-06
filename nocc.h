@@ -222,7 +222,8 @@ struct FunctionNode {
     char *identifier;
     Type *type;
     LLVMValueRef generated_location;
-    Vec *params;
+    ParamNode **params;
+    int num_params;
     bool var_args;
     StmtNode *body;
 };
@@ -281,6 +282,16 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
+
+ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
+
+void sema_function_enter_params(ParserContext *ctx);
+FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
+                                         const Token *t, ParamNode **params,
+                                         int num_params, bool var_args);
+void sema_function_enter_body(ParserContext *ctx, FunctionNode *p);
+FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
+                                       StmtNode *body);
 
 ParserContext *sema_translation_unit_enter(const char *src);
 TranslationUnitNode *sema_translation_unit_leave(const char *filename,

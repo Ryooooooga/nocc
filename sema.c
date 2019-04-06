@@ -287,6 +287,130 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     return (StmtNode *)p;
 }
 
+ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
+    ParamNode *p;
+
+    assert(ctx);
+    assert(type);
+    assert(t);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_param;
+    p->line = t->line;
+    p->identifier = strdup(t->text);
+    p->type = type;
+    p->generated_location = NULL;
+
+    /* type check */
+    if (type == type_get_void()) {
+        fprintf(stderr, "parameter must not be void\n");
+        exit(1);
+    }
+
+    /* redeclaration check */
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
+        fprintf(stderr, "symbol %s has already been declared in this scope\n",
+                p->identifier);
+        exit(1);
+    }
+
+    /* register symbol */
+    scope_stack_register(ctx->env, (DeclNode *)p);
+
+    return p;
+}
+
+void sema_function_enter_params(ParserContext *ctx) {
+    assert(ctx);
+
+    /* enter parameter scope */
+    scope_stack_push(ctx->env);
+}
+
+FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
+                                         const Token *t, ParamNode **params,
+                                         int num_params, bool var_args) {
+    Type **param_types;
+    Type *function_type;
+    FunctionNode *p;
+    int i;
+
+    assert(ctx);
+    assert(return_type);
+    assert(t);
+    assert(params != NULL || num_params == 0);
+    assert(num_params >= 0);
+
+    /* leave parameter scope */
+    scope_stack_pop(ctx->env);
+
+    /* make function type */
+    param_types = malloc(sizeof(Type *) * num_params);
+
+    for (i = 0; i < num_params; i++) {
+        param_types[i] = params[i]->type;
+    }
+
+    function_type = function_type_new(return_type, param_types, num_params);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_function;
+    p->line = t->line;
+    p->identifier = t->text;
+    p->type = function_type;
+    p->generated_location = NULL;
+    p->params = malloc(sizeof(ParamNode *) * num_params);
+    p->num_params = num_params;
+    p->var_args = var_args;
+    p->body = NULL;
+
+    for (i = 0; i < num_params; i++) {
+        p->params[i] = params[i];
+    }
+
+    /* redeclaration check */
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
+        fprintf(stderr, "symbol %s has already been declared in this scope\n",
+                p->identifier);
+        exit(1);
+    }
+
+    /* register symbol */
+    scope_stack_register(ctx->env, (DeclNode *)p);
+
+    return p;
+}
+
+void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
+    int i;
+
+    assert(ctx);
+    assert(p);
+
+    /* enter parameter scope */
+    scope_stack_push(ctx->env);
+
+    /* register parameters */
+    for (i = 0; i < p->num_params; i++) {
+        scope_stack_register(ctx->env, (DeclNode *)p->params[i]);
+    }
+}
+
+FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
+                                       StmtNode *body) {
+    assert(ctx);
+    assert(p);
+    assert(body);
+
+    p->body = body;
+
+    /* leave parameter scope */
+    scope_stack_pop(ctx->env);
+
+    return p;
+}
+
 ParserContext *sema_translation_unit_enter(const char *src) {
     ParserContext *ctx;
     Vec *tokens;

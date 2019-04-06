@@ -296,7 +296,8 @@ void test_generating_function_prototype(void) {
         .line = 1,
         .identifier = "f",
         .type = function_type_new(type_get_int32(), NULL, 0),
-        .params = vec_new(),
+        .params = NULL,
+        .num_params = 0,
         .var_args = false,
         .body = NULL,
     };
@@ -323,7 +324,8 @@ void test_generating_function(void) {
         .line = 1,
         .identifier = "f",
         .type = function_type_new(type_get_void(), NULL, 0),
-        .params = vec_new(),
+        .params = NULL,
+        .num_params = 0,
         .var_args = false,
         .body =
             (StmtNode *)&(CompoundNode){
@@ -360,7 +362,16 @@ void test_generating_function_with_param(void) {
         .identifier = "g",
         .type =
             function_type_new(type_get_void(), (Type *[]){type_get_int32()}, 1),
-        .params = vec_new(),
+        .params =
+            (ParamNode *[]){
+                &(ParamNode){
+                    .kind = node_param,
+                    .line = 1,
+                    .identifier = "a",
+                    .type = type_get_int32(),
+                },
+            },
+        .num_params = 1,
         .var_args = false,
         .body =
             (StmtNode *)&(CompoundNode){
@@ -370,13 +381,6 @@ void test_generating_function_with_param(void) {
                 .num_stmts = 0,
             },
     };
-
-    vec_push(p->params, &(ParamNode){
-                            .kind = node_param,
-                            .line = 1,
-                            .identifier = "a",
-                            .type = type_get_int32(),
-                        });
 
     LLVMValueRef function = generate_function(ctx, p);
     char *message = LLVMPrintValueToString(function);
@@ -406,7 +410,22 @@ void test_generating_function_with_params(void) {
         .identifier = "g",
         .type = function_type_new(
             type_get_void(), (Type *[]){type_get_int32(), type_get_int32()}, 2),
-        .params = vec_new(),
+        .params =
+            (ParamNode *[]){
+                &(ParamNode){
+                    .kind = node_param,
+                    .line = 1,
+                    .identifier = "a",
+                    .type = type_get_int32(),
+                },
+                &(ParamNode){
+                    .kind = node_param,
+                    .line = 1,
+                    .identifier = "b",
+                    .type = type_get_int32(),
+                },
+            },
+        .num_params = 2,
         .var_args = false,
         .body =
             (StmtNode *)&(CompoundNode){
@@ -416,20 +435,6 @@ void test_generating_function_with_params(void) {
                 .num_stmts = 0,
             },
     };
-
-    vec_push(p->params, &(ParamNode){
-                            .kind = node_param,
-                            .line = 1,
-                            .identifier = "a",
-                            .type = type_get_int32(),
-                        });
-
-    vec_push(p->params, &(ParamNode){
-                            .kind = node_param,
-                            .line = 1,
-                            .identifier = "b",
-                            .type = type_get_int32(),
-                        });
 
     LLVMValueRef function = generate_function(ctx, p);
     char *message = LLVMPrintValueToString(function);
