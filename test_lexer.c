@@ -42,11 +42,19 @@ void test_lexer(void) {
     };
 
     const TokenTestSuite suites2[] = {
-        {token_if, "if", 1}, {'(', "(", 1}, {token_identifier, "x", 1},
-        {')', ")", 1},       {'{', "{", 1}, {'}', "}", 2},
+        {token_if, "if", 1},
+        {'(', "(", 1},
+        {token_identifier, "x", 1},
+        {token_lesser_equal, "<=", 1},
+        {token_identifier, "y", 1},
+        {token_equal, "==", 1},
+        {token_identifier, "true", 1},
+        {')', ")", 1},
+        {'{', "{", 1},
+        {'}', "}", 2},
         {'\0', "", 2},
     };
 
     test_tokens("42 + 5 - \n a*abc", suites1);
-    test_tokens("if (x) {\n}", suites2);
+    test_tokens("if (x<=y==true) {\n}", suites2);
 }
