@@ -33,6 +33,28 @@ Type *parse_type(ParserContext *ctx) {
     }
 }
 
+ExprNode *parse_paren_expr(ParserContext *ctx) {
+    ExprNode *expr;
+
+    if (ctx->tokens[ctx->index]->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n",
+                ctx->tokens[ctx->index]->text);
+        exit(1);
+    }
+    ctx->index += 1; /* eat ( */
+
+    expr = parse_expr(ctx);
+
+    if (ctx->tokens[ctx->index]->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n",
+                ctx->tokens[ctx->index]->text);
+        exit(1);
+    }
+    ctx->index += 1; /* eat ) */
+
+    return expr;
+}
+
 ExprNode *parse_number_expr(ParserContext *ctx) {
     IntegerNode *p;
 
@@ -79,6 +101,9 @@ ExprNode *parse_identifier_expr(ParserContext *ctx) {
 
 ExprNode *parse_primary_expr(ParserContext *ctx) {
     switch (ctx->tokens[ctx->index]->kind) {
+    case '(':
+        return parse_paren_expr(ctx);
+
     case token_number:
         return parse_number_expr(ctx);
 
@@ -280,6 +305,35 @@ StmtNode *parse_return_stmt(ParserContext *ctx) {
     return (StmtNode *)p;
 }
 
+StmtNode *parse_if_stmt(ParserContext *ctx) {
+    IfNode *p;
+
+    p = malloc(sizeof(*p));
+    p->kind = node_if;
+    p->line = ctx->tokens[ctx->index]->line;
+    p->else_ = NULL;
+
+    if (ctx->tokens[ctx->index]->kind != token_if) {
+        fprintf(stderr, "expected if, but got %s\n",
+                ctx->tokens[ctx->index]->text);
+        exit(1);
+    }
+    ctx->index += 1; /* eat if */
+
+    p->condition = parse_paren_expr(ctx);
+
+    p->then = parse_stmt(ctx);
+
+    if (ctx->tokens[ctx->index]->kind != token_else) {
+        return (StmtNode *)p;
+    }
+    ctx->index += 1; // eat else
+
+    p->else_ = parse_stmt(ctx);
+
+    return (StmtNode *)p;
+}
+
 StmtNode *parse_expr_stmt(ParserContext *ctx) {
     ExprNode *expr;
     ExprStmtNode *p;
@@ -305,6 +359,9 @@ StmtNode *parse_stmt(ParserContext *ctx) {
 
     case token_return:
         return parse_return_stmt(ctx);
+
+    case token_if:
+        return parse_if_stmt(ctx);
 
     default:
         return parse_expr_stmt(ctx);

@@ -15,6 +15,7 @@ enum {
     token_number = 256,
     token_identifier,
     token_if,
+    token_else,
     token_return,
     token_void,
     token_int,
@@ -91,6 +92,7 @@ enum {
 
     node_compound,
     node_return,
+    node_if,
     node_expr,
 
     node_param,
@@ -107,6 +109,7 @@ typedef struct BinaryNode BinaryNode;
 typedef struct StmtNode StmtNode;
 typedef struct CompoundNode CompoundNode;
 typedef struct ReturnNode ReturnNode;
+typedef struct IfNode IfNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
 typedef struct DeclNode DeclNode;
@@ -170,6 +173,14 @@ struct ReturnNode {
     int kind;
     int line;
     ExprNode *return_value;
+};
+
+struct IfNode {
+    int kind;
+    int line;
+    ExprNode *condition;
+    StmtNode *then;
+    StmtNode *else_;
 };
 
 struct ExprStmtNode {

@@ -272,6 +272,44 @@ void test_parsing_multiplication(void) {
     assert(right->right->kind == node_integer);
 }
 
+void test_parsing_paren(void) {
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){'(', "(", 1},
+                &(Token){token_number, "6", 1},
+                &(Token){'+', "+", 1},
+                &(Token){token_number, "4", 1},
+                &(Token){')', ")", 1},
+                &(Token){'*', "*", 1},
+                &(Token){token_number, "3", 1},
+                &(Token){'\0', "", 2},
+            },
+        .index = 0,
+    };
+
+    ExprNode *p = parse_expr(ctx);
+    BinaryNode *q = (BinaryNode *)p;
+
+    assert(p->kind == node_binary);
+    assert(p->line == 1);
+    assert(q->operator_ == '*');
+
+    BinaryNode *left = (BinaryNode *)q->left;
+    IntegerNode *right = (IntegerNode *)q->right;
+
+    assert(left->kind == node_binary);
+    assert(left->line == 1);
+    assert(left->operator_ == '+');
+    assert(left->left->kind == node_integer);
+    assert(left->right->kind == node_integer);
+
+    assert(right->kind == node_integer);
+    assert(right->line == 1);
+    assert(right->value == 3);
+}
+
 void test_parsing_expr_stmt(void) {
     ParserContext *ctx = &(ParserContext){
         .env = map_new(),
@@ -374,6 +412,39 @@ void test_parsing_compound_stmt(void) {
             exit(1);
         }
     }
+}
+
+void test_parsing_if_stmt(void) {
+    Vec *toks = lex("if (42) {}");
+
+    IfNode *p = (IfNode *)parse_stmt(&(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    });
+
+    assert(p->kind == node_if);
+    assert(p->line == 1);
+    assert(p->condition->kind == node_integer);
+    assert(p->then->kind == node_compound);
+    assert(p->else_ == NULL);
+}
+
+void test_parsing_if_else_stmt(void) {
+    Vec *toks = lex("if (42) {} else 42;");
+
+    IfNode *p = (IfNode *)parse_stmt(&(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    });
+
+    assert(p->kind == node_if);
+    assert(p->line == 1);
+    assert(p->condition->kind == node_integer);
+    assert(p->then->kind == node_compound);
+    assert(p->else_ != NULL);
+    assert(p->else_->kind == node_expr);
 }
 
 void test_parsing_parameter(void) {
@@ -542,11 +613,14 @@ void test_parser(void) {
     test_parsing_negative();
     test_parsing_addition();
     test_parsing_multiplication();
+    test_parsing_paren();
 
     test_parsing_expr_stmt();
     test_parsing_return_stmt();
     test_parsing_return_void_stmt();
     test_parsing_compound_stmt();
+    test_parsing_if_stmt();
+    test_parsing_if_else_stmt();
 
     test_parsing_parameter();
     test_parsing_function();
