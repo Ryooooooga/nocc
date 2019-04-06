@@ -504,6 +504,70 @@ void test_generating_call(void) {
     LLVMDisposeModule(module);
 }
 
+void test_generating_if(void) {
+    TranslationUnitNode *p =
+        parse("test_generating_if", "void f(void) {if (1) {}}\n");
+
+    LLVMModuleRef module = generate(p);
+
+    char *message = LLVMPrintModuleToString(module);
+
+    assert(strcmp(message, "; ModuleID = 'test_generating_if'\n"
+                           "source_filename = \"test_generating_if\"\n"
+                           "\n"
+                           "define void @f() {\n"
+                           "entry:\n"
+                           "  br i1 true, label %then, label %else\n"
+                           "\n"
+                           "then:                                             "
+                           "; preds = %entry\n"
+                           "  br label %endif\n"
+                           "\n"
+                           "else:                                             "
+                           "; preds = %entry\n"
+                           "  br label %endif\n"
+                           "\n"
+                           "endif:                                            "
+                           "; preds = %else, %then\n"
+                           "  ret void\n"
+                           "}\n") == 0);
+
+    LLVMDisposeMessage(message);
+    LLVMDisposeModule(module);
+}
+
+void test_generating_if_else(void) {
+    TranslationUnitNode *p =
+        parse("test_generating_if_else", "void f(void) {if (1) {} else {}}\n");
+
+    LLVMModuleRef module = generate(p);
+
+    char *message = LLVMPrintModuleToString(module);
+
+    assert(strcmp(message, "; ModuleID = 'test_generating_if_else'\n"
+                           "source_filename = \"test_generating_if_else\"\n"
+                           "\n"
+                           "define void @f() {\n"
+                           "entry:\n"
+                           "  br i1 true, label %then, label %else\n"
+                           "\n"
+                           "then:                                             "
+                           "; preds = %entry\n"
+                           "  br label %endif\n"
+                           "\n"
+                           "else:                                             "
+                           "; preds = %entry\n"
+                           "  br label %endif\n"
+                           "\n"
+                           "endif:                                            "
+                           "; preds = %else, %then\n"
+                           "  ret void\n"
+                           "}\n") == 0);
+
+    LLVMDisposeMessage(message);
+    LLVMDisposeModule(module);
+}
+
 void test_generator(void) {
     test_generating_type_void();
     test_generating_type_int32();
@@ -525,4 +589,6 @@ void test_generator(void) {
     test_generating_translation_unit();
 
     test_generating_call();
+    test_generating_if();
+    test_generating_if_else();
 }

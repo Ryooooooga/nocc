@@ -166,6 +166,49 @@ bool generate_return_stmt(GeneratorContext *ctx, ReturnNode *p) {
     return true;
 }
 
+bool generate_if_stmt(GeneratorContext *ctx, IfNode *p) {
+    LLVMValueRef function;
+    LLVMBasicBlockRef then_basic_block;
+    LLVMBasicBlockRef else_basic_block;
+    LLVMBasicBlockRef endif_basic_block;
+
+    LLVMValueRef condition;
+    LLVMValueRef bool_condition;
+
+    function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
+    then_basic_block = LLVMAppendBasicBlock(function, "then");
+    else_basic_block = LLVMAppendBasicBlock(function, "else");
+    endif_basic_block = LLVMAppendBasicBlock(function, "endif");
+
+    /* condition */
+    condition = generate_expr(ctx, p->condition);
+    bool_condition =
+        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
+                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+
+    LLVMBuildCondBr(ctx->builder, bool_condition, then_basic_block,
+                    else_basic_block);
+
+    /* then */
+    LLVMPositionBuilderAtEnd(ctx->builder, then_basic_block);
+
+    if (!generate_stmt(ctx, p->then)) {
+        LLVMBuildBr(ctx->builder, endif_basic_block);
+    }
+
+    /* else */
+    LLVMPositionBuilderAtEnd(ctx->builder, else_basic_block);
+
+    if (p->else_ == NULL || !generate_stmt(ctx, p->else_)) {
+        LLVMBuildBr(ctx->builder, endif_basic_block);
+    }
+
+    /* end if */
+    LLVMPositionBuilderAtEnd(ctx->builder, endif_basic_block);
+
+    return false;
+}
+
 bool generate_expr_stmt(GeneratorContext *ctx, ExprStmtNode *p) {
     generate_expr(ctx, p->expr);
 
@@ -183,6 +226,9 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
     case node_return:
         return generate_return_stmt(ctx, (ReturnNode *)p);
 
+    case node_if:
+        return generate_if_stmt(ctx, (IfNode *)p);
+
     case node_expr:
         return generate_expr_stmt(ctx, (ExprStmtNode *)p);
 
@@ -197,7 +243,7 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     LLVMTypeRef *param_types;
     LLVMTypeRef function_type;
     LLVMValueRef function;
-    LLVMBasicBlockRef entryBasicBlock;
+    LLVMBasicBlockRef entry_basic_block;
 
     FunctionType *type;
     ParamNode *param;
@@ -229,8 +275,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     }
 
     /* entry block */
-    entryBasicBlock = LLVMAppendBasicBlock(function, "entry");
-    LLVMPositionBuilderAtEnd(ctx->builder, entryBasicBlock);
+    entry_basic_block = LLVMAppendBasicBlock(function, "entry");
+    LLVMPositionBuilderAtEnd(ctx->builder, entry_basic_block);
 
     /* prologue */
     for (i = 0; i < p->params->size; i++) {
