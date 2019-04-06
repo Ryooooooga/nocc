@@ -64,6 +64,8 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
     LLVMValueRef left;
     LLVMValueRef right;
 
+    LLVMValueRef cmp;
+
     left = generate_expr(ctx, p->left);
     right = generate_expr(ctx, p->right);
 
@@ -82,6 +84,30 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
     case '%':
         return LLVMBuildSRem(ctx->builder, left, right, "rem");
+
+    case '<':
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLT, left, right, "lt");
+        return LLVMBuildSExt(ctx->builder, cmp, LLVMInt32Type(), "lt_i32");
+
+    case '>':
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGT, left, right, "gt");
+        return LLVMBuildSExt(ctx->builder, cmp, LLVMInt32Type(), "gt_i32");
+
+    case token_lesser_equal:
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLE, left, right, "le");
+        return LLVMBuildSExt(ctx->builder, cmp, LLVMInt32Type(), "le_i32");
+
+    case token_greater_equal:
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGE, left, right, "ge");
+        return LLVMBuildSExt(ctx->builder, cmp, LLVMInt32Type(), "ge_i32");
+
+    case token_equal:
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left, right, "eq");
+        return LLVMBuildSExt(ctx->builder, cmp, LLVMInt32Type(), "eq_i32");
+
+    case token_not_equal:
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntNE, left, right, "ne");
+        return LLVMBuildSExt(ctx->builder, cmp, LLVMInt32Type(), "ne_i32");
 
     default:
         fprintf(stderr, "unknown binary operator %d\n", p->operator_);

@@ -235,10 +235,52 @@ ExprNode *parse_additive_expr(ParserContext *ctx) {
     return left;
 }
 
+ExprNode *parse_relational_expr(ParserContext *ctx) {
+    const Token *op_tok;
+    ExprNode *left;
+    ExprNode *right;
+
+    left = parse_additive_expr(ctx);
+
+    while (ctx->tokens[ctx->index]->kind == '<' ||
+           ctx->tokens[ctx->index]->kind == '>' ||
+           ctx->tokens[ctx->index]->kind == token_lesser_equal ||
+           ctx->tokens[ctx->index]->kind == token_greater_equal) {
+        op_tok = ctx->tokens[ctx->index];
+        ctx->index += 1; /* eat binary operator */
+
+        right = parse_additive_expr(ctx);
+
+        left = binary_expr_new(op_tok, left, right);
+    }
+
+    return left;
+}
+
+ExprNode *parse_equality_expr(ParserContext *ctx) {
+    const Token *op_tok;
+    ExprNode *left;
+    ExprNode *right;
+
+    left = parse_relational_expr(ctx);
+
+    while (ctx->tokens[ctx->index]->kind == token_equal ||
+           ctx->tokens[ctx->index]->kind == token_not_equal) {
+        op_tok = ctx->tokens[ctx->index];
+        ctx->index += 1; /* eat binary operator */
+
+        right = parse_relational_expr(ctx);
+
+        left = binary_expr_new(op_tok, left, right);
+    }
+
+    return left;
+}
+
 ExprNode *parse_expr(ParserContext *ctx) {
     assert(ctx);
 
-    return parse_additive_expr(ctx);
+    return parse_equality_expr(ctx);
 }
 
 StmtNode *parse_compound_stmt(ParserContext *ctx) {
