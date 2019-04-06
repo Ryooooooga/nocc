@@ -60,8 +60,8 @@ typedef struct UnaryNode UnaryNode;
 typedef struct BinaryNode BinaryNode;
 
 typedef struct StmtNode StmtNode;
-typedef struct CompoundStmtNode CompoundStmtNode;
-typedef struct ReturnStmtNode ReturnStmtNode;
+typedef struct CompoundNode CompoundNode;
+typedef struct ReturnNode ReturnNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
 struct ExprNode {
@@ -101,13 +101,13 @@ struct StmtNode {
     int line;
 };
 
-struct CompoundStmtNode {
+struct CompoundNode {
     int kind;
     int line;
-    Vec* stmts;
+    Vec *stmts;
 };
 
-struct ReturnStmtNode {
+struct ReturnNode {
     int kind;
     int line;
     ExprNode *return_value;

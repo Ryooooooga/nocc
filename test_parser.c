@@ -136,7 +136,7 @@ void test_parsing_return_stmt(void) {
     int index = 0;
 
     StmtNode *p = parse_stmt(tokens, &index);
-    ReturnStmtNode *q = (ReturnStmtNode *)p;
+    ReturnNode *q = (ReturnNode *)p;
 
     assert(p->kind == node_return);
     assert(p->line == 1);
@@ -153,7 +153,7 @@ void test_parsing_return_void_stmt(void) {
     int index = 0;
 
     StmtNode *p = parse_stmt(tokens, &index);
-    ReturnStmtNode *q = (ReturnStmtNode *)p;
+    ReturnNode *q = (ReturnNode *)p;
 
     assert(p->kind == node_return);
     assert(p->line == 1);
@@ -178,7 +178,7 @@ void test_parsing_compound_stmt(void) {
     int index = 0;
 
     StmtNode *p = parse_stmt(tokens, &index);
-    CompoundStmtNode *q = (CompoundStmtNode *)p;
+    CompoundNode *q = (CompoundNode *)p;
 
     assert(p->kind == node_compound);
     assert(p->line == 1);

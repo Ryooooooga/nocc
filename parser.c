@@ -133,7 +133,7 @@ ExprNode *parse_expr(const Token **toks, int *n) {
 }
 
 StmtNode *parse_compound_stmt(const Token **toks, int *n) {
-    CompoundStmtNode *p;
+    CompoundNode *p;
 
     if (toks[*n]->kind != '{') {
         fprintf(stderr, "expected {, but got %s\n", toks[*n]->text);
@@ -160,7 +160,7 @@ StmtNode *parse_compound_stmt(const Token **toks, int *n) {
 }
 
 StmtNode *parse_return_stmt(const Token **toks, int *n) {
-    ReturnStmtNode *p;
+    ReturnNode *p;
 
     if (toks[*n]->kind != token_return) {
         fprintf(stderr, "expected return, but got %s\n", toks[*n]->text);
