@@ -14,21 +14,42 @@ ExprNode *binary_expr_new(const Token *op_tok, ExprNode *left,
     return (ExprNode *)p;
 }
 
+const Token *current_token(ParserContext *ctx) {
+    assert(ctx);
+    return ctx->tokens[ctx->index];
+}
+
+const Token *consume_token(ParserContext *ctx) {
+    const Token *t;
+
+    assert(ctx);
+
+    t = current_token(ctx);
+
+    if (t->kind == '\0') {
+        return t;
+    }
+
+    ctx->index += 1;
+
+    return t;
+}
+
 Type *parse_type(ParserContext *ctx) {
     assert(ctx);
 
-    switch (ctx->tokens[ctx->index]->kind) {
+    switch (current_token(ctx)->kind) {
     case token_void:
-        ctx->index += 1; /* eat void */
+        consume_token(ctx); /* eat void */
         return type_get_void();
 
     case token_int:
-        ctx->index += 1; /* eat int */
+        consume_token(ctx); /* eat int */
         return type_get_int32();
 
     default:
         fprintf(stderr, "expected type, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 }
@@ -36,21 +57,19 @@ Type *parse_type(ParserContext *ctx) {
 ExprNode *parse_paren_expr(ParserContext *ctx) {
     ExprNode *expr;
 
-    if (ctx->tokens[ctx->index]->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    ctx->index += 1; /* eat ( */
+    consume_token(ctx); /* eat ( */
 
     expr = parse_expr(ctx);
 
-    if (ctx->tokens[ctx->index]->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    ctx->index += 1; /* eat ) */
+    consume_token(ctx); /* eat ) */
 
     return expr;
 }
@@ -58,18 +77,19 @@ ExprNode *parse_paren_expr(ParserContext *ctx) {
 ExprNode *parse_number_expr(ParserContext *ctx) {
     IntegerNode *p;
 
-    if (ctx->tokens[ctx->index]->kind != token_number) {
+    if (current_token(ctx)->kind != token_number) {
         fprintf(stderr, "expected number, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 
     p = malloc(sizeof(*p));
     p->kind = node_integer;
-    p->line = ctx->tokens[ctx->index]->line;
-    p->value = atoi(ctx->tokens[ctx->index]->text);
+    p->line = current_token(ctx)->line;
+    p->type = type_get_int32();
+    p->value = atoi(current_token(ctx)->text);
 
-    ctx->index += 1; /* eat number */
+    consume_token(ctx); /* eat number */
 
     return (ExprNode *)p;
 }
@@ -77,16 +97,16 @@ ExprNode *parse_number_expr(ParserContext *ctx) {
 ExprNode *parse_identifier_expr(ParserContext *ctx) {
     IdentifierNode *p;
 
-    if (ctx->tokens[ctx->index]->kind != token_identifier) {
+    if (current_token(ctx)->kind != token_identifier) {
         fprintf(stderr, "expected identifier, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 
     p = malloc(sizeof(*p));
     p->kind = node_identifier;
-    p->line = ctx->tokens[ctx->index]->line;
-    p->identifier = strdup(ctx->tokens[ctx->index]->text);
+    p->line = current_token(ctx)->line;
+    p->identifier = strdup(current_token(ctx)->text);
     p->declaration = map_get(ctx->env, p->identifier);
 
     if (p->declaration == NULL) {
@@ -94,13 +114,15 @@ ExprNode *parse_identifier_expr(ParserContext *ctx) {
         exit(1);
     }
 
-    ctx->index += 1; /* eat identifier */
+    consume_token(ctx); /* eat identifier */
+
+    p->type = p->declaration->type;
 
     return (ExprNode *)p;
 }
 
 ExprNode *parse_primary_expr(ParserContext *ctx) {
-    switch (ctx->tokens[ctx->index]->kind) {
+    switch (current_token(ctx)->kind) {
     case '(':
         return parse_paren_expr(ctx);
 
@@ -112,7 +134,7 @@ ExprNode *parse_primary_expr(ParserContext *ctx) {
 
     default:
         fprintf(stderr, "expected expression, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 }
@@ -122,37 +144,35 @@ ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
 
     p = malloc(sizeof(*p));
     p->kind = node_call;
-    p->line = ctx->tokens[ctx->index]->line;
+    p->line = current_token(ctx)->line;
     p->callee = callee;
     p->args = vec_new();
 
-    if (ctx->tokens[ctx->index]->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    ctx->index += 1; /* eat ( */
+    consume_token(ctx); /* eat ( */
 
-    if (ctx->tokens[ctx->index]->kind == ')') {
-        ctx->index += 1; /* eat ) */
+    if (current_token(ctx)->kind == ')') {
+        consume_token(ctx); /* eat ) */
 
         return (ExprNode *)p;
     }
 
     vec_push(p->args, parse_expr(ctx));
 
-    while (ctx->tokens[ctx->index]->kind == ',') {
-        ctx->index += 1; /* eat , */
+    while (current_token(ctx)->kind == ',') {
+        consume_token(ctx); /* eat , */
 
         vec_push(p->args, parse_expr(ctx));
     }
 
-    if (ctx->tokens[ctx->index]->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    ctx->index += 1; /* eat ) */
+    consume_token(ctx); /* eat ) */
 
     return (ExprNode *)p;
 }
@@ -163,7 +183,7 @@ ExprNode *parse_postfix_expr(ParserContext *ctx) {
     operand = parse_primary_expr(ctx);
 
     while (1) {
-        switch (ctx->tokens[ctx->index]->kind) {
+        switch (current_token(ctx)->kind) {
         case '(':
             operand = parse_call_expr(ctx, operand);
             break;
@@ -177,14 +197,14 @@ ExprNode *parse_postfix_expr(ParserContext *ctx) {
 ExprNode *parse_unary_expr(ParserContext *ctx) {
     UnaryNode *p;
 
-    switch (ctx->tokens[ctx->index]->kind) {
+    switch (current_token(ctx)->kind) {
     case '-':
         p = malloc(sizeof(*p));
         p->kind = node_unary;
-        p->line = ctx->tokens[ctx->index]->line;
-        p->operator_ = ctx->tokens[ctx->index]->kind;
+        p->line = current_token(ctx)->line;
+        p->operator_ = current_token(ctx)->kind;
 
-        ctx->index += 1; /* eat unary operator */
+        consume_token(ctx); /* eat unary operator */
         p->operand = parse_unary_expr(ctx);
 
         return (ExprNode *)p;
@@ -201,11 +221,10 @@ ExprNode *parse_multiplicative_expr(ParserContext *ctx) {
 
     left = parse_unary_expr(ctx);
 
-    while (ctx->tokens[ctx->index]->kind == '*' ||
-           ctx->tokens[ctx->index]->kind == '/' ||
-           ctx->tokens[ctx->index]->kind == '%') {
-        op_tok = ctx->tokens[ctx->index];
-        ctx->index += 1; /* eat binary operator */
+    while (current_token(ctx)->kind == '*' || current_token(ctx)->kind == '/' ||
+           current_token(ctx)->kind == '%') {
+        op_tok = current_token(ctx);
+        consume_token(ctx); /* eat binary operator */
 
         right = parse_unary_expr(ctx);
 
@@ -222,10 +241,9 @@ ExprNode *parse_additive_expr(ParserContext *ctx) {
 
     left = parse_multiplicative_expr(ctx);
 
-    while (ctx->tokens[ctx->index]->kind == '+' ||
-           ctx->tokens[ctx->index]->kind == '-') {
-        op_tok = ctx->tokens[ctx->index];
-        ctx->index += 1; /* eat binary operator */
+    while (current_token(ctx)->kind == '+' || current_token(ctx)->kind == '-') {
+        op_tok = current_token(ctx);
+        consume_token(ctx); /* eat binary operator */
 
         right = parse_multiplicative_expr(ctx);
 
@@ -242,12 +260,11 @@ ExprNode *parse_relational_expr(ParserContext *ctx) {
 
     left = parse_additive_expr(ctx);
 
-    while (ctx->tokens[ctx->index]->kind == '<' ||
-           ctx->tokens[ctx->index]->kind == '>' ||
-           ctx->tokens[ctx->index]->kind == token_lesser_equal ||
-           ctx->tokens[ctx->index]->kind == token_greater_equal) {
-        op_tok = ctx->tokens[ctx->index];
-        ctx->index += 1; /* eat binary operator */
+    while (current_token(ctx)->kind == '<' || current_token(ctx)->kind == '>' ||
+           current_token(ctx)->kind == token_lesser_equal ||
+           current_token(ctx)->kind == token_greater_equal) {
+        op_tok = current_token(ctx);
+        consume_token(ctx); /* eat binary operator */
 
         right = parse_additive_expr(ctx);
 
@@ -264,10 +281,10 @@ ExprNode *parse_equality_expr(ParserContext *ctx) {
 
     left = parse_relational_expr(ctx);
 
-    while (ctx->tokens[ctx->index]->kind == token_equal ||
-           ctx->tokens[ctx->index]->kind == token_not_equal) {
-        op_tok = ctx->tokens[ctx->index];
-        ctx->index += 1; /* eat binary operator */
+    while (current_token(ctx)->kind == token_equal ||
+           current_token(ctx)->kind == token_not_equal) {
+        op_tok = current_token(ctx);
+        consume_token(ctx); /* eat binary operator */
 
         right = parse_relational_expr(ctx);
 
@@ -286,32 +303,30 @@ ExprNode *parse_expr(ParserContext *ctx) {
 StmtNode *parse_compound_stmt(ParserContext *ctx) {
     CompoundNode *p;
 
-    if (ctx->tokens[ctx->index]->kind != '{') {
-        fprintf(stderr, "expected {, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != '{') {
+        fprintf(stderr, "expected {, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
 
     p = malloc(sizeof(*p));
     p->kind = node_compound;
-    p->line = ctx->tokens[ctx->index]->line;
+    p->line = current_token(ctx)->line;
     p->stmts = vec_new();
 
-    ctx->index += 1; /* eat { */
+    consume_token(ctx); /* eat { */
 
     /* TODO: lexical scope */
 
-    while (ctx->tokens[ctx->index]->kind != '}') {
+    while (current_token(ctx)->kind != '}') {
         vec_push(p->stmts, parse_stmt(ctx));
     }
 
-    if (ctx->tokens[ctx->index]->kind != '}') {
-        fprintf(stderr, "expected }, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != '}') {
+        fprintf(stderr, "expected }, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
 
-    ctx->index += 1; /* eat } */
+    consume_token(ctx); /* eat } */
 
     return (StmtNode *)p;
 }
@@ -319,30 +334,30 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
 StmtNode *parse_return_stmt(ParserContext *ctx) {
     ReturnNode *p;
 
-    if (ctx->tokens[ctx->index]->kind != token_return) {
+    if (current_token(ctx)->kind != token_return) {
         fprintf(stderr, "expected return, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 
     p = malloc(sizeof(*p));
     p->kind = node_return;
-    p->line = ctx->tokens[ctx->index]->line;
+    p->line = current_token(ctx)->line;
     p->return_value = NULL;
 
-    ctx->index += 1; /* eat return */
+    consume_token(ctx); /* eat return */
 
-    if (ctx->tokens[ctx->index]->kind != ';') {
+    if (current_token(ctx)->kind != ';') {
         p->return_value = parse_expr(ctx);
     }
 
-    if (ctx->tokens[ctx->index]->kind != ';') {
+    if (current_token(ctx)->kind != ';') {
         fprintf(stderr, "expected semicolon, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 
-    ctx->index += 1; /* eat ; */
+    consume_token(ctx); /* eat ; */
 
     return (StmtNode *)p;
 }
@@ -352,24 +367,23 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
 
     p = malloc(sizeof(*p));
     p->kind = node_if;
-    p->line = ctx->tokens[ctx->index]->line;
+    p->line = current_token(ctx)->line;
     p->else_ = NULL;
 
-    if (ctx->tokens[ctx->index]->kind != token_if) {
-        fprintf(stderr, "expected if, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != token_if) {
+        fprintf(stderr, "expected if, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    ctx->index += 1; /* eat if */
+    consume_token(ctx); /* eat if */
 
     p->condition = parse_paren_expr(ctx);
 
     p->then = parse_stmt(ctx);
 
-    if (ctx->tokens[ctx->index]->kind != token_else) {
+    if (current_token(ctx)->kind != token_else) {
         return (StmtNode *)p;
     }
-    ctx->index += 1; // eat else
+    consume_token(ctx); // eat else
 
     p->else_ = parse_stmt(ctx);
 
@@ -385,9 +399,9 @@ StmtNode *parse_expr_stmt(ParserContext *ctx) {
     p = malloc(sizeof(*p));
     p->kind = node_expr;
     p->expr = expr;
-    p->line = ctx->tokens[ctx->index]->line;
+    p->line = current_token(ctx)->line;
 
-    ctx->index += 1; /* eat ; */
+    consume_token(ctx); /* eat ; */
 
     return (StmtNode *)p;
 }
@@ -395,7 +409,7 @@ StmtNode *parse_expr_stmt(ParserContext *ctx) {
 StmtNode *parse_stmt(ParserContext *ctx) {
     assert(ctx);
 
-    switch (ctx->tokens[ctx->index]->kind) {
+    switch (current_token(ctx)->kind) {
     case '{':
         return parse_compound_stmt(ctx);
 
@@ -421,15 +435,15 @@ ParamNode *parse_param(ParserContext *ctx) {
 
     /* TODO: type check */
 
-    if (ctx->tokens[ctx->index]->kind != token_identifier) {
+    if (current_token(ctx)->kind != token_identifier) {
         fprintf(stderr, "expected identifier, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 
-    identifier = ctx->tokens[ctx->index];
+    identifier = current_token(ctx);
 
-    ctx->index += 1; /* eat identifier */
+    consume_token(ctx); /* eat identifier */
 
     p = malloc(sizeof(*p));
     p->kind = node_param;
@@ -455,42 +469,40 @@ DeclNode *parse_top_level(ParserContext *ctx) {
 
     return_type = parse_type(ctx);
 
-    if (ctx->tokens[ctx->index]->kind != token_identifier) {
+    if (current_token(ctx)->kind != token_identifier) {
         fprintf(stderr, "expected identifier, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+                current_token(ctx)->text);
         exit(1);
     }
 
-    identifier = ctx->tokens[ctx->index];
-    ctx->index += 1; /* eat identifier */
+    identifier = current_token(ctx);
+    consume_token(ctx); /* eat identifier */
 
-    if (ctx->tokens[ctx->index]->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    ctx->index += 1; /* eat ( */
+    consume_token(ctx); /* eat ( */
 
     params = vec_new();
 
-    if (ctx->tokens[ctx->index]->kind == token_void) {
-        ctx->index += 1; /* eat void */
+    if (current_token(ctx)->kind == token_void) {
+        consume_token(ctx); /* eat void */
     } else {
         vec_push(params, parse_param(ctx));
 
-        while (ctx->tokens[ctx->index]->kind == ',') {
-            ctx->index += 1; /* eat , */
+        while (current_token(ctx)->kind == ',') {
+            consume_token(ctx); /* eat , */
 
             vec_push(params, parse_param(ctx));
         }
     }
 
-    if (ctx->tokens[ctx->index]->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n",
-                ctx->tokens[ctx->index]->text);
+    if (current_token(ctx)->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
         exit(1);
     }
-    ctx->index += 1; /* eat ) */
+    consume_token(ctx); /* eat ) */
 
     /* make function type */
     param_types = malloc(sizeof(Type *) * params->size);
@@ -519,8 +531,8 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     map_add(ctx->env, p->identifier, p);
     env_size = map_size(ctx->env);
 
-    if (ctx->tokens[ctx->index]->kind == ';') {
-        ctx->index += 1; /* eat ; */
+    if (current_token(ctx)->kind == ';') {
+        consume_token(ctx); /* eat ; */
         return (DeclNode *)p;
     }
 
