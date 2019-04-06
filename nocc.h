@@ -248,6 +248,7 @@ void scope_stack_register(ScopeStack *s, DeclNode *decl);
 
 struct ParserContext {
     ScopeStack *env;
+    FunctionNode *current_function;
     const Token **tokens;
     int index;
 };

@@ -90,7 +90,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     }
 
     for (i = 0; i < num_args; i++) {
-        /* TODO: type limitation */
+        /* TODO: remove type limitation */
         if (args[i]->type != func_type->param_types[i] ||
             args[i]->type != type_get_int32()) {
             fprintf(stderr, "invalid type of argument\n");
@@ -232,8 +232,10 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
 StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
                            ExprNode *return_value, const Token *semi) {
     ReturnNode *p;
+    FunctionType *function_type;
 
     assert(ctx);
+    assert(ctx->current_function);
     assert(t);
     assert(semi);
 
@@ -242,7 +244,21 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
     p->line = t->line;
     p->return_value = return_value;
 
-    /* TODO: type check */
+    /* type check */
+    function_type = (FunctionType *)ctx->current_function->type;
+
+    if (function_type->return_type == type_get_void()) {
+        if (return_value != NULL) {
+            fprintf(stderr, "void function should not return a value\n");
+            exit(1);
+        }
+    } else {
+        if (return_value == NULL ||
+            function_type->return_type != return_value->type) {
+            fprintf(stderr, "invalid return type\n");
+            exit(1);
+        }
+    }
 
     return (StmtNode *)p;
 }
@@ -388,6 +404,8 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
     assert(ctx);
     assert(p);
 
+    ctx->current_function = p;
+
     /* enter parameter scope */
     scope_stack_push(ctx->env);
 
@@ -407,6 +425,8 @@ FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
 
     /* leave parameter scope */
     scope_stack_pop(ctx->env);
+
+    ctx->current_function = NULL;
 
     return p;
 }

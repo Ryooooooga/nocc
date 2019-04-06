@@ -355,6 +355,16 @@ void test_parsing_expr_stmt(void) {
 void test_parsing_return_stmt(void) {
     ParserContext *ctx = &(ParserContext){
         .env = scope_stack_new(),
+        .current_function =
+            &(FunctionNode){
+                .kind = node_function,
+                .line = 1,
+                .identifier = "f",
+                .type = function_type_new(type_get_int32(), NULL, 0),
+                .params = NULL,
+                .num_params = 0,
+                .var_args = false,
+            },
         .tokens =
             (const Token *[]){
                 &(Token){token_return, "return", 1},
@@ -377,6 +387,16 @@ void test_parsing_return_stmt(void) {
 void test_parsing_return_void_stmt(void) {
     ParserContext *ctx = &(ParserContext){
         .env = scope_stack_new(),
+        .current_function =
+            &(FunctionNode){
+                .kind = node_function,
+                .line = 1,
+                .identifier = "f",
+                .type = function_type_new(type_get_void(), NULL, 0),
+                .params = NULL,
+                .num_params = 0,
+                .var_args = false,
+            },
         .tokens =
             (const Token *[]){
                 &(Token){token_return, "return", 1},
@@ -405,6 +425,16 @@ void test_parsing_compound_stmt(void) {
 
     ParserContext *ctx = &(ParserContext){
         .env = scope_stack_new(),
+        .current_function =
+            &(FunctionNode){
+                .kind = node_function,
+                .line = 1,
+                .identifier = "f",
+                .type = function_type_new(type_get_void(), NULL, 0),
+                .params = NULL,
+                .num_params = 0,
+                .var_args = false,
+            },
         .tokens =
             (const Token *[]){
                 &(Token){'{', "{", 1},
