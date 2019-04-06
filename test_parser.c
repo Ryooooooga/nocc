@@ -48,6 +48,7 @@ void test_parsing_integer(void) {
 
     assert(p->kind == node_integer);
     assert(p->line == 1);
+    assert(p->type == type_get_int32());
     assert(q->value == 42);
 }
 
@@ -76,6 +77,7 @@ void test_parsing_identifier(void) {
 
     assert(p->kind == node_identifier);
     assert(p->line == 1);
+    assert(p->type == type_get_int32());
     assert(strcmp(q->identifier, "xyz") == 0);
     assert(q->declaration == (DeclNode *)decl);
 }

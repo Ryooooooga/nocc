@@ -125,17 +125,20 @@ typedef struct TranslationUnitNode TranslationUnitNode;
 struct ExprNode {
     int kind;
     int line;
+    Type *type;
 };
 
 struct IntegerNode {
     int kind;
     int line;
+    Type *type;
     int value;
 };
 
 struct IdentifierNode {
     int kind;
     int line;
+    Type *type;
     char *identifier;
     DeclNode *declaration;
 };
@@ -143,6 +146,7 @@ struct IdentifierNode {
 struct CallNode {
     int kind;
     int line;
+    Type *type;
     ExprNode *callee;
     Vec *args;
 };
@@ -150,6 +154,7 @@ struct CallNode {
 struct UnaryNode {
     int kind;
     int line;
+    Type *type;
     int operator_;
     ExprNode *operand;
 };
@@ -157,6 +162,7 @@ struct UnaryNode {
 struct BinaryNode {
     int kind;
     int line;
+    Type *type;
     int operator_;
     ExprNode *left;
     ExprNode *right;
@@ -239,6 +245,11 @@ StmtNode *parse_stmt(ParserContext *ctx);
 ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
+
+ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
+                          const Token *close);
+ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value);
+ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t);
 
 struct GeneratorContext {
     LLVMModuleRef module;

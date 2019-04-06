@@ -20,19 +20,13 @@ const Token *current_token(ParserContext *ctx) {
 }
 
 const Token *consume_token(ParserContext *ctx) {
-    const Token *t;
-
     assert(ctx);
 
-    t = current_token(ctx);
-
-    if (t->kind == '\0') {
-        return t;
+    if (current_token(ctx)->kind == '\0') {
+        return current_token(ctx);
     }
 
-    ctx->index += 1;
-
-    return t;
+    return ctx->tokens[ctx->index++];
 }
 
 Type *parse_type(ParserContext *ctx) {
@@ -55,70 +49,65 @@ Type *parse_type(ParserContext *ctx) {
 }
 
 ExprNode *parse_paren_expr(ParserContext *ctx) {
+    const Token *open;
+    const Token *close;
     ExprNode *expr;
 
-    if (current_token(ctx)->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
+    /* ( */
+    open = consume_token(ctx);
+
+    if (open->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", open->text);
         exit(1);
     }
-    consume_token(ctx); /* eat ( */
 
+    /* expression */
     expr = parse_expr(ctx);
 
-    if (current_token(ctx)->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
+    /* ) */
+    close = consume_token(ctx);
+
+    if (close->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", close->text);
         exit(1);
     }
-    consume_token(ctx); /* eat ) */
 
-    return expr;
+    /* make node */
+    return sema_paren_expr(ctx, open, expr, close);
 }
 
 ExprNode *parse_number_expr(ParserContext *ctx) {
-    IntegerNode *p;
+    const Token *t;
+    int value;
 
-    if (current_token(ctx)->kind != token_number) {
-        fprintf(stderr, "expected number, but got %s\n",
-                current_token(ctx)->text);
+    /* number */
+    t = consume_token(ctx);
+
+    if (t->kind != token_number) {
+        fprintf(stderr, "expected number, but got %s\n", t->text);
         exit(1);
     }
 
-    p = malloc(sizeof(*p));
-    p->kind = node_integer;
-    p->line = current_token(ctx)->line;
-    p->type = type_get_int32();
-    p->value = atoi(current_token(ctx)->text);
+    /* convert */
+    value = atoi(t->text); /* TODO: check value range */
 
-    consume_token(ctx); /* eat number */
-
-    return (ExprNode *)p;
+    /* make node */
+    return sema_integer_expr(ctx, t, value);
 }
 
 ExprNode *parse_identifier_expr(ParserContext *ctx) {
-    IdentifierNode *p;
+    const Token *t;
 
-    if (current_token(ctx)->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n",
-                current_token(ctx)->text);
+    /* identifier */
+    t = consume_token(ctx);
+
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", t->text);
         exit(1);
     }
 
-    p = malloc(sizeof(*p));
-    p->kind = node_identifier;
-    p->line = current_token(ctx)->line;
-    p->identifier = strdup(current_token(ctx)->text);
-    p->declaration = map_get(ctx->env, p->identifier);
-
-    if (p->declaration == NULL) {
-        fprintf(stderr, "undeclared symbol %s\n", p->identifier);
-        exit(1);
-    }
-
-    consume_token(ctx); /* eat identifier */
-
-    p->type = p->declaration->type;
-
-    return (ExprNode *)p;
+    /* make node */
+    return sema_identifier_expr(ctx, t);
 }
 
 ExprNode *parse_primary_expr(ParserContext *ctx) {
