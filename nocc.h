@@ -250,6 +250,10 @@ ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close);
 ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value);
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t);
+ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
+                          ExprNode *operand);
+ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
+                           ExprNode *right);
 
 struct GeneratorContext {
     LLVMModuleRef module;

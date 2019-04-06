@@ -195,6 +195,7 @@ void test_parsing_negative(void) {
 
     assert(p->kind == node_unary);
     assert(p->line == 1);
+    assert(p->type == type_get_int32());
     assert(q->operator_ == '-');
 
     ExprNode *child = q->operand;
@@ -224,6 +225,7 @@ void test_parsing_addition(void) {
 
     assert(p->kind == node_binary);
     assert(p->line == 1);
+    assert(p->type == type_get_int32());
     assert(q->operator_ == '+');
 
     IntegerNode *left = (IntegerNode *)q->left;
@@ -258,6 +260,7 @@ void test_parsing_multiplication(void) {
 
     assert(p->kind == node_binary);
     assert(p->line == 1);
+    assert(p->type == type_get_int32());
     assert(q->operator_ == '+');
 
     IntegerNode *left = (IntegerNode *)q->left;
@@ -296,6 +299,7 @@ void test_parsing_paren(void) {
 
     assert(p->kind == node_binary);
     assert(p->line == 1);
+    assert(p->type == type_get_int32());
     assert(q->operator_ == '*');
 
     BinaryNode *left = (BinaryNode *)q->left;

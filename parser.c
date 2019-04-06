@@ -1,19 +1,5 @@
 #include "nocc.h"
 
-ExprNode *binary_expr_new(const Token *op_tok, ExprNode *left,
-                          ExprNode *right) {
-    BinaryNode *p;
-
-    p = malloc(sizeof(*p));
-    p->kind = node_binary;
-    p->line = op_tok->line;
-    p->operator_ = op_tok->kind;
-    p->left = left;
-    p->right = right;
-
-    return (ExprNode *)p;
-}
-
 const Token *current_token(ParserContext *ctx) {
     assert(ctx);
     return ctx->tokens[ctx->index];
@@ -184,19 +170,21 @@ ExprNode *parse_postfix_expr(ParserContext *ctx) {
 }
 
 ExprNode *parse_unary_expr(ParserContext *ctx) {
-    UnaryNode *p;
+    const Token *t;
+    ExprNode *operand;
 
-    switch (current_token(ctx)->kind) {
+    t = current_token(ctx);
+
+    switch (t->kind) {
     case '-':
-        p = malloc(sizeof(*p));
-        p->kind = node_unary;
-        p->line = current_token(ctx)->line;
-        p->operator_ = current_token(ctx)->kind;
+        /* unary operator */
+        consume_token(ctx);
 
-        consume_token(ctx); /* eat unary operator */
-        p->operand = parse_unary_expr(ctx);
+        /* unary expression */
+        operand = parse_unary_expr(ctx);
 
-        return (ExprNode *)p;
+        /* make node */
+        return sema_unary_expr(ctx, t, operand);
 
     default:
         return parse_postfix_expr(ctx);
@@ -204,80 +192,92 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
 }
 
 ExprNode *parse_multiplicative_expr(ParserContext *ctx) {
-    const Token *op_tok;
+    const Token *t;
     ExprNode *left;
     ExprNode *right;
 
+    /* unary expression */
     left = parse_unary_expr(ctx);
 
     while (current_token(ctx)->kind == '*' || current_token(ctx)->kind == '/' ||
            current_token(ctx)->kind == '%') {
-        op_tok = current_token(ctx);
-        consume_token(ctx); /* eat binary operator */
+        /* multiplicative operator */
+        t = consume_token(ctx);
 
+        /* unary expression */
         right = parse_unary_expr(ctx);
 
-        left = binary_expr_new(op_tok, left, right);
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
     }
 
     return left;
 }
 
 ExprNode *parse_additive_expr(ParserContext *ctx) {
-    const Token *op_tok;
+    const Token *t;
     ExprNode *left;
     ExprNode *right;
 
+    /* multiplicative expression */
     left = parse_multiplicative_expr(ctx);
 
     while (current_token(ctx)->kind == '+' || current_token(ctx)->kind == '-') {
-        op_tok = current_token(ctx);
-        consume_token(ctx); /* eat binary operator */
+        /* additive operator */
+        t = consume_token(ctx);
 
+        /* multiplicative expression */
         right = parse_multiplicative_expr(ctx);
 
-        left = binary_expr_new(op_tok, left, right);
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
     }
 
     return left;
 }
 
 ExprNode *parse_relational_expr(ParserContext *ctx) {
-    const Token *op_tok;
+    const Token *t;
     ExprNode *left;
     ExprNode *right;
 
+    /* additive expression */
     left = parse_additive_expr(ctx);
 
     while (current_token(ctx)->kind == '<' || current_token(ctx)->kind == '>' ||
            current_token(ctx)->kind == token_lesser_equal ||
            current_token(ctx)->kind == token_greater_equal) {
-        op_tok = current_token(ctx);
-        consume_token(ctx); /* eat binary operator */
+        /* relational operator */
+        t = consume_token(ctx);
 
+        /* additive expression */
         right = parse_additive_expr(ctx);
 
-        left = binary_expr_new(op_tok, left, right);
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
     }
 
     return left;
 }
 
 ExprNode *parse_equality_expr(ParserContext *ctx) {
-    const Token *op_tok;
+    const Token *t;
     ExprNode *left;
     ExprNode *right;
 
+    /* relational expression */
     left = parse_relational_expr(ctx);
 
     while (current_token(ctx)->kind == token_equal ||
            current_token(ctx)->kind == token_not_equal) {
-        op_tok = current_token(ctx);
-        consume_token(ctx); /* eat binary operator */
+        /* equality operator */
+        t = consume_token(ctx);
 
+        /* relational expression */
         right = parse_relational_expr(ctx);
 
-        left = binary_expr_new(op_tok, left, right);
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
     }
 
     return left;
