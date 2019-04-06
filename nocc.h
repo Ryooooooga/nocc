@@ -264,6 +264,8 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
                              StmtNode **stmts, int num_stmts,
                              const Token *close);
+StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
+                           ExprNode *return_value, const Token *semi);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);

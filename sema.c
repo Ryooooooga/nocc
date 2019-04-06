@@ -223,6 +223,24 @@ StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
     return (StmtNode *)p;
 }
 
+StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
+                           ExprNode *return_value, const Token *semi) {
+    ReturnNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(semi);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_return;
+    p->line = t->line;
+    p->return_value = return_value;
+
+    /* TODO: type check */
+
+    return (StmtNode *)p;
+}
+
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_) {
     IfNode *p;

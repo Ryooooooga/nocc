@@ -330,34 +330,35 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
 }
 
 StmtNode *parse_return_stmt(ParserContext *ctx) {
-    ReturnNode *p;
+    const Token *t;
+    const Token *semi;
+    ExprNode *return_value;
 
-    if (current_token(ctx)->kind != token_return) {
-        fprintf(stderr, "expected return, but got %s\n",
-                current_token(ctx)->text);
+    /* return */
+    t = consume_token(ctx);
+
+    if (t->kind != token_return) {
+        fprintf(stderr, "expected return, but got %s\n", t->text);
         exit(1);
     }
 
-    p = malloc(sizeof(*p));
-    p->kind = node_return;
-    p->line = current_token(ctx)->line;
-    p->return_value = NULL;
-
-    consume_token(ctx); /* eat return */
+    /* expression */
+    return_value = NULL;
 
     if (current_token(ctx)->kind != ';') {
-        p->return_value = parse_expr(ctx);
+        return_value = parse_expr(ctx);
     }
 
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected semicolon, but got %s\n",
-                current_token(ctx)->text);
+    /* ; */
+    semi = consume_token(ctx);
+
+    if (semi->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", semi->text);
         exit(1);
     }
 
-    consume_token(ctx); /* eat ; */
-
-    return (StmtNode *)p;
+    /* make node */
+    return sema_return_stmt(ctx, t, return_value, semi);
 }
 
 StmtNode *parse_if_stmt(ParserContext *ctx) {
