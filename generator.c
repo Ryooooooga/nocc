@@ -29,6 +29,22 @@ LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
                          "load");
 }
 
+LLVMValueRef generate_call_expr(GeneratorContext *ctx, CallNode *p) {
+    LLVMValueRef callee;
+    LLVMValueRef *args;
+    int i;
+
+    callee = generate_expr_addr(ctx, p->callee);
+
+    args = malloc(sizeof(LLVMValueRef) * p->args->size);
+
+    for (i = 0; i < p->args->size; i++) {
+        args[i] = generate_expr(ctx, p->args->data[i]);
+    }
+
+    return LLVMBuildCall(ctx->builder, callee, args, p->args->size, "call");
+}
+
 LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
     LLVMValueRef operand;
 
@@ -84,11 +100,35 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
     case node_identifier:
         return generate_identifier_expr(ctx, (IdentifierNode *)p);
 
+    case node_call:
+        return generate_call_expr(ctx, (CallNode *)p);
+
     case node_unary:
         return generate_unary_expr(ctx, (UnaryNode *)p);
 
     case node_binary:
         return generate_binary_expr(ctx, (BinaryNode *)p);
+
+    default:
+        fprintf(stderr, "unknown expression %d\n", p->kind);
+        exit(1);
+    }
+}
+
+LLVMValueRef generate_identifier_expr_addr(GeneratorContext *ctx,
+                                           IdentifierNode *p) {
+    (void)ctx;
+
+    return p->declaration->generated_location;
+}
+
+LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
+    assert(p);
+    assert(ctx);
+
+    switch (p->kind) {
+    case node_identifier:
+        return generate_identifier_expr_addr(ctx, (IdentifierNode *)p);
 
     default:
         fprintf(stderr, "unknown expression %d\n", p->kind);
