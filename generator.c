@@ -208,3 +208,22 @@ void generate_decl(GeneratorContext *ctx, DeclNode *p) {
         exit(1);
     }
 }
+
+LLVMModuleRef generate(TranslationUnitNode *p) {
+    GeneratorContext ctx;
+    int i;
+
+    assert(p);
+
+    ctx.module = LLVMModuleCreateWithName(p->filename);
+    ctx.builder = LLVMCreateBuilder();
+
+    for (i = 0; i < p->decls->size; i++) {
+        generate_decl(&ctx, p->decls->data[i]);
+    }
+
+    LLVMDisposeBuilder(ctx.builder);
+    LLVMVerifyModule(ctx.module, LLVMAbortProcessAction, NULL);
+
+    return ctx.module;
+}

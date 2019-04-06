@@ -182,5 +182,6 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p);
 
 LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p);
 void generate_decl(GeneratorContext *ctx, DeclNode *p);
+LLVMModuleRef generate(TranslationUnitNode *p);
 
 #endif

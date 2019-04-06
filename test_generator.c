@@ -310,6 +310,27 @@ void test_generating_function(void) {
     LLVMDisposeModule(ctx->module);
 }
 
+void test_generating_translation_unit(void) {
+    TranslationUnitNode *p = parse("test_generating_translation_unit",
+                                   "int main(void) {return 42;}");
+
+    LLVMModuleRef module = generate(p);
+
+    char *message = LLVMPrintModuleToString(module);
+
+    assert(strcmp(message,
+                  "; ModuleID = 'test_generating_translation_unit'\n"
+                  "source_filename = \"test_generating_translation_unit\"\n"
+                  "\n"
+                  "define i32 @main() {\n"
+                  "entry:\n"
+                  "  ret i32 42\n"
+                  "}\n") == 0);
+
+    LLVMDisposeMessage(message);
+    LLVMDisposeModule(module);
+}
+
 void test_generator(void) {
     test_generating_type_void();
     test_generating_type_int32();
@@ -324,4 +345,6 @@ void test_generator(void) {
 
     test_generating_function_prototype();
     test_generating_function();
+
+    test_generating_translation_unit();
 }
