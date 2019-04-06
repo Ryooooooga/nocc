@@ -1,7 +1,32 @@
 #include "nocc.h"
 
+void test_generating_type_void(void) {
+    GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
+        .builder = LLVMCreateBuilder(),
+    };
+
+    assert(generate_type(ctx, type_get_void()) == LLVMVoidType());
+
+    LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
+}
+
+void test_generating_type_int32(void) {
+    GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
+        .builder = LLVMCreateBuilder(),
+    };
+
+    assert(generate_type(ctx, type_get_int32()) == LLVMInt32Type());
+
+    LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
+}
+
 void test_generating_integer(void) {
     GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
         .builder = LLVMCreateBuilder(),
     };
 
@@ -17,10 +42,12 @@ void test_generating_integer(void) {
     assert(LLVMConstIntGetSExtValue(v) == 42);
 
     LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
 }
 
 void test_generating_negative(void) {
     GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
         .builder = LLVMCreateBuilder(),
     };
 
@@ -43,10 +70,12 @@ void test_generating_negative(void) {
     assert(LLVMConstIntGetSExtValue(v) == -42);
 
     LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
 }
 
 void test_generating_addition(void) {
     GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
         .builder = LLVMCreateBuilder(),
     };
 
@@ -76,10 +105,12 @@ void test_generating_addition(void) {
     assert(LLVMConstIntGetSExtValue(v) == 23);
 
     LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
 }
 
 void test_generating_subtraction(void) {
     GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
         .builder = LLVMCreateBuilder(),
     };
 
@@ -109,10 +140,12 @@ void test_generating_subtraction(void) {
     assert(LLVMConstIntGetSExtValue(v) == 7);
 
     LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
 }
 
 void test_generating_multiplication(void) {
     GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
         .builder = LLVMCreateBuilder(),
     };
 
@@ -142,10 +175,12 @@ void test_generating_multiplication(void) {
     assert(LLVMConstIntGetSExtValue(v) == 120);
 
     LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
 }
 
 void test_generating_division(void) {
     GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
         .builder = LLVMCreateBuilder(),
     };
 
@@ -175,10 +210,12 @@ void test_generating_division(void) {
     assert(LLVMConstIntGetSExtValue(v) == 1);
 
     LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
 }
 
 void test_generating_modulo(void) {
     GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
         .builder = LLVMCreateBuilder(),
     };
 
@@ -208,9 +245,40 @@ void test_generating_modulo(void) {
     assert(LLVMConstIntGetSExtValue(v) == 7);
 
     LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
+}
+
+void test_generating_function_prototype(void) {
+    GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
+        .builder = LLVMCreateBuilder(),
+    };
+
+    FunctionNode *p = &(FunctionNode){
+        .kind = node_function,
+        .line = 1,
+        .identifier = "f",
+        .return_type = type_get_int32(),
+        .params = vec_new(),
+        .var_args = false,
+        .body = NULL,
+    };
+
+    LLVMValueRef function = generate_function(ctx, p);
+    char *message = LLVMPrintValueToString(function);
+
+    assert(strcmp(message, "\n"
+                           "declare i32 @f()\n") == 0);
+
+    LLVMDisposeMessage(message);
+    LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
 }
 
 void test_generator(void) {
+    test_generating_type_void();
+    test_generating_type_int32();
+
     test_generating_integer();
     test_generating_negative();
     test_generating_addition();
@@ -218,4 +286,6 @@ void test_generator(void) {
     test_generating_multiplication();
     test_generating_division();
     test_generating_modulo();
+
+    test_generating_function_prototype();
 }

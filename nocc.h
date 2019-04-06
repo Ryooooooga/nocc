@@ -162,11 +162,16 @@ StmtNode *parse_stmt(const Token **toks, int *n);
 DeclNode *parse_top_level(const Token **toks, int *n);
 
 struct GeneratorContext {
+    LLVMModuleRef module;
     LLVMBuilderRef builder;
 };
 
 typedef struct GeneratorContext GeneratorContext;
 
+LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p);
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p);
+
+LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p);
+void generate_decl(GeneratorContext *ctx, DeclNode *p);
 
 #endif

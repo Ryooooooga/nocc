@@ -1,5 +1,24 @@
 #include "nocc.h"
 
+LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
+    assert(ctx);
+    assert(p);
+
+    (void)ctx;
+
+    switch (p->kind) {
+    case type_void:
+        return LLVMVoidType();
+
+    case type_int32:
+        return LLVMInt32Type();
+
+    default:
+        fprintf(stderr, "unknown type %d\n", p->kind);
+        exit(1);
+    }
+}
+
 LLVMValueRef generate_integer_expr(IntegerNode *p) {
     return LLVMConstInt(LLVMInt32Type(), p->value, true);
 }
@@ -64,6 +83,53 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
     default:
         fprintf(stderr, "unknown expression %d\n", p->kind);
+        exit(1);
+    }
+}
+
+LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
+    LLVMTypeRef return_type;
+    LLVMTypeRef *param_types;
+    LLVMTypeRef function_type;
+    LLVMValueRef function;
+    int i;
+
+    assert(ctx);
+    assert(p);
+
+    return_type = generate_type(ctx, p->return_type);
+
+    param_types = malloc(sizeof(LLVMTypeRef) * p->params->size);
+
+    for (i = 0; i < p->params->size; i++) {
+        // TODO: params
+    }
+
+    function_type = LLVMFunctionType(return_type, param_types, p->params->size,
+                                     p->var_args);
+
+    function = LLVMAddFunction(ctx->module, p->identifier, function_type);
+
+    if (p->body == NULL) {
+        return function;
+    }
+
+    // TODO: body
+
+    return function;
+}
+
+void generate_decl(GeneratorContext *ctx, DeclNode *p) {
+    assert(p);
+    assert(ctx);
+
+    switch (p->kind) {
+    case node_function:
+        generate_function(ctx, (FunctionNode *)p);
+        return;
+
+    default:
+        fprintf(stderr, "unknown declaration %d\n", p->kind);
         exit(1);
     }
 }
