@@ -43,6 +43,7 @@ typedef struct Map Map;
 
 Map *map_new(void);
 int map_size(Map *m);
+void map_shrink(Map *m, int size);
 bool map_contains(Map *m, const char *k);
 void *map_get(Map *m, const char *k);
 void map_add(Map *m, const char *k, void *v);
@@ -196,11 +197,19 @@ struct TranslationUnitNode {
     Vec *decls;
 };
 
-Type *parse_type(const Token **toks, int *n);
-ExprNode *parse_expr(const Token **toks, int *n);
-StmtNode *parse_stmt(const Token **toks, int *n);
-ParamNode *parse_param(const Token **toks, int *n);
-DeclNode *parse_top_level(const Token **toks, int *n);
+struct ParserContext {
+    Map *env;
+    const Token **tokens;
+    int index;
+};
+
+typedef struct ParserContext ParserContext;
+
+Type *parse_type(ParserContext *ctx);
+ExprNode *parse_expr(ParserContext *ctx);
+StmtNode *parse_stmt(ParserContext *ctx);
+ParamNode *parse_param(ParserContext *ctx);
+DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
 
 struct GeneratorContext {

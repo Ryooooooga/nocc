@@ -1,37 +1,49 @@
 #include "nocc.h"
 
 void test_parsing_type_void(void) {
-    const Token *tokens[] = {
-        &(Token){token_void, "void", 1},
-        &(Token){'\0', "", 1},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_void, "void", 1},
+                &(Token){'\0', "", 1},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    Type *p = parse_type(tokens, &index);
+    Type *p = parse_type(ctx);
 
     assert(p == type_get_void());
 }
 
 void test_parsing_type_int(void) {
-    const Token *tokens[] = {
-        &(Token){token_int, "int", 1},
-        &(Token){'\0', "", 1},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_int, "int", 1},
+                &(Token){'\0', "", 1},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    Type *p = parse_type(tokens, &index);
+    Type *p = parse_type(ctx);
 
     assert(p == type_get_int32());
 }
 
 void test_parsing_integer(void) {
-    const Token *tokens[] = {
-        &(Token){token_number, "42", 1},
-        &(Token){'\0', "", 1},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_number, "42", 1},
+                &(Token){'\0', "", 1},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    ExprNode *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(ctx);
     IntegerNode *q = (IntegerNode *)p;
 
     assert(p->kind == node_integer);
@@ -40,13 +52,17 @@ void test_parsing_integer(void) {
 }
 
 void test_parsing_identifier(void) {
-    const Token *tokens[] = {
-        &(Token){token_identifier, "xyz", 1},
-        &(Token){'\0', "", 1},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_identifier, "xyz", 1},
+                &(Token){'\0', "", 1},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    ExprNode *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(ctx);
     IdentifierNode *q = (IdentifierNode *)p;
 
     assert(p->kind == node_identifier);
@@ -55,14 +71,18 @@ void test_parsing_identifier(void) {
 }
 
 void test_parsing_negative(void) {
-    const Token *tokens[] = {
-        &(Token){'-', "-", 1},
-        &(Token){token_number, "10", 2},
-        &(Token){'\0', "", 2},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){'-', "-", 1},
+                &(Token){token_number, "10", 2},
+                &(Token){'\0', "", 1},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    ExprNode *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(ctx);
     UnaryNode *q = (UnaryNode *)p;
 
     assert(p->kind == node_unary);
@@ -78,15 +98,20 @@ void test_parsing_negative(void) {
 }
 
 void test_parsing_addition(void) {
-    const Token *tokens[] = {
-        &(Token){token_number, "6", 1},
-        &(Token){'+', "+", 1},
-        &(Token){token_number, "12", 2},
-        &(Token){'\0', "", 2},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_number, "6", 1},
+                &(Token){'+', "+", 1},
+                &(Token){token_number, "12", 2},
+                &(Token){token_number, "10", 2},
+                &(Token){'\0', "", 1},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    ExprNode *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(ctx);
     BinaryNode *q = (BinaryNode *)p;
 
     assert(p->kind == node_binary);
@@ -106,14 +131,21 @@ void test_parsing_addition(void) {
 }
 
 void test_parsing_multiplication(void) {
-    const Token *tokens[] = {
-        &(Token){token_number, "6", 1}, &(Token){'+', "+", 1},
-        &(Token){token_number, "4", 1}, &(Token){'*', "*", 1},
-        &(Token){token_number, "3", 1}, &(Token){'\0', "", 2},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_number, "6", 1},
+                &(Token){'+', "+", 1},
+                &(Token){token_number, "4", 1},
+                &(Token){'*', "*", 1},
+                &(Token){token_number, "3", 1},
+                &(Token){'\0', "", 2},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    ExprNode *p = parse_expr(tokens, &index);
+    ExprNode *p = parse_expr(ctx);
     BinaryNode *q = (BinaryNode *)p;
 
     assert(p->kind == node_binary);
@@ -135,14 +167,18 @@ void test_parsing_multiplication(void) {
 }
 
 void test_parsing_expr_stmt(void) {
-    const Token *tokens[] = {
-        &(Token){token_number, "42", 1},
-        &(Token){';', ";", 1},
-        &(Token){'\0', "", 2},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_number, "42", 1},
+                &(Token){';', ";", 1},
+                &(Token){'\0', "", 2},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    StmtNode *p = parse_stmt(tokens, &index);
+    StmtNode *p = parse_stmt(ctx);
     ExprStmtNode *q = (ExprStmtNode *)p;
 
     assert(p->kind == node_expr);
@@ -151,15 +187,19 @@ void test_parsing_expr_stmt(void) {
 }
 
 void test_parsing_return_stmt(void) {
-    const Token *tokens[] = {
-        &(Token){token_return, "return", 1},
-        &(Token){token_number, "42", 1},
-        &(Token){';', ";", 1},
-        &(Token){'\0', "", 2},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_return, "return", 1},
+                &(Token){token_number, "42", 1},
+                &(Token){';', ";", 1},
+                &(Token){'\0', "", 2},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    StmtNode *p = parse_stmt(tokens, &index);
+    StmtNode *p = parse_stmt(ctx);
     ReturnNode *q = (ReturnNode *)p;
 
     assert(p->kind == node_return);
@@ -169,14 +209,18 @@ void test_parsing_return_stmt(void) {
 }
 
 void test_parsing_return_void_stmt(void) {
-    const Token *tokens[] = {
-        &(Token){token_return, "return", 1},
-        &(Token){';', ";", 1},
-        &(Token){'\0', "", 2},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){token_return, "return", 1},
+                &(Token){';', ";", 1},
+                &(Token){'\0', "", 2},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    StmtNode *p = parse_stmt(tokens, &index);
+    StmtNode *p = parse_stmt(ctx);
     ReturnNode *q = (ReturnNode *)p;
 
     assert(p->kind == node_return);
@@ -193,15 +237,22 @@ void test_parsing_compound_stmt(void) {
     };
     const int len_suites = sizeof(suites) / sizeof(suites[0]);
 
-    const Token *tokens[] = {
-        &(Token){'{', "{", 1}, &(Token){token_number, "42", 1},
-        &(Token){';', ";", 1}, &(Token){token_return, "return", 1},
-        &(Token){';', ";", 1}, &(Token){'}', "}", 1},
-        &(Token){'\0', "", 2},
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens =
+            (const Token *[]){
+                &(Token){'{', "{", 1},
+                &(Token){token_number, "42", 1},
+                &(Token){';', ";", 1},
+                &(Token){token_return, "return", 1},
+                &(Token){';', ";", 1},
+                &(Token){'}', "}", 1},
+                &(Token){'\0', "", 2},
+            },
+        .index = 0,
     };
-    int index = 0;
 
-    StmtNode *p = parse_stmt(tokens, &index);
+    StmtNode *p = parse_stmt(ctx);
     CompoundNode *q = (CompoundNode *)p;
 
     assert(p->kind == node_compound);
@@ -221,9 +272,12 @@ void test_parsing_compound_stmt(void) {
 
 void test_parsing_parameter(void) {
     Vec *toks = lex("int a");
-    int index = 0;
 
-    ParamNode *p = parse_param((const Token **)toks->data, &index);
+    ParamNode *p = parse_param(&(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    });
 
     assert(p->kind == node_param);
     assert(p->line == 1);
@@ -233,9 +287,12 @@ void test_parsing_parameter(void) {
 
 void test_parsing_function(void) {
     Vec *toks = lex("int main(void) { return 42; }");
-    int index = 0;
 
-    DeclNode *p = parse_top_level((const Token **)toks->data, &index);
+    DeclNode *p = parse_top_level(&(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    });
     FunctionNode *q = (FunctionNode *)p;
     FunctionType *t = (FunctionType *)q->type;
 
@@ -254,9 +311,12 @@ void test_parsing_function(void) {
 
 void test_parsing_function_prototype(void) {
     Vec *toks = lex("int main(void);");
-    int index = 0;
 
-    DeclNode *p = parse_top_level((const Token **)toks->data, &index);
+    DeclNode *p = parse_top_level(&(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    });
     FunctionNode *q = (FunctionNode *)p;
     FunctionType *t = (FunctionType *)q->type;
 
@@ -274,9 +334,12 @@ void test_parsing_function_prototype(void) {
 
 void test_parsing_function_param(void) {
     Vec *toks = lex("int main(int a);");
-    int index = 0;
 
-    DeclNode *p = parse_top_level((const Token **)toks->data, &index);
+    DeclNode *p = parse_top_level(&(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    });
     FunctionNode *q = (FunctionNode *)p;
     FunctionType *t = (FunctionType *)q->type;
 
@@ -302,9 +365,12 @@ void test_parsing_function_param(void) {
 
 void test_parsing_function_params(void) {
     Vec *toks = lex("int main(int a, int b);");
-    int index = 0;
 
-    DeclNode *p = parse_top_level((const Token **)toks->data, &index);
+    DeclNode *p = parse_top_level(&(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    });
     FunctionNode *q = (FunctionNode *)p;
     FunctionType *t = (FunctionType *)q->type;
 
