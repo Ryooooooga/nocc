@@ -65,6 +65,12 @@ ExprNode *parse_identifier_expr(ParserContext *ctx) {
     p->kind = node_identifier;
     p->line = ctx->tokens[ctx->index]->line;
     p->identifier = strdup(ctx->tokens[ctx->index]->text);
+    p->declaration = map_get(ctx->env, p->identifier);
+
+    if (p->declaration == NULL) {
+        fprintf(stderr, "undeclared symbol %s\n", p->identifier);
+        exit(1);
+    }
 
     ctx->index += 1; /* eat identifier */
 

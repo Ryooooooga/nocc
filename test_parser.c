@@ -62,12 +62,22 @@ void test_parsing_identifier(void) {
         .index = 0,
     };
 
+    ParamNode *decl = &(ParamNode){
+        .kind = node_param,
+        .line = 1,
+        .identifier = "xyz",
+        .type = type_get_int32(),
+    };
+
+    map_add(ctx->env, decl->identifier, decl);
+
     ExprNode *p = parse_expr(ctx);
     IdentifierNode *q = (IdentifierNode *)p;
 
     assert(p->kind == node_identifier);
     assert(p->line == 1);
     assert(strcmp(q->identifier, "xyz") == 0);
+    assert(q->declaration == (DeclNode *)decl);
 }
 
 void test_parsing_negative(void) {

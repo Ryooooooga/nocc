@@ -128,6 +128,7 @@ struct IdentifierNode {
     int kind;
     int line;
     char *identifier;
+    DeclNode *declaration;
 };
 
 struct UnaryNode {
