@@ -34,6 +34,19 @@ void vec_resize(Vec *v, int size);
 void vec_push(Vec *v, void *value);
 void *vec_pop(Vec *v);
 
+struct Map {
+    Vec *keys;
+    Vec *values;
+};
+
+typedef struct Map Map;
+
+Map *map_new(void);
+int map_size(Map *m);
+bool map_contains(Map *m, const char *k);
+void *map_get(Map *m, const char *k);
+void map_add(Map *m, const char *k, void *v);
+
 struct Token {
     int kind;
     char *text;

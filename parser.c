@@ -257,6 +257,8 @@ ParamNode *parse_param(const Token **toks, int *n) {
 
     type = parse_type(toks, n);
 
+    /* TODO: type check */
+
     if (toks[*n]->kind != token_identifier) {
         fprintf(stderr, "identifier is expected, but got %s\n", toks[*n]->text);
         exit(1);
