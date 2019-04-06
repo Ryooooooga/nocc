@@ -92,6 +92,63 @@ ExprNode *parse_primary_expr(ParserContext *ctx) {
     }
 }
 
+ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
+    CallNode *p;
+
+    p = malloc(sizeof(*p));
+    p->kind = node_call;
+    p->line = ctx->tokens[ctx->index]->line;
+    p->callee = callee;
+    p->args = vec_new();
+
+    if (ctx->tokens[ctx->index]->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n",
+                ctx->tokens[ctx->index]->text);
+        exit(1);
+    }
+    ctx->index += 1; /* eat ( */
+
+    if (ctx->tokens[ctx->index]->kind == ')') {
+        ctx->index += 1; /* eat ) */
+
+        return (ExprNode *)p;
+    }
+
+    vec_push(p->args, parse_expr(ctx));
+
+    while (ctx->tokens[ctx->index]->kind == ',') {
+        ctx->index += 1; /* eat , */
+
+        vec_push(p->args, parse_expr(ctx));
+    }
+
+    if (ctx->tokens[ctx->index]->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n",
+                ctx->tokens[ctx->index]->text);
+        exit(1);
+    }
+    ctx->index += 1; /* eat ) */
+
+    return (ExprNode *)p;
+}
+
+ExprNode *parse_postfix_expr(ParserContext *ctx) {
+    ExprNode *operand;
+
+    operand = parse_primary_expr(ctx);
+
+    while (1) {
+        switch (ctx->tokens[ctx->index]->kind) {
+        case '(':
+            operand = parse_call_expr(ctx, operand);
+            break;
+
+        default:
+            return operand;
+        }
+    }
+}
+
 ExprNode *parse_unary_expr(ParserContext *ctx) {
     UnaryNode *p;
 
@@ -108,7 +165,7 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
         return (ExprNode *)p;
 
     default:
-        return parse_primary_expr(ctx);
+        return parse_postfix_expr(ctx);
     }
 }
 
@@ -266,7 +323,7 @@ ParamNode *parse_param(ParserContext *ctx) {
     /* TODO: type check */
 
     if (ctx->tokens[ctx->index]->kind != token_identifier) {
-        fprintf(stderr, "identifier is expected, but got %s\n",
+        fprintf(stderr, "expected identifier, but got %s\n",
                 ctx->tokens[ctx->index]->text);
         exit(1);
     }

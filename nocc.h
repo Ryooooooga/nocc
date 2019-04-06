@@ -85,6 +85,7 @@ Type *function_type_new(Type *return_type, Type **param_types, int num_params);
 enum {
     node_integer,
     node_identifier,
+    node_call,
     node_unary,
     node_binary,
 
@@ -99,6 +100,7 @@ enum {
 typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
 typedef struct IdentifierNode IdentifierNode;
+typedef struct CallNode CallNode;
 typedef struct UnaryNode UnaryNode;
 typedef struct BinaryNode BinaryNode;
 
@@ -129,6 +131,13 @@ struct IdentifierNode {
     int line;
     char *identifier;
     DeclNode *declaration;
+};
+
+struct CallNode {
+    int kind;
+    int line;
+    ExprNode *callee;
+    Vec *args;
 };
 
 struct UnaryNode {

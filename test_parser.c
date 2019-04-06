@@ -80,6 +80,102 @@ void test_parsing_identifier(void) {
     assert(q->declaration == (DeclNode *)decl);
 }
 
+void test_parsing_call(void) {
+    Vec *toks = lex("f()");
+
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    };
+
+    FunctionNode *decl = &(FunctionNode){
+        .kind = node_function,
+        .line = 1,
+        .identifier = "f",
+        .type = function_type_new(type_get_int32(), NULL, 0),
+        .params = vec_new(),
+        .var_args = false,
+        .body = NULL,
+    };
+
+    map_add(ctx->env, decl->identifier, decl);
+
+    CallNode *p = (CallNode *)parse_expr(ctx);
+    IdentifierNode *callee = (IdentifierNode *)p->callee;
+
+    assert(p->kind == node_call);
+    assert(p->line == 1);
+    assert(p->args->size == 0);
+
+    assert(callee->kind == node_identifier);
+    assert(strcmp(callee->identifier, "f") == 0);
+}
+
+void test_parsing_call_arg(void) {
+    Vec *toks = lex("f(42)");
+
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    };
+
+    FunctionNode *decl = &(FunctionNode){
+        .kind = node_function,
+        .line = 1,
+        .identifier = "f",
+        .type = function_type_new(type_get_int32(), NULL, 0),
+        .params = vec_new(),
+        .var_args = false,
+        .body = NULL,
+    };
+
+    map_add(ctx->env, decl->identifier, decl);
+
+    CallNode *p = (CallNode *)parse_expr(ctx);
+    IdentifierNode *callee = (IdentifierNode *)p->callee;
+
+    assert(p->kind == node_call);
+    assert(p->line == 1);
+    assert(p->args->size == 1);
+
+    assert(callee->kind == node_identifier);
+    assert(strcmp(callee->identifier, "f") == 0);
+}
+
+void test_parsing_call_args(void) {
+    Vec *toks = lex("f(1, 2, 3)");
+
+    ParserContext *ctx = &(ParserContext){
+        .env = map_new(),
+        .tokens = (const Token **)toks->data,
+        .index = 0,
+    };
+
+    FunctionNode *decl = &(FunctionNode){
+        .kind = node_function,
+        .line = 1,
+        .identifier = "f",
+        .type = function_type_new(type_get_int32(), NULL, 0),
+        .params = vec_new(),
+        .var_args = false,
+        .body = NULL,
+    };
+
+    map_add(ctx->env, decl->identifier, decl);
+
+    CallNode *p = (CallNode *)parse_expr(ctx);
+    IdentifierNode *callee = (IdentifierNode *)p->callee;
+
+    assert(p->kind == node_call);
+    assert(p->line == 1);
+    assert(p->args->size == 3);
+
+    assert(callee->kind == node_identifier);
+    assert(strcmp(callee->identifier, "f") == 0);
+}
+
 void test_parsing_negative(void) {
     ParserContext *ctx = &(ParserContext){
         .env = map_new(),
@@ -440,6 +536,9 @@ void test_parser(void) {
 
     test_parsing_integer();
     test_parsing_identifier();
+    test_parsing_call();
+    test_parsing_call_arg();
+    test_parsing_call_args();
     test_parsing_negative();
     test_parsing_addition();
     test_parsing_multiplication();
