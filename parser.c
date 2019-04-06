@@ -14,6 +14,27 @@ ExprNode *binary_expr_new(const Token *op_tok, ExprNode *left,
     return (ExprNode *)p;
 }
 
+Type *parse_type(const Token **toks, int *n) {
+    assert(toks);
+    assert(toks[0]);
+    assert(n);
+    assert(*n >= 0);
+
+    switch (toks[*n]->kind) {
+    case token_void:
+        *n += 1; /* eat void */
+        return type_get_void();
+
+    case token_int:
+        *n += 1; /* eat int */
+        return type_get_int32();
+
+    default:
+        fprintf(stderr, "expected type, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+}
+
 ExprNode *parse_number_expr(const Token **toks, int *n) {
     IntegerNode *p;
 
@@ -220,4 +241,65 @@ StmtNode *parse_stmt(const Token **toks, int *n) {
     default:
         return parse_expr_stmt(toks, n);
     }
+}
+
+DeclNode *parse_top_level(const Token **toks, int *n) {
+    Type *return_type;
+    const Token *identifier;
+    Vec *params;
+    FunctionNode *p;
+
+    assert(toks);
+    assert(toks[0]);
+    assert(n);
+    assert(*n >= 0);
+
+    return_type = parse_type(toks, n);
+
+    if (toks[*n]->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+
+    identifier = toks[*n];
+    *n += 1; /* eat identifier */
+
+    if (toks[*n]->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+    *n += 1; /* eat ( */
+
+    // TODO: params
+    params = vec_new();
+
+    if (toks[*n]->kind != token_void) {
+        fprintf(stderr, "expected void, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+    *n += 1; /* eat void */
+
+    if (toks[*n]->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+    *n += 1; /* eat ) */
+
+    p = malloc(sizeof(*p));
+    p->kind = node_function;
+    p->line = identifier->line;
+    p->identifier = strdup(identifier->text);
+    p->return_type = return_type;
+    p->params = params;
+    p->var_args = false;
+    p->body = NULL;
+
+    if (toks[*n]->kind == ';') {
+        *n += 1; /* eat ; */
+        return (DeclNode *)p;
+    }
+
+    p->body = parse_compound_stmt(toks, n);
+
+    return (DeclNode *)p;
 }

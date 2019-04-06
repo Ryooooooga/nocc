@@ -1,5 +1,29 @@
 #include "nocc.h"
 
+void test_parsing_type_void(void) {
+    const Token *tokens[] = {
+        &(Token){token_void, "void", 1},
+        &(Token){'\0', "", 1},
+    };
+    int index = 0;
+
+    Type *p = parse_type(tokens, &index);
+
+    assert(p->kind == type_void);
+}
+
+void test_parsing_type_int(void) {
+    const Token *tokens[] = {
+        &(Token){token_int, "int", 1},
+        &(Token){'\0', "", 1},
+    };
+    int index = 0;
+
+    Type *p = parse_type(tokens, &index);
+
+    assert(p->kind == type_int32);
+}
+
 void test_parsing_integer(void) {
     const Token *tokens[] = {
         &(Token){token_number, "42", 1},
@@ -195,7 +219,43 @@ void test_parsing_compound_stmt(void) {
     }
 }
 
+void test_parsing_function(void) {
+    Vec *toks = lex("int main(void) { return 42; }");
+    int index = 0;
+
+    DeclNode *p = parse_top_level((const Token **)toks->data, &index);
+    FunctionNode *q = (FunctionNode *)p;
+
+    assert(p->kind == node_function);
+    assert(p->line == 1);
+    assert(strcmp(p->identifier, "main") == 0);
+    assert(q->return_type->kind == type_int32);
+    assert(q->params->size == 0);
+    assert(q->var_args == false);
+    assert(q->body != NULL);
+    assert(q->body->kind == node_compound);
+}
+
+void test_parsing_function_prototype(void) {
+    Vec *toks = lex("int main(void);");
+    int index = 0;
+
+    DeclNode *p = parse_top_level((const Token **)toks->data, &index);
+    FunctionNode *q = (FunctionNode *)p;
+
+    assert(p->kind == node_function);
+    assert(p->line == 1);
+    assert(strcmp(p->identifier, "main") == 0);
+    assert(q->return_type->kind == type_int32);
+    assert(q->params->size == 0);
+    assert(q->var_args == false);
+    assert(q->body == NULL);
+}
+
 void test_parser(void) {
+    test_parsing_type_void();
+    test_parsing_type_int();
+
     test_parsing_integer();
     test_parsing_identifier();
     test_parsing_negative();
@@ -206,4 +266,7 @@ void test_parser(void) {
     test_parsing_return_stmt();
     test_parsing_return_void_stmt();
     test_parsing_compound_stmt();
+
+    test_parsing_function();
+    test_parsing_function_prototype();
 }

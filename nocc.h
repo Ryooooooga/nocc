@@ -16,6 +16,8 @@ enum {
     token_identifier,
     token_if,
     token_return,
+    token_void,
+    token_int,
 };
 
 struct Vec {
@@ -43,6 +45,20 @@ typedef struct Token Token;
 Vec *lex(const char *src);
 
 enum {
+    type_void,
+    type_int32,
+};
+
+struct Type {
+    int kind;
+};
+
+typedef struct Type Type;
+
+Type *type_get_void(void);
+Type *type_get_int32(void);
+
+enum {
     node_integer,
     node_identifier,
     node_unary,
@@ -51,6 +67,8 @@ enum {
     node_compound,
     node_return,
     node_expr,
+
+    node_function,
 };
 
 typedef struct ExprNode ExprNode;
@@ -63,6 +81,9 @@ typedef struct StmtNode StmtNode;
 typedef struct CompoundNode CompoundNode;
 typedef struct ReturnNode ReturnNode;
 typedef struct ExprStmtNode ExprStmtNode;
+
+typedef struct DeclNode DeclNode;
+typedef struct FunctionNode FunctionNode;
 
 struct ExprNode {
     int kind;
@@ -119,8 +140,26 @@ struct ExprStmtNode {
     ExprNode *expr;
 };
 
+struct DeclNode {
+    int kind;
+    int line;
+    char *identifier;
+};
+
+struct FunctionNode {
+    int kind;
+    int line;
+    char *identifier;
+    Type *return_type;
+    Vec *params;
+    bool var_args;
+    StmtNode *body;
+};
+
+Type *parse_type(const Token **toks, int *n);
 ExprNode *parse_expr(const Token **toks, int *n);
 StmtNode *parse_stmt(const Token **toks, int *n);
+DeclNode *parse_top_level(const Token **toks, int *n);
 
 struct GeneratorContext {
     LLVMBuilderRef builder;
