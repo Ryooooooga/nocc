@@ -85,6 +85,8 @@ typedef struct ExprStmtNode ExprStmtNode;
 typedef struct DeclNode DeclNode;
 typedef struct FunctionNode FunctionNode;
 
+typedef struct TranslationUnitNode TranslationUnitNode;
+
 struct ExprNode {
     int kind;
     int line;
@@ -156,10 +158,16 @@ struct FunctionNode {
     StmtNode *body;
 };
 
+struct TranslationUnitNode {
+    char *filename;
+    Vec *decls;
+};
+
 Type *parse_type(const Token **toks, int *n);
 ExprNode *parse_expr(const Token **toks, int *n);
 StmtNode *parse_stmt(const Token **toks, int *n);
 DeclNode *parse_top_level(const Token **toks, int *n);
+TranslationUnitNode *parse(const char *filename, const char *src);
 
 struct GeneratorContext {
     LLVMModuleRef module;

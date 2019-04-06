@@ -252,6 +252,25 @@ void test_parsing_function_prototype(void) {
     assert(q->body == NULL);
 }
 
+void test_parsing_translation_unit(void) {
+    TranslationUnitNode *p =
+        parse("test_parsing_translation_unit", "int main(void) {return 42;}");
+
+    assert(strcmp(p->filename, "test_parsing_translation_unit") == 0);
+    assert(p->decls->size == 1);
+
+    FunctionNode *f = p->decls->data[0];
+
+    assert(f->kind == node_function);
+    assert(f->line == 1);
+    assert(strcmp(f->identifier, "main") == 0);
+    assert(f->return_type->kind == type_int32);
+    assert(f->params->size == 0);
+    assert(f->var_args == false);
+    assert(f->body != NULL);
+    assert(f->body->kind == node_compound);
+}
+
 void test_parser(void) {
     test_parsing_type_void();
     test_parsing_type_int();
@@ -269,4 +288,6 @@ void test_parser(void) {
 
     test_parsing_function();
     test_parsing_function_prototype();
+
+    test_parsing_translation_unit();
 }

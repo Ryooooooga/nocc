@@ -177,6 +177,8 @@ StmtNode *parse_compound_stmt(const Token **toks, int *n) {
         exit(1);
     }
 
+    *n += 1; /* eat } */
+
     return (StmtNode *)p;
 }
 
@@ -302,4 +304,28 @@ DeclNode *parse_top_level(const Token **toks, int *n) {
     p->body = parse_compound_stmt(toks, n);
 
     return (DeclNode *)p;
+}
+
+TranslationUnitNode *parse(const char *filename, const char *src) {
+    TranslationUnitNode *p;
+    Vec *tokens;
+    const Token **toks;
+    int index;
+
+    assert(filename);
+    assert(src);
+
+    p = malloc(sizeof(*p));
+    p->filename = strdup(filename);
+    p->decls = vec_new();
+
+    tokens = lex(src);
+    toks = (const Token **)tokens->data;
+    index = 0;
+
+    while (toks[index]->kind != '\0') {
+        vec_push(p->decls, parse_top_level(toks, &index));
+    }
+
+    return p;
 }
