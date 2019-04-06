@@ -272,9 +272,10 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
                            ExprNode *right);
 
-StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
-                             StmtNode **stmts, int num_stmts,
-                             const Token *close);
+void sema_compound_stmt_enter(ParserContext *ctx);
+StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
+                                   StmtNode **stmts, int num_stmts,
+                                   const Token *close);
 StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
                            ExprNode *return_value, const Token *semi);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,

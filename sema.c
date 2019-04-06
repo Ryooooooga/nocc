@@ -194,9 +194,16 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     return (ExprNode *)p;
 }
 
-StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
-                             StmtNode **stmts, int num_stmts,
-                             const Token *close) {
+void sema_compound_stmt_enter(ParserContext *ctx) {
+    assert(ctx);
+
+    /* enter scope */
+    scope_stack_push(ctx->env);
+}
+
+StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
+                                   StmtNode **stmts, int num_stmts,
+                                   const Token *close) {
     CompoundNode *p;
     int i;
 
@@ -205,6 +212,9 @@ StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
     assert(stmts != NULL || num_stmts == 0);
     assert(num_stmts >= 0);
     assert(close);
+
+    /* leave scope */
+    scope_stack_pop(ctx->env);
 
     p = malloc(sizeof(*p));
     p->kind = node_compound;

@@ -299,6 +299,9 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
     const Token *close;
     Vec *stmts;
 
+    /* enter scope */
+    sema_compound_stmt_enter(ctx);
+
     /* { */
     open = consume_token(ctx);
 
@@ -306,8 +309,6 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
         fprintf(stderr, "expected {, but got %s\n", open->text);
         exit(1);
     }
-
-    /* TODO: lexical scope */
 
     /* {statement} */
     stmts = vec_new();
@@ -324,9 +325,9 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
         exit(1);
     }
 
-    /* make node */
-    return sema_compound_stmt(ctx, open, (StmtNode **)stmts->data, stmts->size,
-                              close);
+    /* make node and leave scope */
+    return sema_compound_stmt_leave(ctx, open, (StmtNode **)stmts->data,
+                                    stmts->size, close);
 }
 
 StmtNode *parse_return_stmt(ParserContext *ctx) {
