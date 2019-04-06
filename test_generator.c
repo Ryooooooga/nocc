@@ -275,6 +275,41 @@ void test_generating_function_prototype(void) {
     LLVMDisposeModule(ctx->module);
 }
 
+void test_generating_function(void) {
+    GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
+        .builder = LLVMCreateBuilder(),
+    };
+
+    FunctionNode *p = &(FunctionNode){
+        .kind = node_function,
+        .line = 1,
+        .identifier = "f",
+        .return_type = type_get_void(),
+        .params = vec_new(),
+        .var_args = false,
+        .body =
+            (StmtNode *)&(CompoundNode){
+                .kind = node_compound,
+                .line = 1,
+                .stmts = vec_new(),
+            },
+    };
+
+    LLVMValueRef function = generate_function(ctx, p);
+    char *message = LLVMPrintValueToString(function);
+
+    assert(strcmp(message, "\n"
+                           "define void @f() {\n"
+                           "entry:\n"
+                           "  ret void\n"
+                           "}\n") == 0);
+
+    LLVMDisposeMessage(message);
+    LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
+}
+
 void test_generator(void) {
     test_generating_type_void();
     test_generating_type_int32();
@@ -288,4 +323,5 @@ void test_generator(void) {
     test_generating_modulo();
 
     test_generating_function_prototype();
+    test_generating_function();
 }

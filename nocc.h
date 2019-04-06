@@ -170,6 +170,7 @@ typedef struct GeneratorContext GeneratorContext;
 
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p);
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p);
+bool generate_stmt(GeneratorContext *ctx, StmtNode *p);
 
 LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p);
 void generate_decl(GeneratorContext *ctx, DeclNode *p);
