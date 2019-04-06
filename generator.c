@@ -42,7 +42,12 @@ LLVMValueRef generate_call_expr(GeneratorContext *ctx, CallNode *p) {
         args[i] = generate_expr(ctx, p->args->data[i]);
     }
 
-    return LLVMBuildCall(ctx->builder, callee, args, p->args->size, "call");
+    if (LLVMGetReturnType(LLVMGetElementType(LLVMTypeOf(callee))) ==
+        LLVMVoidType()) {
+        return LLVMBuildCall(ctx->builder, callee, args, p->args->size, "");
+    } else {
+        return LLVMBuildCall(ctx->builder, callee, args, p->args->size, "call");
+    }
 }
 
 LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
