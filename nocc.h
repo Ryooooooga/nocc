@@ -174,6 +174,7 @@ struct DeclNode {
     int line;
     char *identifier;
     Type *type;
+    LLVMValueRef generated_location;
 };
 
 struct ParamNode {
@@ -181,6 +182,7 @@ struct ParamNode {
     int line;
     char *identifier;
     Type *type;
+    LLVMValueRef generated_location;
 };
 
 struct FunctionNode {

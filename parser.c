@@ -280,6 +280,7 @@ ParamNode *parse_param(ParserContext *ctx) {
     p->line = identifier->line;
     p->identifier = strdup(identifier->text);
     p->type = type;
+    p->generated_location = NULL;
 
     return p;
 }

@@ -23,6 +23,12 @@ LLVMValueRef generate_integer_expr(IntegerNode *p) {
     return LLVMConstInt(LLVMInt32Type(), p->value, true);
 }
 
+LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
+                                      IdentifierNode *p) {
+    return LLVMBuildLoad(ctx->builder, p->declaration->generated_location,
+                         "load");
+}
+
 LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
     LLVMValueRef operand;
 
@@ -74,6 +80,9 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
     switch (p->kind) {
     case node_integer:
         return generate_integer_expr((IntegerNode *)p);
+
+    case node_identifier:
+        return generate_identifier_expr(ctx, (IdentifierNode *)p);
 
     case node_unary:
         return generate_unary_expr(ctx, (UnaryNode *)p);

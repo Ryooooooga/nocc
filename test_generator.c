@@ -45,6 +45,43 @@ void test_generating_integer(void) {
     LLVMDisposeModule(ctx->module);
 }
 
+void test_generating_identifier(void) {
+    GeneratorContext *ctx = &(GeneratorContext){
+        .module = LLVMModuleCreateWithName("main"),
+        .builder = LLVMCreateBuilder(),
+    };
+
+    ParamNode *decl = &(ParamNode){
+        .kind = node_param,
+        .line = 1,
+        .identifier = "a",
+        .type = type_get_int32(),
+    };
+
+    IdentifierNode *p = &(IdentifierNode){
+        .kind = node_identifier,
+        .line = 1,
+        .identifier = "a",
+        .declaration = (DeclNode *)decl,
+    };
+
+    LLVMValueRef func = LLVMAddFunction(
+        ctx->module, "f", LLVMFunctionType(LLVMInt32Type(), NULL, 0, false));
+    LLVMBasicBlockRef block = LLVMAppendBasicBlock(func, "entry");
+    LLVMPositionBuilderAtEnd(ctx->builder, block);
+
+    decl->generated_location =
+        LLVMBuildAlloca(ctx->builder, LLVMInt32Type(), "a");
+    LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
+
+    assert(LLVMGetInstructionOpcode(v) == LLVMLoad);
+
+    LLVMBuildRet(ctx->builder, v);
+
+    LLVMDisposeBuilder(ctx->builder);
+    LLVMDisposeModule(ctx->module);
+}
+
 void test_generating_negative(void) {
     GeneratorContext *ctx = &(GeneratorContext){
         .module = LLVMModuleCreateWithName("main"),
@@ -429,6 +466,7 @@ void test_generator(void) {
     test_generating_type_int32();
 
     test_generating_integer();
+    test_generating_identifier();
     test_generating_negative();
     test_generating_addition();
     test_generating_subtraction();
