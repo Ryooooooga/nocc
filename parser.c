@@ -245,6 +245,36 @@ StmtNode *parse_stmt(const Token **toks, int *n) {
     }
 }
 
+ParamNode *parse_param(const Token **toks, int *n) {
+    Type *type;
+    const Token *identifier;
+    ParamNode *p;
+
+    assert(toks);
+    assert(toks[0]);
+    assert(n);
+    assert(*n >= 0);
+
+    type = parse_type(toks, n);
+
+    if (toks[*n]->kind != token_identifier) {
+        fprintf(stderr, "identifier is expected, but got %s\n", toks[*n]->text);
+        exit(1);
+    }
+
+    identifier = toks[*n];
+
+    *n += 1; /* eat identifier */
+
+    p = malloc(sizeof(*p));
+    p->kind = node_param;
+    p->line = identifier->line;
+    p->identifier = strdup(identifier->text);
+    p->type = type;
+
+    return p;
+}
+
 DeclNode *parse_top_level(const Token **toks, int *n) {
     Type *return_type;
     const Token *identifier;
@@ -275,11 +305,17 @@ DeclNode *parse_top_level(const Token **toks, int *n) {
     // TODO: params
     params = vec_new();
 
-    if (toks[*n]->kind != token_void) {
-        fprintf(stderr, "expected void, but got %s\n", toks[*n]->text);
-        exit(1);
+    if (toks[*n]->kind == token_void) {
+        *n += 1; /* eat void */
+    } else {
+        vec_push(params, parse_param(toks, n));
+
+        while (toks[*n]->kind == ',') {
+            *n += 1; /* eat , */
+
+            vec_push(params, parse_param(toks, n));
+        }
     }
-    *n += 1; /* eat void */
 
     if (toks[*n]->kind != ')') {
         fprintf(stderr, "expected ), but got %s\n", toks[*n]->text);

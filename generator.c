@@ -149,6 +149,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     LLVMTypeRef function_type;
     LLVMValueRef function;
     LLVMBasicBlockRef entryBasicBlock;
+    
+    ParamNode* param;
     bool is_terminated;
     int i;
 
@@ -160,7 +162,9 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     param_types = malloc(sizeof(LLVMTypeRef) * p->params->size);
 
     for (i = 0; i < p->params->size; i++) {
-        // TODO: params
+        param = p->params->data[i];
+
+        param_types[i] = generate_type(ctx, param->type);
     }
 
     function_type = LLVMFunctionType(return_type, param_types, p->params->size,

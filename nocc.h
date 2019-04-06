@@ -68,6 +68,7 @@ enum {
     node_return,
     node_expr,
 
+    node_param,
     node_function,
 };
 
@@ -83,6 +84,7 @@ typedef struct ReturnNode ReturnNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
 typedef struct DeclNode DeclNode;
+typedef struct ParamNode ParamNode;
 typedef struct FunctionNode FunctionNode;
 
 typedef struct TranslationUnitNode TranslationUnitNode;
@@ -146,6 +148,14 @@ struct DeclNode {
     int kind;
     int line;
     char *identifier;
+    Type *type;
+};
+
+struct ParamNode {
+    int kind;
+    int line;
+    char *identifier;
+    Type *type;
 };
 
 struct FunctionNode {
@@ -166,6 +176,7 @@ struct TranslationUnitNode {
 Type *parse_type(const Token **toks, int *n);
 ExprNode *parse_expr(const Token **toks, int *n);
 StmtNode *parse_stmt(const Token **toks, int *n);
+ParamNode *parse_param(const Token **toks, int *n);
 DeclNode *parse_top_level(const Token **toks, int *n);
 TranslationUnitNode *parse(const char *filename, const char *src);
 
