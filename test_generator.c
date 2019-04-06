@@ -382,6 +382,8 @@ void test_generating_function_with_param(void) {
     assert(strcmp(message, "\n"
                            "define void @g(i32) {\n"
                            "entry:\n"
+                           "  %a = alloca i32\n"
+                           "  store i32 %0, i32* %a\n"
                            "  ret void\n"
                            "}\n") == 0);
 
@@ -432,6 +434,10 @@ void test_generating_function_with_params(void) {
     assert(strcmp(message, "\n"
                            "define void @g(i32, i32) {\n"
                            "entry:\n"
+                           "  %a = alloca i32\n"
+                           "  store i32 %0, i32* %a\n"
+                           "  %b = alloca i32\n"
+                           "  store i32 %1, i32* %b\n"
                            "  ret void\n"
                            "}\n") == 0);
 
