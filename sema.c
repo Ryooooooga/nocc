@@ -1,9 +1,5 @@
 #include "nocc.h"
 
-DeclNode *scope_get(ParserContext *ctx, const char *name) {
-    return map_get(ctx->env, name);
-}
-
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close) {
     assert(ctx);
@@ -40,7 +36,7 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     p->line = t->line;
     p->type = NULL;
     p->identifier = strdup(t->text);
-    p->declaration = scope_get(ctx, p->identifier);
+    p->declaration = scope_stack_find(ctx->env, p->identifier, true);
 
     if (p->declaration == NULL) {
         fprintf(stderr, "undeclared symbol %s\n", p->identifier);
@@ -290,7 +286,7 @@ ParserContext *sema_translation_unit_enter(const char *src) {
     tokens = lex(src);
 
     ctx = malloc(sizeof(*ctx));
-    ctx->env = map_new();
+    ctx->env = scope_stack_new();
     ctx->tokens = (const Token **)tokens->data;
     ctx->index = 0;
 

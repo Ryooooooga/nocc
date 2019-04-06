@@ -17,15 +17,6 @@ int map_size(Map *m) {
     return m->keys->size;
 }
 
-void map_shrink(Map *m, int size) {
-    assert(m);
-    assert(size >= 0);
-    assert(size <= map_size(m));
-
-    vec_resize(m->keys, size);
-    vec_resize(m->values, size);
-}
-
 bool map_contains(Map *m, const char *k) {
     int i;
 

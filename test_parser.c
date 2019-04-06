@@ -2,7 +2,7 @@
 
 void test_parsing_type_void(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_void, "void", 1},
@@ -18,7 +18,7 @@ void test_parsing_type_void(void) {
 
 void test_parsing_type_int(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_int, "int", 1},
@@ -34,7 +34,7 @@ void test_parsing_type_int(void) {
 
 void test_parsing_integer(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_number, "42", 1},
@@ -54,7 +54,7 @@ void test_parsing_integer(void) {
 
 void test_parsing_identifier(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_identifier, "xyz", 1},
@@ -70,7 +70,7 @@ void test_parsing_identifier(void) {
         .type = type_get_int32(),
     };
 
-    map_add(ctx->env, decl->identifier, decl);
+    scope_stack_register(ctx->env, (DeclNode *)decl);
 
     ExprNode *p = parse_expr(ctx);
     IdentifierNode *q = (IdentifierNode *)p;
@@ -86,7 +86,7 @@ void test_parsing_call(void) {
     Vec *toks = lex("f()");
 
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     };
@@ -101,7 +101,7 @@ void test_parsing_call(void) {
         .body = NULL,
     };
 
-    map_add(ctx->env, decl->identifier, decl);
+    scope_stack_register(ctx->env, (DeclNode *)decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
     IdentifierNode *callee = (IdentifierNode *)p->callee;
@@ -119,7 +119,7 @@ void test_parsing_call_arg(void) {
     Vec *toks = lex("f(42)");
 
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     };
@@ -138,7 +138,7 @@ void test_parsing_call_arg(void) {
         .body = NULL,
     };
 
-    map_add(ctx->env, decl->identifier, decl);
+    scope_stack_register(ctx->env, (DeclNode *)decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
     IdentifierNode *callee = (IdentifierNode *)p->callee;
@@ -156,7 +156,7 @@ void test_parsing_call_args(void) {
     Vec *toks = lex("f(1, 2, 3)");
 
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     };
@@ -177,7 +177,7 @@ void test_parsing_call_args(void) {
         .body = NULL,
     };
 
-    map_add(ctx->env, decl->identifier, decl);
+    scope_stack_register(ctx->env, (DeclNode *)decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
     IdentifierNode *callee = (IdentifierNode *)p->callee;
@@ -193,7 +193,7 @@ void test_parsing_call_args(void) {
 
 void test_parsing_negative(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){'-', "-", 1},
@@ -221,7 +221,7 @@ void test_parsing_negative(void) {
 
 void test_parsing_addition(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_number, "6", 1},
@@ -255,7 +255,7 @@ void test_parsing_addition(void) {
 
 void test_parsing_multiplication(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_number, "6", 1},
@@ -292,7 +292,7 @@ void test_parsing_multiplication(void) {
 
 void test_parsing_paren(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){'(', "(", 1},
@@ -331,7 +331,7 @@ void test_parsing_paren(void) {
 
 void test_parsing_expr_stmt(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_number, "42", 1},
@@ -351,7 +351,7 @@ void test_parsing_expr_stmt(void) {
 
 void test_parsing_return_stmt(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_return, "return", 1},
@@ -373,7 +373,7 @@ void test_parsing_return_stmt(void) {
 
 void test_parsing_return_void_stmt(void) {
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){token_return, "return", 1},
@@ -401,7 +401,7 @@ void test_parsing_compound_stmt(void) {
     const int len_suites = sizeof(suites) / sizeof(suites[0]);
 
     ParserContext *ctx = &(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens =
             (const Token *[]){
                 &(Token){'{', "{", 1},
@@ -436,7 +436,7 @@ void test_parsing_if_stmt(void) {
     Vec *toks = lex("if (42) {}");
 
     IfNode *p = (IfNode *)parse_stmt(&(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });
@@ -452,7 +452,7 @@ void test_parsing_if_else_stmt(void) {
     Vec *toks = lex("if (42) {} else 42;");
 
     IfNode *p = (IfNode *)parse_stmt(&(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });
@@ -469,7 +469,7 @@ void test_parsing_parameter(void) {
     Vec *toks = lex("int a");
 
     ParamNode *p = parse_param(&(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });
@@ -484,7 +484,7 @@ void test_parsing_function(void) {
     Vec *toks = lex("int main(void) { return 42; }");
 
     DeclNode *p = parse_top_level(&(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });
@@ -508,7 +508,7 @@ void test_parsing_function_prototype(void) {
     Vec *toks = lex("int main(void);");
 
     DeclNode *p = parse_top_level(&(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });
@@ -531,7 +531,7 @@ void test_parsing_function_param(void) {
     Vec *toks = lex("int main(int a);");
 
     DeclNode *p = parse_top_level(&(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });
@@ -562,7 +562,7 @@ void test_parsing_function_params(void) {
     Vec *toks = lex("int main(int a, int b);");
 
     DeclNode *p = parse_top_level(&(ParserContext){
-        .env = map_new(),
+        .env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });

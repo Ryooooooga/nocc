@@ -48,7 +48,6 @@ typedef struct Map Map;
 
 Map *map_new(void);
 int map_size(Map *m);
-void map_shrink(Map *m, int size);
 bool map_contains(Map *m, const char *k);
 void *map_get(Map *m, const char *k);
 void map_add(Map *m, const char *k, void *v);
@@ -234,8 +233,20 @@ struct TranslationUnitNode {
     int num_decls;
 };
 
+struct ScopeStack {
+    Vec *scopes;
+};
+
+typedef struct ScopeStack ScopeStack;
+
+ScopeStack *scope_stack_new(void);
+void scope_stack_push(ScopeStack *s);
+void scope_stack_pop(ScopeStack *s);
+DeclNode *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
+void scope_stack_register(ScopeStack *s, DeclNode *decl);
+
 struct ParserContext {
-    Map *env;
+    ScopeStack *env;
     const Token **tokens;
     int index;
 };

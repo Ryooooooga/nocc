@@ -470,7 +470,6 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     Vec *params;
     ParamNode *param;
     FunctionNode *p;
-    int env_size;
     int i;
 
     assert(ctx);
@@ -530,14 +529,13 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     p->body = NULL;
 
     /* register function symbol */
-    if (map_contains(ctx->env, p->identifier)) {
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
         fprintf(stderr, "function %s has already been declared\n",
                 p->identifier);
         exit(1);
     }
 
-    map_add(ctx->env, p->identifier, p);
-    env_size = map_size(ctx->env);
+    scope_stack_register(ctx->env, (DeclNode *)p);
 
     if (current_token(ctx)->kind == ';') {
         consume_token(ctx); /* eat ; */
@@ -545,17 +543,19 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     }
 
     /* register parameter symbols */
+    scope_stack_push(ctx->env);
+
     for (i = 0; i < params->size; i++) {
         param = params->data[i];
 
         /* TODO: redeclaration check */
-        map_add(ctx->env, param->identifier, param);
+        scope_stack_register(ctx->env, (DeclNode *)param);
     }
 
     /* parse function body */
     p->body = parse_compound_stmt(ctx);
 
-    map_shrink(ctx->env, env_size);
+    scope_stack_pop(ctx->env);
 
     return (DeclNode *)p;
 }
