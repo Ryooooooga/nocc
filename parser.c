@@ -324,6 +324,7 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
         exit(1);
     }
 
+    /* make node */
     return sema_compound_stmt(ctx, open, (StmtNode **)stmts->data, stmts->size,
                               close);
 }
@@ -559,26 +560,23 @@ DeclNode *parse_top_level(ParserContext *ctx) {
 }
 
 TranslationUnitNode *parse(const char *filename, const char *src) {
-    TranslationUnitNode *p;
-    ParserContext ctx;
-    Vec *tokens;
+    ParserContext *ctx;
+    Vec *decls;
 
     assert(filename);
     assert(src);
 
-    p = malloc(sizeof(*p));
-    p->filename = strdup(filename);
-    p->decls = vec_new();
+    /* enter translation unit */
+    ctx = sema_translation_unit_enter(src);
 
-    tokens = lex(src);
+    /* top level declarations */
+    decls = vec_new();
 
-    ctx.env = map_new();
-    ctx.tokens = (const Token **)tokens->data;
-    ctx.index = 0;
-
-    while (ctx.tokens[ctx.index]->kind != '\0') {
-        vec_push(p->decls, parse_top_level(&ctx));
+    while (current_token(ctx)->kind != '\0') {
+        vec_push(decls, parse_top_level(ctx));
     }
 
-    return p;
+    /* make node */
+    return sema_translation_unit_leave(filename, (DeclNode **)decls->data,
+                                       decls->size);
 }

@@ -365,8 +365,8 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     ctx.module = LLVMModuleCreateWithName(p->filename);
     ctx.builder = LLVMCreateBuilder();
 
-    for (i = 0; i < p->decls->size; i++) {
-        generate_decl(&ctx, p->decls->data[i]);
+    for (i = 0; i < p->num_decls; i++) {
+        generate_decl(&ctx, p->decls[i]);
     }
 
     LLVMDisposeBuilder(ctx.builder);

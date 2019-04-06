@@ -601,9 +601,9 @@ void test_parsing_translation_unit(void) {
         parse("test_parsing_translation_unit", "int main(void) {return 42;}");
 
     assert(strcmp(p->filename, "test_parsing_translation_unit") == 0);
-    assert(p->decls->size == 1);
+    assert(p->num_decls == 1);
 
-    FunctionNode *f = p->decls->data[0];
+    FunctionNode *f = (FunctionNode *)p->decls[0];
     FunctionType *t = (FunctionType *)f->type;
 
     assert(f->kind == node_function);

@@ -230,7 +230,8 @@ struct FunctionNode {
 
 struct TranslationUnitNode {
     char *filename;
-    Vec *decls;
+    DeclNode **decls;
+    int num_decls;
 };
 
 struct ParserContext {
@@ -266,6 +267,11 @@ StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
+
+ParserContext *sema_translation_unit_enter(const char *src);
+TranslationUnitNode *sema_translation_unit_leave(const char *filename,
+                                                 DeclNode **decls,
+                                                 int num_decls);
 
 struct GeneratorContext {
     LLVMModuleRef module;

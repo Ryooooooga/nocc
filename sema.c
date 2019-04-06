@@ -262,3 +262,41 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
 
     return (StmtNode *)p;
 }
+
+ParserContext *sema_translation_unit_enter(const char *src) {
+    ParserContext *ctx;
+    Vec *tokens;
+
+    assert(src);
+
+    tokens = lex(src);
+
+    ctx = malloc(sizeof(*ctx));
+    ctx->env = map_new();
+    ctx->tokens = (const Token **)tokens->data;
+    ctx->index = 0;
+
+    return ctx;
+}
+
+TranslationUnitNode *sema_translation_unit_leave(const char *filename,
+                                                 DeclNode **decls,
+                                                 int num_decls) {
+    TranslationUnitNode *p;
+    int i;
+
+    assert(filename);
+    assert(decls != NULL || num_decls == 0);
+    assert(num_decls >= 0);
+
+    p = malloc(sizeof(*p));
+    p->filename = strdup(filename);
+    p->decls = malloc(sizeof(DeclNode *) * num_decls);
+    p->num_decls = num_decls;
+
+    for (i = 0; i < num_decls; i++) {
+        p->decls[i] = decls[i];
+    }
+
+    return p;
+}
