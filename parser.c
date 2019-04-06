@@ -115,41 +115,46 @@ ExprNode *parse_primary_expr(ParserContext *ctx) {
 }
 
 ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
-    CallNode *p;
+    const Token *open;
+    const Token *close;
+    Vec *args;
 
-    p = malloc(sizeof(*p));
-    p->kind = node_call;
-    p->line = current_token(ctx)->line;
-    p->callee = callee;
-    p->args = vec_new();
+    /* ( */
+    open = consume_token(ctx);
 
-    if (current_token(ctx)->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
+    if (open->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", open->text);
         exit(1);
     }
-    consume_token(ctx); /* eat ( */
 
-    if (current_token(ctx)->kind == ')') {
-        consume_token(ctx); /* eat ) */
-
-        return (ExprNode *)p;
-    }
-
-    vec_push(p->args, parse_expr(ctx));
-
-    while (current_token(ctx)->kind == ',') {
-        consume_token(ctx); /* eat , */
-
-        vec_push(p->args, parse_expr(ctx));
-    }
+    /* argument list */
+    args = vec_new();
 
     if (current_token(ctx)->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
+        /* expression */
+        vec_push(args, parse_expr(ctx));
+
+        /* {, expression} */
+        while (current_token(ctx)->kind == ',') {
+            /* , */
+            consume_token(ctx);
+
+            /* expression */
+            vec_push(args, parse_expr(ctx));
+        }
+    }
+
+    /* ) */
+    close = consume_token(ctx);
+
+    if (close->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", close->text);
         exit(1);
     }
-    consume_token(ctx); /* eat ) */
 
-    return (ExprNode *)p;
+    /* make node */
+    return sema_call_expr(ctx, callee, open, (ExprNode **)args->data,
+                          args->size, close);
 }
 
 ExprNode *parse_postfix_expr(ParserContext *ctx) {

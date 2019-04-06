@@ -108,7 +108,8 @@ void test_parsing_call(void) {
 
     assert(p->kind == node_call);
     assert(p->line == 1);
-    assert(p->args->size == 0);
+    assert(p->type == type_get_int32());
+    assert(p->num_args == 0);
 
     assert(callee->kind == node_identifier);
     assert(strcmp(callee->identifier, "f") == 0);
@@ -127,7 +128,11 @@ void test_parsing_call_arg(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "f",
-        .type = function_type_new(type_get_int32(), NULL, 0),
+        .type = function_type_new(type_get_int32(),
+                                  (Type *[]){
+                                      type_get_int32(),
+                                  },
+                                  1),
         .params = vec_new(),
         .var_args = false,
         .body = NULL,
@@ -140,7 +145,8 @@ void test_parsing_call_arg(void) {
 
     assert(p->kind == node_call);
     assert(p->line == 1);
-    assert(p->args->size == 1);
+    assert(p->type == type_get_int32());
+    assert(p->num_args == 1);
 
     assert(callee->kind == node_identifier);
     assert(strcmp(callee->identifier, "f") == 0);
@@ -159,7 +165,13 @@ void test_parsing_call_args(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "f",
-        .type = function_type_new(type_get_int32(), NULL, 0),
+        .type = function_type_new(type_get_int32(),
+                                  (Type *[]){
+                                      type_get_int32(),
+                                      type_get_int32(),
+                                      type_get_int32(),
+                                  },
+                                  3),
         .params = vec_new(),
         .var_args = false,
         .body = NULL,
@@ -172,7 +184,8 @@ void test_parsing_call_args(void) {
 
     assert(p->kind == node_call);
     assert(p->line == 1);
-    assert(p->args->size == 3);
+    assert(p->type == type_get_int32());
+    assert(p->num_args == 3);
 
     assert(callee->kind == node_identifier);
     assert(strcmp(callee->identifier, "f") == 0);

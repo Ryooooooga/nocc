@@ -148,7 +148,8 @@ struct CallNode {
     int line;
     Type *type;
     ExprNode *callee;
-    Vec *args;
+    ExprNode **args;
+    int num_args;
 };
 
 struct UnaryNode {
@@ -250,6 +251,9 @@ ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close);
 ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value);
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t);
+ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
+                         const Token *open, ExprNode **args, int num_args,
+                         const Token *close);
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand);
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,

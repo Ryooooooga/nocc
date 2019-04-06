@@ -36,17 +36,17 @@ LLVMValueRef generate_call_expr(GeneratorContext *ctx, CallNode *p) {
 
     callee = generate_expr_addr(ctx, p->callee);
 
-    args = malloc(sizeof(LLVMValueRef) * p->args->size);
+    args = malloc(sizeof(LLVMValueRef) * p->num_args);
 
-    for (i = 0; i < p->args->size; i++) {
-        args[i] = generate_expr(ctx, p->args->data[i]);
+    for (i = 0; i < p->num_args; i++) {
+        args[i] = generate_expr(ctx, p->args[i]);
     }
 
     if (LLVMGetReturnType(LLVMGetElementType(LLVMTypeOf(callee))) ==
         LLVMVoidType()) {
-        return LLVMBuildCall(ctx->builder, callee, args, p->args->size, "");
+        return LLVMBuildCall(ctx->builder, callee, args, p->num_args, "");
     } else {
-        return LLVMBuildCall(ctx->builder, callee, args, p->args->size, "call");
+        return LLVMBuildCall(ctx->builder, callee, args, p->num_args, "call");
     }
 }
 

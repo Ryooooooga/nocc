@@ -52,6 +52,62 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     return (ExprNode *)p;
 }
 
+ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
+                         const Token *open, ExprNode **args, int num_args,
+                         const Token *close) {
+    CallNode *p;
+    FunctionType *func_type;
+    int i;
+
+    assert(ctx);
+    assert(callee);
+    assert(open);
+    assert(args);
+    assert(num_args >= 0);
+    assert(close);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_call;
+    p->line = open->line;
+    p->type = NULL;
+    p->callee = callee;
+    p->args = malloc(sizeof(ExprNode *) * num_args);
+    p->num_args = num_args;
+
+    for (i = 0; i < num_args; i++) {
+        p->args[i] = args[i];
+    }
+
+    /* callee type */
+    /* TODO: fix to function pointer */
+    if (callee->type->kind != type_function) {
+        fprintf(stderr, "invalid callee type\n");
+        exit(1);
+    }
+
+    func_type = (FunctionType *)callee->type;
+
+    /* check argument types */
+    if (num_args != func_type->num_params) {
+        fprintf(stderr, "invalid number of arguments\n");
+        exit(1);
+    }
+
+    for (i = 0; i < num_args; i++) {
+        /* TODO: type limitation */
+        if (args[i]->type != func_type->param_types[i] ||
+            args[i]->type != type_get_int32()) {
+            fprintf(stderr, "invalid type of argument\n");
+            exit(1);
+        }
+    }
+
+    /* result type */
+    p->type = func_type->return_type;
+
+    return (ExprNode *)p;
+}
+
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand) {
     UnaryNode *p;
