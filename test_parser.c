@@ -420,14 +420,13 @@ void test_parsing_compound_stmt(void) {
 
     assert(p->kind == node_compound);
     assert(p->line == 1);
-    assert(q->stmts->size == len_suites);
+    assert(q->num_stmts == len_suites);
 
     for (int i = 0; i < len_suites; i++) {
-        StmtNode *s = q->stmts->data[i];
-
-        if (s->kind != suites[i].kind) {
-            fprintf(stderr, "%d: s->kind is expected %d, but got %d\n", i,
-                    suites[i].kind, s->kind);
+        if (q->stmts[i]->kind != suites[i].kind) {
+            fprintf(stderr,
+                    "%d: q->stmts[i]->kind is expected %d, but got %d\n", i,
+                    suites[i].kind, q->stmts[i]->kind);
             exit(1);
         }
     }

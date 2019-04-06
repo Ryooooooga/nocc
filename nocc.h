@@ -177,7 +177,8 @@ struct StmtNode {
 struct CompoundNode {
     int kind;
     int line;
-    Vec *stmts;
+    StmtNode **stmts;
+    int num_stmts;
 };
 
 struct ReturnNode {
@@ -258,6 +259,13 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand);
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
                            ExprNode *right);
+
+StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
+                             StmtNode **stmts, int num_stmts,
+                             const Token *close);
+StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
+                       StmtNode *then, StmtNode *else_);
+StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
 
 struct GeneratorContext {
     LLVMModuleRef module;

@@ -329,7 +329,8 @@ void test_generating_function(void) {
             (StmtNode *)&(CompoundNode){
                 .kind = node_compound,
                 .line = 1,
-                .stmts = vec_new(),
+                .stmts = NULL,
+                .num_stmts = 0,
             },
     };
 
@@ -365,7 +366,8 @@ void test_generating_function_with_param(void) {
             (StmtNode *)&(CompoundNode){
                 .kind = node_compound,
                 .line = 1,
-                .stmts = vec_new(),
+                .stmts = NULL,
+                .num_stmts = 0,
             },
     };
 
@@ -410,7 +412,8 @@ void test_generating_function_with_params(void) {
             (StmtNode *)&(CompoundNode){
                 .kind = node_compound,
                 .line = 1,
-                .stmts = vec_new(),
+                .stmts = NULL,
+                .num_stmts = 0,
             },
     };
 

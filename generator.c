@@ -171,8 +171,8 @@ bool generate_compound_stmt(GeneratorContext *ctx, CompoundNode *p) {
     bool is_terminated;
     int i;
 
-    for (i = 0; i < p->stmts->size; i++) {
-        is_terminated = generate_stmt(ctx, p->stmts->data[i]);
+    for (i = 0; i < p->num_stmts; i++) {
+        is_terminated = generate_stmt(ctx, p->stmts[i]);
 
         if (is_terminated) {
             return true;

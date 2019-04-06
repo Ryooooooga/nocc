@@ -295,34 +295,37 @@ ExprNode *parse_expr(ParserContext *ctx) {
 }
 
 StmtNode *parse_compound_stmt(ParserContext *ctx) {
-    CompoundNode *p;
+    const Token *open;
+    const Token *close;
+    Vec *stmts;
 
-    if (current_token(ctx)->kind != '{') {
-        fprintf(stderr, "expected {, but got %s\n", current_token(ctx)->text);
+    /* { */
+    open = consume_token(ctx);
+
+    if (open->kind != '{') {
+        fprintf(stderr, "expected {, but got %s\n", open->text);
         exit(1);
     }
-
-    p = malloc(sizeof(*p));
-    p->kind = node_compound;
-    p->line = current_token(ctx)->line;
-    p->stmts = vec_new();
-
-    consume_token(ctx); /* eat { */
 
     /* TODO: lexical scope */
 
+    /* {statement} */
+    stmts = vec_new();
+
     while (current_token(ctx)->kind != '}') {
-        vec_push(p->stmts, parse_stmt(ctx));
+        vec_push(stmts, parse_stmt(ctx));
     }
 
-    if (current_token(ctx)->kind != '}') {
-        fprintf(stderr, "expected }, but got %s\n", current_token(ctx)->text);
+    /* } */
+    close = consume_token(ctx);
+
+    if (close->kind != '}') {
+        fprintf(stderr, "expected }, but got %s\n", close->text);
         exit(1);
     }
 
-    consume_token(ctx); /* eat } */
-
-    return (StmtNode *)p;
+    return sema_compound_stmt(ctx, open, (StmtNode **)stmts->data, stmts->size,
+                              close);
 }
 
 StmtNode *parse_return_stmt(ParserContext *ctx) {
@@ -357,47 +360,56 @@ StmtNode *parse_return_stmt(ParserContext *ctx) {
 }
 
 StmtNode *parse_if_stmt(ParserContext *ctx) {
-    IfNode *p;
+    const Token *t;
+    ExprNode *condition;
+    StmtNode *then;
+    StmtNode *else_;
 
-    p = malloc(sizeof(*p));
-    p->kind = node_if;
-    p->line = current_token(ctx)->line;
-    p->else_ = NULL;
+    /* if */
+    t = consume_token(ctx);
 
-    if (current_token(ctx)->kind != token_if) {
-        fprintf(stderr, "expected if, but got %s\n", current_token(ctx)->text);
+    if (t->kind != token_if) {
+        fprintf(stderr, "expected if, but got %s\n", t->text);
         exit(1);
     }
-    consume_token(ctx); /* eat if */
 
-    p->condition = parse_paren_expr(ctx);
+    /* ( expression ) */
+    condition = parse_paren_expr(ctx);
 
-    p->then = parse_stmt(ctx);
+    /* statement */
+    then = parse_stmt(ctx);
 
-    if (current_token(ctx)->kind != token_else) {
-        return (StmtNode *)p;
+    /* else */
+    else_ = NULL;
+
+    if (current_token(ctx)->kind == token_else) {
+        consume_token(ctx);
+
+        /* statement */
+        else_ = parse_stmt(ctx);
     }
-    consume_token(ctx); // eat else
 
-    p->else_ = parse_stmt(ctx);
-
-    return (StmtNode *)p;
+    /* make node */
+    return sema_if_stmt(ctx, t, condition, then, else_);
 }
 
 StmtNode *parse_expr_stmt(ParserContext *ctx) {
     ExprNode *expr;
-    ExprStmtNode *p;
+    const Token *t;
 
+    /* expression */
     expr = parse_expr(ctx);
 
-    p = malloc(sizeof(*p));
-    p->kind = node_expr;
-    p->expr = expr;
-    p->line = current_token(ctx)->line;
+    /* ; */
+    t = consume_token(ctx);
 
-    consume_token(ctx); /* eat ; */
+    if (t->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        exit(1);
+    }
 
-    return (StmtNode *)p;
+    /* make node */
+    return sema_expr_stmt(ctx, expr, t);
 }
 
 StmtNode *parse_stmt(ParserContext *ctx) {

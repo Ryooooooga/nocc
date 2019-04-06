@@ -62,7 +62,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     assert(ctx);
     assert(callee);
     assert(open);
-    assert(args);
+    assert(args != NULL || num_args == 0);
     assert(num_args >= 0);
     assert(close);
 
@@ -196,4 +196,69 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     }
 
     return (ExprNode *)p;
+}
+
+StmtNode *sema_compound_stmt(ParserContext *ctx, const Token *open,
+                             StmtNode **stmts, int num_stmts,
+                             const Token *close) {
+    CompoundNode *p;
+    int i;
+
+    assert(ctx);
+    assert(open);
+    assert(stmts != NULL || num_stmts == 0);
+    assert(num_stmts >= 0);
+    assert(close);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_compound;
+    p->line = open->line;
+    p->stmts = malloc(sizeof(StmtNode *) * num_stmts);
+    p->num_stmts = num_stmts;
+
+    for (i = 0; i < num_stmts; i++) {
+        p->stmts[i] = stmts[i];
+    }
+
+    return (StmtNode *)p;
+}
+
+StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
+                       StmtNode *then, StmtNode *else_) {
+    IfNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(condition);
+    assert(then);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_if;
+    p->line = t->line;
+    p->condition = condition;
+    p->then = then;
+    p->else_ = else_;
+
+    /* type check */
+    if (condition->type != type_get_int32()) {
+        fprintf(stderr, "invalid condition type\n");
+        exit(1);
+    }
+
+    return (StmtNode *)p;
+}
+
+StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
+    ExprStmtNode *p;
+
+    assert(ctx);
+    assert(expr);
+    assert(t);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_expr;
+    p->line = t->line;
+    p->expr = expr;
+
+    return (StmtNode *)p;
 }
