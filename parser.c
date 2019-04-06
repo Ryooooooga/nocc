@@ -290,7 +290,9 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     Type **param_types;
     const Token *identifier;
     Vec *params;
+    ParamNode *param;
     FunctionNode *p;
+    int env_size;
     int i;
 
     assert(ctx);
@@ -313,7 +315,6 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     }
     ctx->index += 1; /* eat ( */
 
-    // TODO: params
     params = vec_new();
 
     if (ctx->tokens[ctx->index]->kind == token_void) {
@@ -339,7 +340,8 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     param_types = malloc(sizeof(Type *) * params->size);
 
     for (i = 0; i < params->size; i++) {
-        param_types[i] = ((ParamNode *)params->data[i])->type;
+        param = params->data[i];
+        param_types[i] = param->type;
     }
 
     p = malloc(sizeof(*p));
@@ -351,12 +353,33 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     p->var_args = false;
     p->body = NULL;
 
+    /* register function symbol */
+    if (map_contains(ctx->env, p->identifier)) {
+        fprintf(stderr, "function %s has already been declared\n",
+                p->identifier);
+        exit(1);
+    }
+
+    map_add(ctx->env, p->identifier, p);
+    env_size = map_size(ctx->env);
+
     if (ctx->tokens[ctx->index]->kind == ';') {
         ctx->index += 1; /* eat ; */
         return (DeclNode *)p;
     }
 
+    /* register parameter symbols */
+    for (i = 0; i < params->size; i++) {
+        param = params->data[i];
+
+        /* TODO: redeclaration check */
+        map_add(ctx->env, param->identifier, param);
+    }
+
+    /* parse function body */
     p->body = parse_compound_stmt(ctx);
+
+    map_shrink(ctx->env, env_size);
 
     return (DeclNode *)p;
 }

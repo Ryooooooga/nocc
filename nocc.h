@@ -190,6 +190,7 @@ struct FunctionNode {
     int line;
     char *identifier;
     Type *type;
+    LLVMValueRef generated_location;
     Vec *params;
     bool var_args;
     StmtNode *body;

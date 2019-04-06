@@ -448,7 +448,8 @@ void test_generating_function_with_params(void) {
 
 void test_generating_translation_unit(void) {
     TranslationUnitNode *p = parse("test_generating_translation_unit",
-                                   "int main(void) {return 42;}");
+                                   "int main(void) {return 42;}\n"
+                                   "int add(int x, int y) {return x+y;}");
 
     LLVMModuleRef module = generate(p);
 
@@ -461,6 +462,18 @@ void test_generating_translation_unit(void) {
                   "define i32 @main() {\n"
                   "entry:\n"
                   "  ret i32 42\n"
+                  "}\n"
+                  "\n"
+                  "define i32 @add(i32, i32) {\n"
+                  "entry:\n"
+                  "  %x = alloca i32\n"
+                  "  store i32 %0, i32* %x\n"
+                  "  %y = alloca i32\n"
+                  "  store i32 %1, i32* %y\n"
+                  "  %load = load i32, i32* %x\n"
+                  "  %load1 = load i32, i32* %y\n"
+                  "  %add = add i32 %load, %load1\n"
+                  "  ret i32 %add\n"
                   "}\n") == 0);
 
     LLVMDisposeMessage(message);
