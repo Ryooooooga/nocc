@@ -1,7 +1,32 @@
-void print_fizzbuzz(void);
-void print_fizz(void);
-void print_buzz(void);
-void print_int(int n);
+int putchar(int c);
+
+void print_fizz(void) {
+    putchar(64 + 6);
+    putchar(96 + 9);
+    putchar(96 + 26);
+    putchar(96 + 26);
+}
+
+void print_buzz(void) {
+    putchar(64 + 2);
+    putchar(96 + 21);
+    putchar(96 + 26);
+    putchar(96 + 26);
+}
+
+void print_fizzbuzz(void) {
+    print_fizz();
+    putchar(32);
+    print_buzz();
+}
+
+void print_int(int n) {
+    if (n >= 10) {
+        print_int(n / 10);
+    }
+
+    putchar(48 + n % 10);
+}
 
 void fizzbuzz(int n) {
     if (n > 1) {
@@ -17,6 +42,7 @@ void fizzbuzz(int n) {
     } else {
         print_int(n);
     }
+    putchar(10);
 }
 
 int main(void) {
