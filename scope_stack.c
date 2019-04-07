@@ -40,7 +40,7 @@ DeclNode *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
         if (decl != NULL) {
             return decl;
         }
-    } while (i-- >= 0 && recursive);
+    } while (--i >= 0 && recursive);
 
     return NULL;
 }
