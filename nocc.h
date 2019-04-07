@@ -280,6 +280,8 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
                                    const Token *close);
 StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
                            ExprNode *return_value, const Token *semi);
+void sema_if_stmt_enter_block(ParserContext *ctx);
+void sema_if_stmt_leave_block(ParserContext *ctx);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);

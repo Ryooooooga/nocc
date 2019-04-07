@@ -263,6 +263,18 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
     return (StmtNode *)p;
 }
 
+void sema_if_stmt_enter_block(ParserContext *ctx) {
+    assert(ctx);
+
+    scope_stack_push(ctx->env);
+}
+
+void sema_if_stmt_leave_block(ParserContext *ctx) {
+    assert(ctx);
+
+    scope_stack_pop(ctx->env);
+}
+
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_) {
     IfNode *p;

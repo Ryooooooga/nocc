@@ -379,8 +379,14 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
     /* ( expression ) */
     condition = parse_paren_expr(ctx);
 
+    /* enter then scope */
+    sema_if_stmt_enter_block(ctx);
+
     /* statement */
     then = parse_stmt(ctx);
+
+    /* leave then scope */
+    sema_if_stmt_leave_block(ctx);
 
     /* else */
     else_ = NULL;
@@ -388,8 +394,14 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
     if (current_token(ctx)->kind == token_else) {
         consume_token(ctx);
 
+        /* enter else scope */
+        sema_if_stmt_enter_block(ctx);
+
         /* statement */
         else_ = parse_stmt(ctx);
+
+        /* leave else scope */
+        sema_if_stmt_leave_block(ctx);
     }
 
     /* make node */
