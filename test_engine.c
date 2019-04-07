@@ -135,4 +135,12 @@ void test_engine(void) {
                              "  return a;\n"
                              "}\n",
                              "continue_", 10, 35);
+
+    test_engine_run_function("pointer",
+                             "int pointer(int n) {\n"
+                             "  int a;\n"
+                             "  *&a = n;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "pointer", 10, 10);
 }

@@ -112,11 +112,17 @@ LLVMValueRef generate_call_expr(GeneratorContext *ctx, CallNode *p) {
 LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
     LLVMValueRef operand;
 
-    operand = generate_expr(ctx, p->operand);
-
     switch (p->operator_) {
     case '-':
+        operand = generate_expr(ctx, p->operand);
         return LLVMBuildNeg(ctx->builder, operand, "neg");
+
+    case '*':
+        operand = generate_expr(ctx, p->operand);
+        return LLVMBuildLoad(ctx->builder, operand, "deref");
+
+    case '&':
+        return generate_expr_addr(ctx, p->operand);
 
     default:
         fprintf(stderr, "unknown unary operator %d\n", p->operator_);
@@ -224,6 +230,19 @@ LLVMValueRef generate_identifier_expr_addr(GeneratorContext *ctx,
     return p->declaration->generated_location;
 }
 
+LLVMValueRef generate_unary_expr_addr(GeneratorContext *ctx, UnaryNode *p) {
+    assert(p->is_lvalue);
+
+    switch (p->operator_) {
+    case '*':
+        return generate_expr(ctx, p->operand);
+
+    default:
+        fprintf(stderr, "unknown unary expression address %d\n", p->operator_);
+        exit(1);
+    }
+}
+
 LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     assert(p);
     assert(ctx);
@@ -237,8 +256,11 @@ LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     case node_identifier:
         return generate_identifier_expr_addr(ctx, (IdentifierNode *)p);
 
+    case node_unary:
+        return generate_unary_expr_addr(ctx, (UnaryNode *)p);
+
     default:
-        fprintf(stderr, "unknown expression %d\n", p->kind);
+        fprintf(stderr, "unknown expression address %d\n", p->kind);
         exit(1);
     }
 }

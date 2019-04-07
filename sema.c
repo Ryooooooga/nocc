@@ -183,6 +183,32 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         p->type = operand->type;
         break;
 
+    case '*':
+        if (!is_pointer_type(operand->type)) {
+            fprintf(stderr, "invalid operand type of unary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (is_incomplete_pointer_type(operand->type)) {
+            fprintf(stderr, "cannot dereference pointer of incomplete type\n");
+            exit(1);
+        }
+
+        p->type = pointer_element_type(operand->type);
+        p->is_lvalue = true;
+        break;
+
+    case '&':
+        if (!operand->is_lvalue) {
+            fprintf(stderr, "operand of unary operator %s must be a lvalue\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = pointer_type_new(operand->type);
+        break;
+
     default:
         fprintf(stderr, "unknown unary operator %s\n", t->text);
         exit(1);
@@ -248,6 +274,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             exit(1);
         }
 
+        /* TODO: assign type */
         if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
@@ -590,8 +617,8 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     p->generated_location = NULL;
 
     /* type check */
-    if (is_void_type(type)) {
-        fprintf(stderr, "variable type must not be void\n");
+    if (is_incomplete_type(type)) {
+        fprintf(stderr, "variable must have a complete type\n");
         exit(1);
     }
 
@@ -631,8 +658,8 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
     p->generated_location = NULL;
 
     /* type check */
-    if (is_void_type(type)) {
-        fprintf(stderr, "parameter type must not be void\n");
+    if (is_incomplete_type(type)) {
+        fprintf(stderr, "parameter must have a complete type\n");
         exit(1);
     }
 

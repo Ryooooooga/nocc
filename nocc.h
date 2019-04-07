@@ -74,14 +74,21 @@ Vec *lex(const char *src);
 enum {
     type_void,
     type_int32,
+    type_pointer,
     type_function,
 };
 
 typedef struct Type Type;
+typedef struct PointerType PointerType;
 typedef struct FunctionType FunctionType;
 
 struct Type {
     int kind;
+};
+
+struct PointerType {
+    int kind;
+    Type *element_type;
 };
 
 struct FunctionType {
@@ -93,12 +100,17 @@ struct FunctionType {
 
 Type *type_get_void(void);
 Type *type_get_int32(void);
+Type *pointer_type_new(Type *element_type);
 Type *function_type_new(Type *return_type, Type **param_types, int num_params);
 
 bool is_void_type(Type *t);
 bool is_int32_type(Type *t);
+bool is_pointer_type(Type *t);
 bool is_function_type(Type *t);
+bool is_incomplete_type(Type *t);
+bool is_incomplete_pointer_type(Type *t);
 
+Type *pointer_element_type(Type *t);
 Type *function_return_type(Type *t);
 
 enum {

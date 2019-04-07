@@ -33,9 +33,7 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     }
 }
 
-Type *parse_type(ParserContext *ctx) {
-    assert(ctx);
-
+Type *parse_primary_type(ParserContext *ctx) {
     switch (current_token(ctx)->kind) {
     case token_void:
         consume_token(ctx); /* eat void */
@@ -50,6 +48,24 @@ Type *parse_type(ParserContext *ctx) {
                 current_token(ctx)->text);
         exit(1);
     }
+}
+
+Type *parse_type(ParserContext *ctx) {
+    Type *type;
+
+    assert(ctx);
+
+    type = parse_primary_type(ctx);
+
+    /* pointer type */
+    while (current_token(ctx)->kind == '*') {
+        /* * */
+        consume_token(ctx);
+
+        type = pointer_type_new(type);
+    }
+
+    return type;
 }
 
 ExprNode *parse_paren_expr(ParserContext *ctx) {
@@ -200,6 +216,8 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
 
     switch (t->kind) {
     case '-':
+    case '*':
+    case '&':
         /* unary operator */
         consume_token(ctx);
 
