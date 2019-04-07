@@ -500,7 +500,8 @@ StmtNode *parse_do_stmt(ParserContext *ctx) {
 
     /* while */
     if (current_token(ctx)->kind != token_while) {
-        fprintf(stderr, "expected while, but got %s\n", t->text);
+        fprintf(stderr, "expected while, but got %s\n",
+                current_token(ctx)->text);
         exit(1);
     }
     consume_token(ctx);
@@ -510,7 +511,7 @@ StmtNode *parse_do_stmt(ParserContext *ctx) {
 
     /* ; */
     if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
     consume_token(ctx);
@@ -536,7 +537,7 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
 
     /* ( */
     if (current_token(ctx)->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", t->text);
+        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
     consume_token(ctx);
@@ -550,7 +551,7 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
 
     /* ; */
     if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
     consume_token(ctx);
@@ -564,7 +565,7 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
 
     /* ; */
     if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
         exit(1);
     }
     consume_token(ctx);
@@ -578,7 +579,7 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
 
     /* ) */
     if (current_token(ctx)->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", t->text);
+        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
         exit(1);
     }
     consume_token(ctx);
