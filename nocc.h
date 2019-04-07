@@ -96,8 +96,10 @@ enum {
     node_compound,
     node_return,
     node_if,
+    node_decl,
     node_expr,
 
+    node_variable,
     node_param,
     node_function,
 };
@@ -113,9 +115,11 @@ typedef struct StmtNode StmtNode;
 typedef struct CompoundNode CompoundNode;
 typedef struct ReturnNode ReturnNode;
 typedef struct IfNode IfNode;
+typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
 typedef struct DeclNode DeclNode;
+typedef struct VariableNode VariableNode;
 typedef struct ParamNode ParamNode;
 typedef struct FunctionNode FunctionNode;
 
@@ -194,6 +198,12 @@ struct IfNode {
     StmtNode *else_;
 };
 
+struct DeclStmtNode {
+    int kind;
+    int line;
+    DeclNode *decl;
+};
+
 struct ExprStmtNode {
     int kind;
     int line;
@@ -201,6 +211,14 @@ struct ExprStmtNode {
 };
 
 struct DeclNode {
+    int kind;
+    int line;
+    char *identifier;
+    Type *type;
+    LLVMValueRef generated_location;
+};
+
+struct VariableNode {
     int kind;
     int line;
     char *identifier;
@@ -256,8 +274,10 @@ struct ParserContext {
 typedef struct ParserContext ParserContext;
 
 Type *parse_type(ParserContext *ctx);
+ExprNode *parse_assign_expr(ParserContext *ctx);
 ExprNode *parse_expr(ParserContext *ctx);
 StmtNode *parse_stmt(ParserContext *ctx);
+DeclNode *parse_var_decl(ParserContext *ctx);
 ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
@@ -284,8 +304,10 @@ void sema_if_stmt_enter_block(ParserContext *ctx);
 void sema_if_stmt_leave_block(ParserContext *ctx);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
+StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
 
+DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t);
 ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
 
 void sema_function_enter_params(ParserContext *ctx);

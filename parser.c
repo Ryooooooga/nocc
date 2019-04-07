@@ -15,6 +15,24 @@ const Token *consume_token(ParserContext *ctx) {
     return ctx->tokens[ctx->index++];
 }
 
+bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
+    assert(ctx);
+    assert(t);
+
+    switch (t->kind) {
+    case token_void:
+    case token_int:
+        return true;
+
+    case token_identifier:
+        /* TODO: typedef name */
+        return false;
+
+    default:
+        return false;
+    }
+}
+
 Type *parse_type(ParserContext *ctx) {
     assert(ctx);
 
@@ -132,7 +150,7 @@ ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
 
     if (current_token(ctx)->kind != ')') {
         /* expression */
-        vec_push(args, parse_expr(ctx));
+        vec_push(args, parse_assign_expr(ctx));
 
         /* {, expression} */
         while (current_token(ctx)->kind == ',') {
@@ -140,7 +158,7 @@ ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
             consume_token(ctx);
 
             /* expression */
-            vec_push(args, parse_expr(ctx));
+            vec_push(args, parse_assign_expr(ctx));
         }
     }
 
@@ -288,10 +306,34 @@ ExprNode *parse_equality_expr(ParserContext *ctx) {
     return left;
 }
 
+ExprNode *parse_assign_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    assert(ctx);
+
+    /* equality expression */
+    left = parse_equality_expr(ctx);
+
+    /* assignment operator */
+    if (current_token(ctx)->kind != '=') {
+        return left;
+    }
+
+    t = consume_token(ctx);
+
+    /* assignment expression */
+    right = parse_assign_expr(ctx);
+
+    /* make node */
+    return sema_binary_expr(ctx, left, t, right);
+}
+
 ExprNode *parse_expr(ParserContext *ctx) {
     assert(ctx);
 
-    return parse_equality_expr(ctx);
+    return parse_assign_expr(ctx);
 }
 
 StmtNode *parse_compound_stmt(ParserContext *ctx) {
@@ -408,6 +450,25 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
     return sema_if_stmt(ctx, t, condition, then, else_);
 }
 
+StmtNode *parse_decl_stmt(ParserContext *ctx) {
+    const Token *t;
+    DeclNode *decl;
+
+    /* variable declaration */
+    decl = parse_var_decl(ctx);
+
+    /* ; */
+    t = consume_token(ctx);
+
+    if (t->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* make node */
+    return sema_decl_stmt(ctx, decl, t);
+}
+
 StmtNode *parse_expr_stmt(ParserContext *ctx) {
     ExprNode *expr;
     const Token *t;
@@ -441,8 +502,32 @@ StmtNode *parse_stmt(ParserContext *ctx) {
         return parse_if_stmt(ctx);
 
     default:
+        if (is_type_specifier_token(ctx, current_token(ctx))) {
+            return parse_decl_stmt(ctx);
+        }
         return parse_expr_stmt(ctx);
     }
+}
+
+DeclNode *parse_var_decl(ParserContext *ctx) {
+    Type *type;
+    const Token *t;
+
+    assert(ctx);
+
+    /* type */
+    type = parse_type(ctx);
+
+    /* identifier */
+    t = consume_token(ctx);
+
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* register symbol and make node */
+    return sema_var_decl(ctx, type, t);
 }
 
 ParamNode *parse_param(ParserContext *ctx) {
@@ -462,7 +547,7 @@ ParamNode *parse_param(ParserContext *ctx) {
         exit(1);
     }
 
-    /* make node */
+    /* register symbol and make node */
     return sema_param(ctx, type, t);
 }
 

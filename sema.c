@@ -300,6 +300,21 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
     return (StmtNode *)p;
 }
 
+StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t) {
+    DeclStmtNode *p;
+
+    assert(ctx);
+    assert(decl);
+    assert(t);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_decl;
+    p->line = t->line;
+    p->decl = decl;
+
+    return (StmtNode *)p;
+}
+
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     ExprStmtNode *p;
 
@@ -313,6 +328,41 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     p->expr = expr;
 
     return (StmtNode *)p;
+}
+
+DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
+    VariableNode *p;
+
+    assert(ctx);
+    assert(type);
+    assert(t);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_variable;
+    p->line = t->line;
+    p->identifier = strdup(t->text);
+    p->type = type;
+    p->generated_location = NULL;
+
+    /* type check */
+    if (type == type_get_void()) {
+        fprintf(stderr, "variable type must not be void\n");
+        exit(1);
+    }
+
+    /* redeclaration check */
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
+        fprintf(stderr, "symbol %s has already been declared in this scope\n",
+                p->identifier);
+        exit(1);
+    }
+
+    /* register symbol */
+    scope_stack_register(ctx->env, (DeclNode *)p);
+
+    /* TODO: add to locals */
+
+    return (DeclNode *)p;
 }
 
 ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
@@ -331,7 +381,7 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
 
     /* type check */
     if (type == type_get_void()) {
-        fprintf(stderr, "parameter must not be void\n");
+        fprintf(stderr, "parameter type must not be void\n");
         exit(1);
     }
 

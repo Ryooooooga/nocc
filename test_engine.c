@@ -54,4 +54,12 @@ void test_engine(void) {
                              "  return n*factorial(n-1);\n"
                              "}\n",
                              "factorial", 5, 120);
+
+    test_engine_run_function("variable",
+                             "int variable(int n) {\n"
+                             "  int a;\n"
+                             "  a = n;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "variable", 42, 42);
 }
