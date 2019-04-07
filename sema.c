@@ -707,7 +707,8 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
         param_types[i] = params[i]->type;
     }
 
-    function_type = function_type_new(return_type, param_types, num_params);
+    function_type =
+        function_type_new(return_type, param_types, num_params, var_args);
 
     /* make node */
     p = malloc(sizeof(*p));

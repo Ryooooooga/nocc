@@ -23,7 +23,8 @@ Type *pointer_type_new(Type *element_type) {
     return (Type *)t;
 }
 
-Type *function_type_new(Type *return_type, Type **param_types, int num_params) {
+Type *function_type_new(Type *return_type, Type **param_types, int num_params,
+                        bool var_args) {
     FunctionType *t;
     int i;
 
@@ -36,6 +37,7 @@ Type *function_type_new(Type *return_type, Type **param_types, int num_params) {
     t->return_type = return_type;
     t->param_types = malloc(sizeof(Type *) * num_params);
     t->num_params = num_params;
+    t->var_args = var_args;
 
     for (i = 0; i < num_params; i++) {
         t->param_types[i] = param_types[i];

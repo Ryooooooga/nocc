@@ -295,7 +295,7 @@ void test_generating_function_prototype(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "f",
-        .type = function_type_new(type_get_int32(), NULL, 0),
+        .type = function_type_new(type_get_int32(), NULL, 0, false),
         .params = NULL,
         .num_params = 0,
         .var_args = false,
@@ -323,7 +323,7 @@ void test_generating_function(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "f",
-        .type = function_type_new(type_get_void(), NULL, 0),
+        .type = function_type_new(type_get_void(), NULL, 0, false),
         .params = NULL,
         .num_params = 0,
         .var_args = false,
@@ -360,8 +360,8 @@ void test_generating_function_with_param(void) {
         .kind = node_function,
         .line = 1,
         .identifier = "g",
-        .type =
-            function_type_new(type_get_void(), (Type *[]){type_get_int32()}, 1),
+        .type = function_type_new(type_get_void(), (Type *[]){type_get_int32()},
+                                  1, false),
         .params =
             (ParamNode *[]){
                 &(ParamNode){
@@ -409,7 +409,8 @@ void test_generating_function_with_params(void) {
         .line = 1,
         .identifier = "g",
         .type = function_type_new(
-            type_get_void(), (Type *[]){type_get_int32(), type_get_int32()}, 2),
+            type_get_void(), (Type *[]){type_get_int32(), type_get_int32()}, 2,
+            false),
         .params =
             (ParamNode *[]){
                 &(ParamNode){

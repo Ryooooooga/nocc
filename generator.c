@@ -55,7 +55,7 @@ LLVMTypeRef generate_function_type(GeneratorContext *ctx, FunctionType *p) {
     }
 
     return LLVMFunctionType(return_type, param_types, p->num_params,
-                            false); /* TODO: var args */
+                            p->var_args);
 }
 
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {

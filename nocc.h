@@ -98,12 +98,14 @@ struct FunctionType {
     Type *return_type;
     Type **param_types;
     int num_params;
+    bool var_args;
 };
 
 Type *type_get_void(void);
 Type *type_get_int32(void);
 Type *pointer_type_new(Type *element_type);
-Type *function_type_new(Type *return_type, Type **param_types, int num_params);
+Type *function_type_new(Type *return_type, Type **param_types, int num_params,
+                        bool var_args);
 
 bool is_void_type(Type *t);
 bool is_int32_type(Type *t);
