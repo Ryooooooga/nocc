@@ -65,6 +65,8 @@ Token *lex_token(const char *src, int *index, int *line) {
                 t->kind = token_else;
             } else if (strcmp(t->text, "while") == 0) {
                 t->kind = token_while;
+            } else if (strcmp(t->text, "for") == 0) {
+                t->kind = token_for;
             } else if (strcmp(t->text, "return") == 0) {
                 t->kind = token_return;
             } else if (strcmp(t->text, "void") == 0) {

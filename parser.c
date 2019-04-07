@@ -476,6 +476,81 @@ StmtNode *parse_while_stmt(ParserContext *ctx) {
     return sema_while_stmt_leave_body(ctx, t, condition, body);
 }
 
+StmtNode *parse_for_stmt(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *initialization;
+    ExprNode *condition;
+    ExprNode *continuation;
+    StmtNode *body;
+
+    /* for */
+    t = consume_token(ctx);
+
+    if (t->kind != token_for) {
+        fprintf(stderr, "expected for, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* ( */
+    if (current_token(ctx)->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* initialization expression */
+    initialization = NULL;
+
+    if (current_token(ctx)->kind != ';') {
+        initialization = parse_expr(ctx);
+    }
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* condition expression */
+    condition = NULL;
+
+    if (current_token(ctx)->kind != ';') {
+        condition = parse_expr(ctx);
+    }
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* continuation expression */
+    continuation = NULL;
+
+    if (current_token(ctx)->kind != ')') {
+        continuation = parse_expr(ctx);
+    }
+
+    /* ) */
+    if (current_token(ctx)->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* enter body scope */
+    sema_for_stmt_enter_body(ctx);
+
+    /* statement */
+    body = parse_stmt(ctx);
+
+    /* leave body scope and make node */
+    return sema_for_stmt_leave_body(ctx, t, initialization, condition,
+                                    continuation, body);
+}
+
 StmtNode *parse_decl_stmt(ParserContext *ctx) {
     const Token *t;
     DeclNode *decl;
@@ -529,6 +604,9 @@ StmtNode *parse_stmt(ParserContext *ctx) {
 
     case token_while:
         return parse_while_stmt(ctx);
+
+    case token_for:
+        return parse_for_stmt(ctx);
 
     default:
         if (is_type_specifier_token(ctx, current_token(ctx))) {

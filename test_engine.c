@@ -86,4 +86,16 @@ void test_engine(void) {
                              "  return sum;\n"
                              "}\n",
                              "sum", 100, 5050);
+
+    test_engine_run_function("sum2",
+                             "int sum2(int n) {\n"
+                             "  int sum;\n"
+                             "  int i;\n"
+                             "  sum = 0;\n"
+                             "  for (i = 1; i <= n; i = i + 1) {\n"
+                             "    sum = sum + i;\n"
+                             "  }\n"
+                             "  return sum;\n"
+                             "}\n",
+                             "sum2", 100, 5050);
 }

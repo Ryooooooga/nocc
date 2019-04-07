@@ -297,6 +297,66 @@ bool generate_while_stmt(GeneratorContext *ctx, WhileNode *p) {
     return false;
 }
 
+bool generate_for_stmt(GeneratorContext *ctx, ForNode *p) {
+    LLVMValueRef function;
+    LLVMBasicBlockRef condition_basic_block;
+    LLVMBasicBlockRef body_basic_block;
+    LLVMBasicBlockRef continuation_basic_block;
+    LLVMBasicBlockRef endfor_basic_block;
+
+    LLVMValueRef condition;
+    LLVMValueRef bool_condition;
+
+    function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
+    condition_basic_block = LLVMAppendBasicBlock(function, "cond");
+    body_basic_block = LLVMAppendBasicBlock(function, "body");
+    continuation_basic_block = LLVMAppendBasicBlock(function, "cont");
+    endfor_basic_block = LLVMAppendBasicBlock(function, "endfor");
+
+    /* initialization */
+    if (p->initialization) {
+        generate_expr(ctx, p->initialization);
+    }
+
+    LLVMBuildBr(ctx->builder, condition_basic_block);
+
+    /* condition */
+    LLVMPositionBuilderAtEnd(ctx->builder, condition_basic_block);
+
+    if (p->condition) {
+        condition = generate_expr(ctx, p->condition);
+        bool_condition =
+            LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
+                          LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+
+        LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
+                        endfor_basic_block);
+    } else {
+        LLVMBuildBr(ctx->builder, body_basic_block);
+    }
+
+    /* body */
+    LLVMPositionBuilderAtEnd(ctx->builder, body_basic_block);
+
+    if (!generate_stmt(ctx, p->body)) {
+        LLVMBuildBr(ctx->builder, continuation_basic_block);
+    }
+
+    /* continuation */
+    LLVMPositionBuilderAtEnd(ctx->builder, continuation_basic_block);
+
+    if (p->continuation) {
+        generate_expr(ctx, p->continuation);
+    }
+
+    LLVMBuildBr(ctx->builder, condition_basic_block);
+
+    /* end for */
+    LLVMPositionBuilderAtEnd(ctx->builder, endfor_basic_block);
+
+    return false;
+}
+
 bool generate_decl_stmt(GeneratorContext *ctx, DeclStmtNode *p) {
     (void)ctx;
     (void)p;
@@ -326,6 +386,9 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
 
     case node_while:
         return generate_while_stmt(ctx, (WhileNode *)p);
+
+    case node_for:
+        return generate_for_stmt(ctx, (ForNode *)p);
 
     case node_decl:
         return generate_decl_stmt(ctx, (DeclStmtNode *)p);

@@ -44,6 +44,7 @@ enum {
     token_if,
     token_else,
     token_while,
+    token_for,
     token_return,
     token_void,
     token_int,
@@ -98,6 +99,7 @@ enum {
     node_return,
     node_if,
     node_while,
+    node_for,
     node_decl,
     node_expr,
 
@@ -118,6 +120,7 @@ typedef struct CompoundNode CompoundNode;
 typedef struct ReturnNode ReturnNode;
 typedef struct IfNode IfNode;
 typedef struct WhileNode WhileNode;
+typedef struct ForNode ForNode;
 typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
@@ -211,6 +214,15 @@ struct WhileNode {
     int kind;
     int line;
     ExprNode *condition;
+    StmtNode *body;
+};
+
+struct ForNode {
+    int kind;
+    int line;
+    ExprNode *initialization;
+    ExprNode *condition;
+    ExprNode *continuation;
     StmtNode *body;
 };
 
@@ -321,11 +333,16 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
                            ExprNode *return_value, const Token *semi);
 void sema_if_stmt_enter_block(ParserContext *ctx);
 void sema_if_stmt_leave_block(ParserContext *ctx);
+StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
+                       StmtNode *then, StmtNode *else_);
 void sema_while_stmt_enter_body(ParserContext *ctx);
 StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
                                      ExprNode *condition, StmtNode *body);
-StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
-                       StmtNode *then, StmtNode *else_);
+void sema_for_stmt_enter_body(ParserContext *ctx);
+StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
+                                   ExprNode *initialization,
+                                   ExprNode *condition, ExprNode *continuation,
+                                   StmtNode *body);
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
 
