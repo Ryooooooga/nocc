@@ -72,4 +72,18 @@ void test_engine(void) {
                              "  return a * b;\n"
                              "}\n",
                              "variables", 4, 20);
+
+    test_engine_run_function("sum",
+                             "int sum(int n) {\n"
+                             "  int sum;\n"
+                             "  int i;\n"
+                             "  sum = 0;\n"
+                             "  i = 1;\n"
+                             "  while (i <= n) {\n"
+                             "    sum = sum + i;\n"
+                             "    i = i + 1;\n"
+                             "  }\n"
+                             "  return sum;\n"
+                             "}\n",
+                             "sum", 100, 5050);
 }

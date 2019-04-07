@@ -450,6 +450,32 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
     return sema_if_stmt(ctx, t, condition, then, else_);
 }
 
+StmtNode *parse_while_stmt(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *condition;
+    StmtNode *body;
+
+    /* while */
+    t = consume_token(ctx);
+
+    if (t->kind != token_while) {
+        fprintf(stderr, "expected while, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* ( expression ) */
+    condition = parse_paren_expr(ctx);
+
+    /* enter body scope */
+    sema_while_stmt_enter_body(ctx);
+
+    /* statement */
+    body = parse_stmt(ctx);
+
+    /* leave body scope and make node */
+    return sema_while_stmt_leave_body(ctx, t, condition, body);
+}
+
 StmtNode *parse_decl_stmt(ParserContext *ctx) {
     const Token *t;
     DeclNode *decl;
@@ -500,6 +526,9 @@ StmtNode *parse_stmt(ParserContext *ctx) {
 
     case token_if:
         return parse_if_stmt(ctx);
+
+    case token_while:
+        return parse_while_stmt(ctx);
 
     default:
         if (is_type_specifier_token(ctx, current_token(ctx))) {

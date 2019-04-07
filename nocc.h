@@ -11,20 +11,6 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Core.h>
 
-enum {
-    token_number = 256,
-    token_identifier,
-    token_if,
-    token_else,
-    token_return,
-    token_void,
-    token_int,
-    token_lesser_equal,
-    token_greater_equal,
-    token_equal,
-    token_not_equal,
-};
-
 struct Vec {
     int capacity;
     int size;
@@ -51,6 +37,21 @@ int map_size(Map *m);
 bool map_contains(Map *m, const char *k);
 void *map_get(Map *m, const char *k);
 void map_add(Map *m, const char *k, void *v);
+
+enum {
+    token_number = 256,
+    token_identifier,
+    token_if,
+    token_else,
+    token_while,
+    token_return,
+    token_void,
+    token_int,
+    token_lesser_equal,
+    token_greater_equal,
+    token_equal,
+    token_not_equal,
+};
 
 struct Token {
     int kind;
@@ -96,6 +97,7 @@ enum {
     node_compound,
     node_return,
     node_if,
+    node_while,
     node_decl,
     node_expr,
 
@@ -115,6 +117,7 @@ typedef struct StmtNode StmtNode;
 typedef struct CompoundNode CompoundNode;
 typedef struct ReturnNode ReturnNode;
 typedef struct IfNode IfNode;
+typedef struct WhileNode WhileNode;
 typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
@@ -196,6 +199,13 @@ struct IfNode {
     ExprNode *condition;
     StmtNode *then;
     StmtNode *else_;
+};
+
+struct WhileNode {
+    int kind;
+    int line;
+    ExprNode *condition;
+    StmtNode *body;
 };
 
 struct DeclStmtNode {
@@ -305,6 +315,9 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
                            ExprNode *return_value, const Token *semi);
 void sema_if_stmt_enter_block(ParserContext *ctx);
 void sema_if_stmt_leave_block(ParserContext *ctx);
+void sema_while_stmt_enter_body(ParserContext *ctx);
+StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
+                                     ExprNode *condition, StmtNode *body);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t);

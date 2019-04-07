@@ -315,6 +315,36 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
     return (StmtNode *)p;
 }
 
+void sema_while_stmt_enter_body(ParserContext *ctx) {
+    assert(ctx);
+
+    scope_stack_push(ctx->env);
+}
+
+StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
+                                     ExprNode *condition, StmtNode *body) {
+    WhileNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(condition);
+    assert(body);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_while;
+    p->line = t->line;
+    p->condition = condition;
+    p->body = body;
+
+    /* type check */
+    if (condition->type != type_get_int32()) {
+        fprintf(stderr, "invalid condition type\n");
+        exit(1);
+    }
+
+    return (StmtNode *)p;
+}
+
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t) {
     DeclStmtNode *p;
 
