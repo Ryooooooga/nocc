@@ -361,6 +361,44 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     return (StmtNode *)p;
 }
 
+void sema_do_stmt_enter_body(ParserContext *ctx) {
+    assert(ctx);
+
+    /* enter scope */
+    scope_stack_push(ctx->env);
+}
+
+void sema_do_stmt_leave_body(ParserContext *ctx) {
+    assert(ctx);
+
+    /* leave scope */
+    scope_stack_pop(ctx->env);
+}
+
+StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
+                       ExprNode *condition) {
+    DoNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(body);
+    assert(condition);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_do;
+    p->line = t->line;
+    p->body = body;
+    p->condition = condition;
+
+    /* type check */
+    if (condition->type != type_get_int32()) {
+        fprintf(stderr, "invalid condition type\n");
+        exit(1);
+    }
+
+    return (StmtNode *)p;
+}
+
 void sema_for_stmt_enter_body(ParserContext *ctx) {
     assert(ctx);
 

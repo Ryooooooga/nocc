@@ -476,6 +476,49 @@ StmtNode *parse_while_stmt(ParserContext *ctx) {
     return sema_while_stmt_leave_body(ctx, t, condition, body);
 }
 
+StmtNode *parse_do_stmt(ParserContext *ctx) {
+    const Token *t;
+    StmtNode *body;
+    ExprNode *condition;
+
+    /* do */
+    t = consume_token(ctx);
+
+    if (t->kind != token_do) {
+        fprintf(stderr, "expected do, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* enter body scope */
+    sema_do_stmt_enter_body(ctx);
+
+    /* statement */
+    body = parse_stmt(ctx);
+
+    /* leave body scope */
+    sema_do_stmt_leave_body(ctx);
+
+    /* while */
+    if (current_token(ctx)->kind != token_while) {
+        fprintf(stderr, "expected while, but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* ( expression ) */
+    condition = parse_paren_expr(ctx);
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* leave body scope and make node */
+    return sema_do_stmt(ctx, t, body, condition);
+}
+
 StmtNode *parse_for_stmt(ParserContext *ctx) {
     const Token *t;
     ExprNode *initialization;
@@ -604,6 +647,9 @@ StmtNode *parse_stmt(ParserContext *ctx) {
 
     case token_while:
         return parse_while_stmt(ctx);
+
+    case token_do:
+        return parse_do_stmt(ctx);
 
     case token_for:
         return parse_for_stmt(ctx);

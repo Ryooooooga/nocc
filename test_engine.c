@@ -98,4 +98,22 @@ void test_engine(void) {
                              "  return sum;\n"
                              "}\n",
                              "sum2", 100, 5050);
+
+    test_engine_run_function("do_while",
+                             "int do_while(int n) {\n"
+                             "  do {\n"
+                             "    n = n + 1;\n"
+                             "  } while (n < 0);\n"
+                             "  return n;\n"
+                             "}\n",
+                             "do_while", 100, 101);
+
+    test_engine_run_function("do_while2",
+                             "int do_while2(int n) {\n"
+                             "  do {\n"
+                             "    n = n + 1;\n"
+                             "  } while (n < 0);\n"
+                             "  return n;\n"
+                             "}\n",
+                             "do_while2", -10, 0);
 }

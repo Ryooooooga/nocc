@@ -296,6 +296,46 @@ bool generate_while_stmt(GeneratorContext *ctx, WhileNode *p) {
     return false;
 }
 
+bool generate_do_stmt(GeneratorContext *ctx, DoNode *p) {
+    LLVMValueRef function;
+    LLVMBasicBlockRef body_basic_block;
+    LLVMBasicBlockRef condition_basic_block;
+    LLVMBasicBlockRef enddo_basic_block;
+
+    LLVMValueRef condition;
+    LLVMValueRef bool_condition;
+
+    function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
+    body_basic_block = LLVMAppendBasicBlock(function, "body");
+    condition_basic_block = LLVMAppendBasicBlock(function, "cond");
+    enddo_basic_block = LLVMAppendBasicBlock(function, "enddo");
+
+    LLVMBuildBr(ctx->builder, body_basic_block);
+
+    /* body */
+    LLVMPositionBuilderAtEnd(ctx->builder, body_basic_block);
+
+    if (!generate_stmt(ctx, p->body)) {
+        LLVMBuildBr(ctx->builder, condition_basic_block);
+    }
+
+    /* condition */
+    LLVMPositionBuilderAtEnd(ctx->builder, condition_basic_block);
+
+    condition = generate_expr(ctx, p->condition);
+    bool_condition =
+        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
+                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+
+    LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
+                    enddo_basic_block);
+
+    /* end do */
+    LLVMPositionBuilderAtEnd(ctx->builder, enddo_basic_block);
+
+    return false;
+}
+
 bool generate_for_stmt(GeneratorContext *ctx, ForNode *p) {
     LLVMValueRef function;
     LLVMBasicBlockRef condition_basic_block;
@@ -385,6 +425,9 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
 
     case node_while:
         return generate_while_stmt(ctx, (WhileNode *)p);
+
+    case node_do:
+        return generate_do_stmt(ctx, (DoNode *)p);
 
     case node_for:
         return generate_for_stmt(ctx, (ForNode *)p);

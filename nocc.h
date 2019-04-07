@@ -44,6 +44,7 @@ enum {
     token_if,
     token_else,
     token_while,
+    token_do,
     token_for,
     token_return,
     token_void,
@@ -99,6 +100,7 @@ enum {
     node_return,
     node_if,
     node_while,
+    node_do,
     node_for,
     node_decl,
     node_expr,
@@ -120,6 +122,7 @@ typedef struct CompoundNode CompoundNode;
 typedef struct ReturnNode ReturnNode;
 typedef struct IfNode IfNode;
 typedef struct WhileNode WhileNode;
+typedef struct DoNode DoNode;
 typedef struct ForNode ForNode;
 typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
@@ -215,6 +218,13 @@ struct WhileNode {
     int line;
     ExprNode *condition;
     StmtNode *body;
+};
+
+struct DoNode {
+    int kind;
+    int line;
+    StmtNode *body;
+    ExprNode *condition;
 };
 
 struct ForNode {
@@ -339,6 +349,10 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
 void sema_while_stmt_enter_body(ParserContext *ctx);
 StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
                                      ExprNode *condition, StmtNode *body);
+void sema_do_stmt_enter_body(ParserContext *ctx);
+void sema_do_stmt_leave_body(ParserContext *ctx);
+StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
+                       ExprNode *condition);
 void sema_for_stmt_enter_body(ParserContext *ctx);
 StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
                                    ExprNode *initialization,
