@@ -162,6 +162,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case '*':
     case '/':
     case '%':
+        /* arithmetic operator */
         if (left->type != type_get_int32() || right->type != type_get_int32()) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
@@ -177,6 +178,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case token_greater_equal:
     case token_equal:
     case token_not_equal:
+        /* relational operator */
         if (left->type != type_get_int32() || right->type != type_get_int32()) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
@@ -184,6 +186,19 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         }
 
         p->type = type_get_int32();
+        break;
+
+    case '=':
+        /* assignment operator */
+        /* TODO: check lvalue */
+
+        if (left->type != type_get_int32() || right->type != type_get_int32()) {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = right->type;
         break;
 
     default:

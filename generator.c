@@ -71,6 +71,18 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
     LLVMValueRef cmp;
 
+    switch (p->operator_) {
+    case '=':
+        right = generate_expr(ctx, p->right);
+        left = generate_expr_addr(ctx, p->left);
+
+        LLVMBuildStore(ctx->builder, right, left);
+        return right;
+
+    default:
+        break;
+    }
+
     left = generate_expr(ctx, p->left);
     right = generate_expr(ctx, p->right);
 
@@ -240,6 +252,18 @@ bool generate_if_stmt(GeneratorContext *ctx, IfNode *p) {
     return false;
 }
 
+bool generate_decl_stmt(GeneratorContext *ctx, DeclStmtNode *p) {
+    LLVMTypeRef type;
+
+    /* FIXME: fix alloca */
+    type = generate_type(ctx, p->decl->type);
+
+    p->decl->generated_location =
+        LLVMBuildAlloca(ctx->builder, type, p->decl->identifier);
+
+    return false;
+}
+
 bool generate_expr_stmt(GeneratorContext *ctx, ExprStmtNode *p) {
     generate_expr(ctx, p->expr);
 
@@ -259,6 +283,9 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
 
     case node_if:
         return generate_if_stmt(ctx, (IfNode *)p);
+
+    case node_decl:
+        return generate_decl_stmt(ctx, (DeclStmtNode *)p);
 
     case node_expr:
         return generate_expr_stmt(ctx, (ExprStmtNode *)p);

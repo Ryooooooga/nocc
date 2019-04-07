@@ -62,4 +62,14 @@ void test_engine(void) {
                              "  return a;\n"
                              "}\n",
                              "variable", 42, 42);
+
+    test_engine_run_function("variables",
+                             "int variables(int n) {\n"
+                             "  int a;\n"
+                             "  int b;\n"
+                             "  a = b = n;\n"
+                             "  a = a + 1;"
+                             "  return a * b;\n"
+                             "}\n",
+                             "variables", 4, 20);
 }
