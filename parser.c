@@ -98,7 +98,7 @@ ExprNode *parse_paren_expr(ParserContext *ctx) {
 
 ExprNode *parse_number_expr(ParserContext *ctx) {
     const Token *t;
-    int value;
+    long value;
 
     /* number */
     t = consume_token(ctx);
@@ -109,10 +109,16 @@ ExprNode *parse_number_expr(ParserContext *ctx) {
     }
 
     /* convert */
-    value = atoi(t->text); /* TODO: check value range */
+    errno = 0;
+    value = strtol(t->text, NULL, 10);
+
+    if (errno == ERANGE || value > INT_MAX) {
+        fprintf(stderr, "too large integer constant %s\n", t->text);
+        exit(1);
+    }
 
     /* make node */
-    return sema_integer_expr(ctx, t, value);
+    return sema_integer_expr(ctx, t, (int)value);
 }
 
 ExprNode *parse_identifier_expr(ParserContext *ctx) {
