@@ -1,5 +1,47 @@
 #include "nocc.h"
 
+LLVMBasicBlockRef nearest_break_target(GeneratorContext *ctx) {
+    assert(ctx);
+    assert(ctx->break_targets->size > 0);
+
+    return vec_back(ctx->break_targets);
+}
+
+LLVMBasicBlockRef nearest_continue_target(GeneratorContext *ctx) {
+    assert(ctx);
+    assert(ctx->continue_targets->size > 0);
+
+    return vec_back(ctx->continue_targets);
+}
+
+void push_break_target(GeneratorContext *ctx, LLVMBasicBlockRef target) {
+    assert(ctx);
+    assert(target);
+
+    vec_push(ctx->break_targets, target);
+}
+
+void push_continue_target(GeneratorContext *ctx, LLVMBasicBlockRef target) {
+    assert(ctx);
+    assert(target);
+
+    vec_push(ctx->continue_targets, target);
+}
+
+void pop_break_target(GeneratorContext *ctx) {
+    assert(ctx);
+    assert(ctx->break_targets->size > 0);
+
+    vec_pop(ctx->break_targets);
+}
+
+void pop_continue_target(GeneratorContext *ctx) {
+    assert(ctx);
+    assert(ctx->continue_targets->size > 0);
+
+    vec_pop(ctx->continue_targets);
+}
+
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     assert(ctx);
     assert(p);
@@ -286,9 +328,15 @@ bool generate_while_stmt(GeneratorContext *ctx, WhileNode *p) {
     /* body */
     LLVMPositionBuilderAtEnd(ctx->builder, body_basic_block);
 
+    push_break_target(ctx, endwhile_basic_block);
+    push_continue_target(ctx, condition_basic_block);
+
     if (!generate_stmt(ctx, p->body)) {
         LLVMBuildBr(ctx->builder, condition_basic_block);
     }
+
+    pop_break_target(ctx);
+    pop_continue_target(ctx);
 
     /* end while */
     LLVMPositionBuilderAtEnd(ctx->builder, endwhile_basic_block);
@@ -315,9 +363,15 @@ bool generate_do_stmt(GeneratorContext *ctx, DoNode *p) {
     /* body */
     LLVMPositionBuilderAtEnd(ctx->builder, body_basic_block);
 
+    push_break_target(ctx, enddo_basic_block);
+    push_continue_target(ctx, condition_basic_block);
+
     if (!generate_stmt(ctx, p->body)) {
         LLVMBuildBr(ctx->builder, condition_basic_block);
     }
+
+    pop_break_target(ctx);
+    pop_continue_target(ctx);
 
     /* condition */
     LLVMPositionBuilderAtEnd(ctx->builder, condition_basic_block);
@@ -377,9 +431,15 @@ bool generate_for_stmt(GeneratorContext *ctx, ForNode *p) {
     /* body */
     LLVMPositionBuilderAtEnd(ctx->builder, body_basic_block);
 
+    push_break_target(ctx, endfor_basic_block);
+    push_continue_target(ctx, continuation_basic_block);
+
     if (!generate_stmt(ctx, p->body)) {
         LLVMBuildBr(ctx->builder, continuation_basic_block);
     }
+
+    pop_break_target(ctx);
+    pop_continue_target(ctx);
 
     /* continuation */
     LLVMPositionBuilderAtEnd(ctx->builder, continuation_basic_block);
@@ -394,6 +454,22 @@ bool generate_for_stmt(GeneratorContext *ctx, ForNode *p) {
     LLVMPositionBuilderAtEnd(ctx->builder, endfor_basic_block);
 
     return false;
+}
+
+bool generate_break_stmt(GeneratorContext *ctx, BreakNode *p) {
+    (void)p;
+
+    LLVMBuildBr(ctx->builder, nearest_break_target(ctx));
+
+    return true;
+}
+
+bool generate_continue_stmt(GeneratorContext *ctx, ContinueNode *p) {
+    (void)p;
+
+    LLVMBuildBr(ctx->builder, nearest_continue_target(ctx));
+
+    return true;
 }
 
 bool generate_decl_stmt(GeneratorContext *ctx, DeclStmtNode *p) {
@@ -431,6 +507,12 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
 
     case node_for:
         return generate_for_stmt(ctx, (ForNode *)p);
+
+    case node_break:
+        return generate_break_stmt(ctx, (BreakNode *)p);
+
+    case node_continue:
+        return generate_continue_stmt(ctx, (ContinueNode *)p);
 
     case node_decl:
         return generate_decl_stmt(ctx, (DeclStmtNode *)p);
@@ -543,6 +625,8 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
 
     ctx.module = LLVMModuleCreateWithName(p->filename);
     ctx.builder = LLVMCreateBuilder();
+    ctx.break_targets = vec_new();
+    ctx.continue_targets = vec_new();
 
     for (i = 0; i < p->num_decls; i++) {
         generate_decl(&ctx, p->decls[i]);

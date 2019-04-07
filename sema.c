@@ -1,5 +1,51 @@
 #include "nocc.h"
 
+enum {
+    control_flow_state_none = 0,
+    control_flow_state_break_bit = 1,
+    control_flow_state_continue_bit = 2,
+};
+
+Vec *control_flow_state_new(void) {
+    Vec *state;
+
+    state = vec_new();
+    vec_push(state, (void *)(intptr_t)control_flow_state_none);
+
+    return state;
+}
+
+int control_flow_current_state(ParserContext *ctx) {
+    assert(ctx);
+    assert(ctx->flow_state->size > 0);
+
+    return (intptr_t)vec_back(ctx->flow_state);
+}
+
+void control_flow_push_state(ParserContext *ctx, int flow_state) {
+    assert(ctx);
+
+    vec_push(ctx->flow_state,
+             (void *)((intptr_t)flow_state | control_flow_current_state(ctx)));
+}
+
+void control_flow_pop_state(ParserContext *ctx) {
+    assert(ctx);
+    assert(ctx->flow_state->size > 1);
+
+    vec_pop(ctx->flow_state);
+}
+
+bool is_break_accepted(ParserContext *ctx) {
+    assert(ctx);
+    return control_flow_current_state(ctx) & control_flow_state_break_bit;
+}
+
+bool is_continue_accepted(ParserContext *ctx) {
+    assert(ctx);
+    return control_flow_current_state(ctx) & control_flow_state_continue_bit;
+}
+
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close) {
     assert(ctx);
@@ -331,6 +377,10 @@ void sema_while_stmt_enter_body(ParserContext *ctx) {
 
     /* enter scope */
     scope_stack_push(ctx->env);
+
+    /* push loop state */
+    control_flow_push_state(ctx, control_flow_state_break_bit |
+                                     control_flow_state_continue_bit);
 }
 
 StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
@@ -341,6 +391,9 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     assert(t);
     assert(condition);
     assert(body);
+
+    /* pop loop state */
+    control_flow_pop_state(ctx);
 
     /* leave scope */
     scope_stack_pop(ctx->env);
@@ -366,10 +419,17 @@ void sema_do_stmt_enter_body(ParserContext *ctx) {
 
     /* enter scope */
     scope_stack_push(ctx->env);
+
+    /* push loop state */
+    control_flow_push_state(ctx, control_flow_state_break_bit |
+                                     control_flow_state_continue_bit);
 }
 
 void sema_do_stmt_leave_body(ParserContext *ctx) {
     assert(ctx);
+
+    /* pop loop state */
+    control_flow_pop_state(ctx);
 
     /* leave scope */
     scope_stack_pop(ctx->env);
@@ -404,6 +464,10 @@ void sema_for_stmt_enter_body(ParserContext *ctx) {
 
     /* enter scope */
     scope_stack_push(ctx->env);
+
+    /* push loop state */
+    control_flow_push_state(ctx, control_flow_state_break_bit |
+                                     control_flow_state_continue_bit);
 }
 
 StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
@@ -415,6 +479,9 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
     assert(ctx);
     assert(t);
     assert(body);
+
+    /* pop loop state */
+    control_flow_pop_state(ctx);
 
     /* leave scope */
     scope_stack_pop(ctx->env);
@@ -433,6 +500,46 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
+
+    return (StmtNode *)p;
+}
+
+StmtNode *sema_break_stmt(ParserContext *ctx, const Token *t) {
+    BreakNode *p;
+
+    assert(ctx);
+    assert(t);
+
+    /* loop check */
+    if (!is_break_accepted(ctx)) {
+        fprintf(stderr, "break outside of loop\n");
+        exit(1);
+    }
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_break;
+    p->line = t->line;
+
+    return (StmtNode *)p;
+}
+
+StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t) {
+    ContinueNode *p;
+
+    assert(ctx);
+    assert(t);
+
+    /* loop check */
+    if (!is_continue_accepted(ctx)) {
+        fprintf(stderr, "continue outside of loop\n");
+        exit(1);
+    }
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_continue;
+    p->line = t->line;
 
     return (StmtNode *)p;
 }
@@ -664,6 +771,7 @@ ParserContext *sema_translation_unit_enter(const char *src) {
     ctx->index = 0;
     ctx->current_function = NULL;
     ctx->locals = NULL;
+    ctx->flow_state = control_flow_state_new();
 
     return ctx;
 }
@@ -677,6 +785,7 @@ TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
 
     assert(ctx);
     assert(scope_stack_depth(ctx->env) == 1);
+    assert(ctx->flow_state->size == 1);
     assert(filename);
     assert(decls != NULL || num_decls == 0);
     assert(num_decls >= 0);

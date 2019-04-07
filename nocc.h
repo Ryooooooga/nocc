@@ -48,6 +48,8 @@ enum {
     token_do,
     token_for,
     token_return,
+    token_break,
+    token_continue,
     token_void,
     token_int,
     token_lesser_equal,
@@ -103,6 +105,8 @@ enum {
     node_while,
     node_do,
     node_for,
+    node_break,
+    node_continue,
     node_decl,
     node_expr,
 
@@ -125,6 +129,8 @@ typedef struct IfNode IfNode;
 typedef struct WhileNode WhileNode;
 typedef struct DoNode DoNode;
 typedef struct ForNode ForNode;
+typedef struct BreakNode BreakNode;
+typedef struct ContinueNode ContinueNode;
 typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
@@ -237,6 +243,16 @@ struct ForNode {
     StmtNode *body;
 };
 
+struct BreakNode {
+    int kind;
+    int line;
+};
+
+struct ContinueNode {
+    int kind;
+    int line;
+};
+
 struct DeclStmtNode {
     int kind;
     int line;
@@ -310,6 +326,7 @@ struct ParserContext {
     ScopeStack *env;
     FunctionNode *current_function;
     Vec *locals;
+    Vec *flow_state;
     const Token **tokens;
     int index;
 };
@@ -359,6 +376,8 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
                                    ExprNode *initialization,
                                    ExprNode *condition, ExprNode *continuation,
                                    StmtNode *body);
+StmtNode *sema_break_stmt(ParserContext *ctx, const Token *t);
+StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t);
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
 
@@ -382,6 +401,8 @@ TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
 struct GeneratorContext {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
+    Vec *break_targets;
+    Vec *continue_targets;
 };
 
 typedef struct GeneratorContext GeneratorContext;

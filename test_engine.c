@@ -116,4 +116,23 @@ void test_engine(void) {
                              "  return n;\n"
                              "}\n",
                              "do_while2", -10, 0);
+
+    test_engine_run_function("break",
+                             "int break_(int n) {\n"
+                             "  for (;;) break;\n"
+                             "  return n;\n"
+                             "}\n",
+                             "break_", 42, 42);
+
+    test_engine_run_function("continue",
+                             "int continue_(int n) {\n"
+                             "  int a; int i;\n"
+                             "  a = 0;\n"
+                             "  for (i = 0; i < n; i = i + 1) {\n"
+                             "    if (i < 5) continue;\n"
+                             "    a = a + i;\n"
+                             "  }\n"
+                             "  return a;\n"
+                             "}\n",
+                             "continue_", 10, 35);
 }

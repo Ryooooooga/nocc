@@ -595,6 +595,48 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
                                     continuation, body);
 }
 
+StmtNode *parse_break_stmt(ParserContext *ctx) {
+    const Token *t;
+
+    /* break */
+    t = consume_token(ctx);
+
+    if (t->kind != token_break) {
+        fprintf(stderr, "expected break, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    return sema_break_stmt(ctx, t);
+}
+
+StmtNode *parse_continue_stmt(ParserContext *ctx) {
+    const Token *t;
+
+    /* continue */
+    t = consume_token(ctx);
+
+    if (t->kind != token_continue) {
+        fprintf(stderr, "expected continue, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    return sema_continue_stmt(ctx, t);
+}
+
 StmtNode *parse_decl_stmt(ParserContext *ctx) {
     const Token *t;
     DeclNode *decl;
@@ -654,6 +696,12 @@ StmtNode *parse_stmt(ParserContext *ctx) {
 
     case token_for:
         return parse_for_stmt(ctx);
+
+    case token_break:
+        return parse_break_stmt(ctx);
+
+    case token_continue:
+        return parse_continue_stmt(ctx);
 
     default:
         if (is_type_specifier_token(ctx, current_token(ctx))) {

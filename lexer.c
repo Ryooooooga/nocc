@@ -71,6 +71,10 @@ Token *lex_token(const char *src, int *index, int *line) {
                 t->kind = token_for;
             } else if (strcmp(t->text, "return") == 0) {
                 t->kind = token_return;
+            } else if (strcmp(t->text, "break") == 0) {
+                t->kind = token_break;
+            } else if (strcmp(t->text, "continue") == 0) {
+                t->kind = token_continue;
             } else if (strcmp(t->text, "void") == 0) {
                 t->kind = token_void;
             } else if (strcmp(t->text, "int") == 0) {
