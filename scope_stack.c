@@ -56,5 +56,5 @@ void scope_stack_register(ScopeStack *s, DeclNode *decl) {
     assert(s->scopes->size > 0);
     assert(decl);
 
-    map_add(s->scopes->data[s->scopes->size - 1], decl->identifier, decl);
+    map_add(vec_back(s->scopes), decl->identifier, decl);
 }

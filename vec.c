@@ -27,6 +27,13 @@ void vec_resize(Vec *v, int size) {
     v->size = size;
 }
 
+void *vec_back(Vec *v) {
+    assert(v);
+    assert(v->size > 0);
+
+    return v->data[v->size - 1];
+}
+
 void vec_push(Vec *v, void *value) {
     assert(v);
 

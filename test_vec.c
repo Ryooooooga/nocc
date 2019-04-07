@@ -14,12 +14,14 @@ void test_vec(void) {
     assert(v->size == 2);
     assert((intptr_t)v->data[0] == 1);
     assert((intptr_t)v->data[1] == 2);
+    assert((intptr_t)vec_back(v) == 2);
 
     for (i = 0; i < 100; i++) {
         vec_push(v, (void *)(intptr_t)i);
     }
 
     assert(v->size == 102);
+    assert((intptr_t)vec_back(v) == 99);
 
     for (i = 0; i < 100; i++) {
         vec_pop(v);
