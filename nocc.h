@@ -132,12 +132,14 @@ struct ExprNode {
     int kind;
     int line;
     Type *type;
+    bool is_lvalue;
 };
 
 struct IntegerNode {
     int kind;
     int line;
     Type *type;
+    bool is_lvalue;
     int value;
 };
 
@@ -145,6 +147,7 @@ struct IdentifierNode {
     int kind;
     int line;
     Type *type;
+    bool is_lvalue;
     char *identifier;
     DeclNode *declaration;
 };
@@ -153,6 +156,7 @@ struct CallNode {
     int kind;
     int line;
     Type *type;
+    bool is_lvalue;
     ExprNode *callee;
     ExprNode **args;
     int num_args;
@@ -162,6 +166,7 @@ struct UnaryNode {
     int kind;
     int line;
     Type *type;
+    bool is_lvalue;
     int operator_;
     ExprNode *operand;
 };
@@ -170,6 +175,7 @@ struct BinaryNode {
     int kind;
     int line;
     Type *type;
+    bool is_lvalue;
     int operator_;
     ExprNode *left;
     ExprNode *right;

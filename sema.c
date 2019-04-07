@@ -20,6 +20,7 @@ ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value) {
     p->kind = node_integer;
     p->line = t->line;
     p->type = type_get_int32();
+    p->is_lvalue = false;
     p->value = value;
 
     return (ExprNode *)p;
@@ -35,6 +36,7 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     p->kind = node_identifier;
     p->line = t->line;
     p->type = NULL;
+    p->is_lvalue = false;
     p->identifier = strdup(t->text);
     p->declaration = scope_stack_find(ctx->env, p->identifier, true);
 
@@ -44,6 +46,7 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     }
 
     p->type = p->declaration->type;
+    p->is_lvalue = true;
 
     return (ExprNode *)p;
 }
@@ -66,6 +69,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     p->kind = node_call;
     p->line = open->line;
     p->type = NULL;
+    p->is_lvalue = false;
     p->callee = callee;
     p->args = malloc(sizeof(ExprNode *) * num_args);
     p->num_args = num_args;
@@ -116,6 +120,7 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     p->kind = node_unary;
     p->line = t->line;
     p->type = NULL;
+    p->is_lvalue = false;
     p->operator_ = t->kind;
     p->operand = operand;
 
@@ -152,6 +157,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     p->kind = node_binary;
     p->line = t->line;
     p->type = NULL;
+    p->is_lvalue = false;
     p->operator_ = t->kind;
     p->left = left;
     p->right = right;
@@ -190,7 +196,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 
     case '=':
         /* assignment operator */
-        /* TODO: check lvalue */
+        if (!left->is_lvalue) {
+            fprintf(stderr, "cannot assign to rvalue\n");
+            exit(1);
+        }
 
         if (left->type != type_get_int32() || right->type != type_get_int32()) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",

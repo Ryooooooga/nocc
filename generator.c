@@ -169,6 +169,11 @@ LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     assert(p);
     assert(ctx);
 
+    if (!p->is_lvalue) {
+        fprintf(stderr, "expression must be a lvalue\n");
+        exit(1);
+    }
+
     switch (p->kind) {
     case node_identifier:
         return generate_identifier_expr_addr(ctx, (IdentifierNode *)p);
