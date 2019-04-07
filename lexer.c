@@ -8,11 +8,8 @@ Token *token_new(int kind, const char *text, int length, int line) {
 
     t = malloc(sizeof(*t));
     t->kind = kind;
-    t->text = malloc(length + 1);
+    t->text = str_dup_n(text, length);
     t->line = line;
-
-    strncpy(t->text, text, length);
-    t->text[length] = '\0';
 
     return t;
 }

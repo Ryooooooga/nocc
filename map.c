@@ -52,6 +52,6 @@ void map_add(Map *m, const char *k, void *v) {
     assert(k);
     assert(m->keys->size == m->values->size);
 
-    vec_push(m->keys, strdup(k));
+    vec_push(m->keys, str_dup(k));
     vec_push(m->values, v);
 }

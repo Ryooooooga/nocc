@@ -11,6 +11,9 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Core.h>
 
+char *str_dup(const char *s);
+char *str_dup_n(const char *s, int length);
+
 struct Vec {
     int capacity;
     int size;

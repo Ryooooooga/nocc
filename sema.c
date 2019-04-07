@@ -83,7 +83,7 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     p->line = t->line;
     p->type = NULL;
     p->is_lvalue = false;
-    p->identifier = strdup(t->text);
+    p->identifier = str_dup(t->text);
     p->declaration = scope_stack_find(ctx->env, p->identifier, true);
 
     if (p->declaration == NULL) {
@@ -584,7 +584,7 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     p = malloc(sizeof(*p));
     p->kind = node_variable;
     p->line = t->line;
-    p->identifier = strdup(t->text);
+    p->identifier = str_dup(t->text);
     p->type = type;
     p->generated_location = NULL;
 
@@ -625,7 +625,7 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
     p = malloc(sizeof(*p));
     p->kind = node_param;
     p->line = t->line;
-    p->identifier = strdup(t->text);
+    p->identifier = str_dup(t->text);
     p->type = type;
     p->generated_location = NULL;
 
@@ -791,7 +791,7 @@ TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
     assert(num_decls >= 0);
 
     p = malloc(sizeof(*p));
-    p->filename = strdup(filename);
+    p->filename = str_dup(filename);
     p->decls = malloc(sizeof(DeclNode *) * num_decls);
     p->num_decls = num_decls;
 
