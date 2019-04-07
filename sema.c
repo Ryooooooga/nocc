@@ -375,7 +375,13 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     /* register symbol */
     scope_stack_register(ctx->env, (DeclNode *)p);
 
-    /* TODO: add to locals */
+    if (ctx->current_function) {
+        /* local variable */
+        vec_push(ctx->locals, (DeclNode *)p);
+    } else {
+        /* TODO: global variable */
+        assert(0);
+    }
 
     return (DeclNode *)p;
 }
@@ -457,6 +463,8 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     p->num_params = num_params;
     p->var_args = var_args;
     p->body = NULL;
+    p->locals = NULL;
+    p->num_locals = 0;
 
     for (i = 0; i < num_params; i++) {
         p->params[i] = params[i];
@@ -482,6 +490,7 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
     assert(p);
 
     ctx->current_function = p;
+    ctx->locals = vec_new();
 
     /* enter parameter scope */
     scope_stack_push(ctx->env);
@@ -494,16 +503,27 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
 
 FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
                                        StmtNode *body) {
+    int i;
+
     assert(ctx);
+    assert(ctx->locals);
     assert(p);
     assert(body);
 
     p->body = body;
 
+    p->locals = malloc(sizeof(DeclNode *) * ctx->locals->size);
+    p->num_locals = ctx->locals->size;
+
+    for (i = 0; i < p->num_locals; i++) {
+        p->locals[i] = ctx->locals->data[i];
+    }
+
     /* leave parameter scope */
     scope_stack_pop(ctx->env);
 
     ctx->current_function = NULL;
+    ctx->locals = NULL;
 
     return p;
 }
@@ -520,6 +540,8 @@ ParserContext *sema_translation_unit_enter(const char *src) {
     ctx->env = scope_stack_new();
     ctx->tokens = (const Token **)tokens->data;
     ctx->index = 0;
+    ctx->current_function = NULL;
+    ctx->locals = NULL;
 
     return ctx;
 }

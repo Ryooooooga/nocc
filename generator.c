@@ -253,13 +253,8 @@ bool generate_if_stmt(GeneratorContext *ctx, IfNode *p) {
 }
 
 bool generate_decl_stmt(GeneratorContext *ctx, DeclStmtNode *p) {
-    LLVMTypeRef type;
-
-    /* FIXME: fix alloca */
-    type = generate_type(ctx, p->decl->type);
-
-    p->decl->generated_location =
-        LLVMBuildAlloca(ctx->builder, type, p->decl->identifier);
+    (void)ctx;
+    (void)p;
 
     return false;
 }
@@ -344,6 +339,13 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
         /* store parameter */
         LLVMBuildStore(ctx->builder, LLVMGetParam(function, i),
                        p->params[i]->generated_location);
+    }
+
+    for (i = 0; i < p->num_locals; i++) {
+        /* allocate local location */
+        p->locals[i]->generated_location = LLVMBuildAlloca(
+            ctx->builder, generate_type(ctx, p->locals[i]->type),
+            p->locals[i]->identifier);
     }
 
     /* body */

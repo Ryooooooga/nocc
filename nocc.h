@@ -244,6 +244,8 @@ struct FunctionNode {
     int num_params;
     bool var_args;
     StmtNode *body;
+    DeclNode **locals;
+    int num_locals;
 };
 
 struct TranslationUnitNode {
@@ -267,6 +269,7 @@ void scope_stack_register(ScopeStack *s, DeclNode *decl);
 struct ParserContext {
     ScopeStack *env;
     FunctionNode *current_function;
+    Vec *locals;
     const Token **tokens;
     int index;
 };
