@@ -754,6 +754,6 @@ TranslationUnitNode *parse(const char *filename, const char *src) {
     }
 
     /* make node */
-    return sema_translation_unit_leave(filename, (DeclNode **)decls->data,
+    return sema_translation_unit_leave(ctx, filename, (DeclNode **)decls->data,
                                        decls->size);
 }

@@ -289,6 +289,7 @@ struct ScopeStack {
 typedef struct ScopeStack ScopeStack;
 
 ScopeStack *scope_stack_new(void);
+int scope_stack_depth(ScopeStack *s);
 void scope_stack_push(ScopeStack *s);
 void scope_stack_pop(ScopeStack *s);
 DeclNode *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
@@ -358,7 +359,8 @@ FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
                                        StmtNode *body);
 
 ParserContext *sema_translation_unit_enter(const char *src);
-TranslationUnitNode *sema_translation_unit_leave(const char *filename,
+TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
+                                                 const char *filename,
                                                  DeclNode **decls,
                                                  int num_decls);
 

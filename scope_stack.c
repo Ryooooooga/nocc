@@ -11,6 +11,12 @@ ScopeStack *scope_stack_new(void) {
     return s;
 }
 
+int scope_stack_depth(ScopeStack *s) {
+    assert(s);
+
+    return s->scopes->size;
+}
+
 void scope_stack_push(ScopeStack *s) {
     assert(s);
 

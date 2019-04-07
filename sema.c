@@ -290,12 +290,14 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
 void sema_if_stmt_enter_block(ParserContext *ctx) {
     assert(ctx);
 
+    /* enter scope */
     scope_stack_push(ctx->env);
 }
 
 void sema_if_stmt_leave_block(ParserContext *ctx) {
     assert(ctx);
 
+    /* leave scope */
     scope_stack_pop(ctx->env);
 }
 
@@ -327,6 +329,7 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
 void sema_while_stmt_enter_body(ParserContext *ctx) {
     assert(ctx);
 
+    /* enter scope */
     scope_stack_push(ctx->env);
 }
 
@@ -339,6 +342,10 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     assert(condition);
     assert(body);
 
+    /* leave scope */
+    scope_stack_pop(ctx->env);
+
+    /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_while;
     p->line = t->line;
@@ -357,6 +364,7 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
 void sema_for_stmt_enter_body(ParserContext *ctx) {
     assert(ctx);
 
+    /* enter scope */
     scope_stack_push(ctx->env);
 }
 
@@ -370,6 +378,10 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
     assert(t);
     assert(body);
 
+    /* leave scope */
+    scope_stack_pop(ctx->env);
+
+    /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_for;
     p->line = t->line;
@@ -618,12 +630,15 @@ ParserContext *sema_translation_unit_enter(const char *src) {
     return ctx;
 }
 
-TranslationUnitNode *sema_translation_unit_leave(const char *filename,
+TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
+                                                 const char *filename,
                                                  DeclNode **decls,
                                                  int num_decls) {
     TranslationUnitNode *p;
     int i;
 
+    assert(ctx);
+    assert(scope_stack_depth(ctx->env) == 1);
     assert(filename);
     assert(decls != NULL || num_decls == 0);
     assert(num_decls >= 0);

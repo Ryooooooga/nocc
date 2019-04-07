@@ -202,7 +202,6 @@ bool generate_compound_stmt(GeneratorContext *ctx, CompoundNode *p) {
 bool generate_return_stmt(GeneratorContext *ctx, ReturnNode *p) {
     LLVMValueRef return_value;
 
-    // TODO: type check
     if (p->return_value) {
         return_value = generate_expr(ctx, p->return_value);
 
