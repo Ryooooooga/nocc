@@ -13,7 +13,7 @@ void test_parsing_type_void(void) {
 
     Type *p = parse_type(ctx);
 
-    assert(p == type_get_void());
+    assert(is_void_type(p));
 }
 
 void test_parsing_type_int(void) {
@@ -29,7 +29,7 @@ void test_parsing_type_int(void) {
 
     Type *p = parse_type(ctx);
 
-    assert(p == type_get_int32());
+    assert(is_int32_type(p));
 }
 
 void test_parsing_integer(void) {
@@ -48,7 +48,7 @@ void test_parsing_integer(void) {
 
     assert(p->kind == node_integer);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(q->value == 42);
 }
 
@@ -77,7 +77,7 @@ void test_parsing_identifier(void) {
 
     assert(p->kind == node_identifier);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(strcmp(q->identifier, "xyz") == 0);
     assert(q->declaration == (DeclNode *)decl);
 }
@@ -109,7 +109,7 @@ void test_parsing_call(void) {
 
     assert(p->kind == node_call);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(p->num_args == 0);
 
     assert(callee->kind == node_identifier);
@@ -147,7 +147,7 @@ void test_parsing_call_arg(void) {
 
     assert(p->kind == node_call);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(p->num_args == 1);
 
     assert(callee->kind == node_identifier);
@@ -187,7 +187,7 @@ void test_parsing_call_args(void) {
 
     assert(p->kind == node_call);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(p->num_args == 3);
 
     assert(callee->kind == node_identifier);
@@ -211,7 +211,7 @@ void test_parsing_negative(void) {
 
     assert(p->kind == node_unary);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(q->operator_ == '-');
 
     ExprNode *child = q->operand;
@@ -241,7 +241,7 @@ void test_parsing_addition(void) {
 
     assert(p->kind == node_binary);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(q->operator_ == '+');
 
     IntegerNode *left = (IntegerNode *)q->left;
@@ -276,7 +276,7 @@ void test_parsing_multiplication(void) {
 
     assert(p->kind == node_binary);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(q->operator_ == '+');
 
     IntegerNode *left = (IntegerNode *)q->left;
@@ -315,7 +315,7 @@ void test_parsing_paren(void) {
 
     assert(p->kind == node_binary);
     assert(p->line == 1);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
     assert(q->operator_ == '*');
 
     BinaryNode *left = (BinaryNode *)q->left;
@@ -510,7 +510,7 @@ void test_parsing_parameter(void) {
     assert(p->kind == node_param);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "a") == 0);
-    assert(p->type == type_get_int32());
+    assert(is_int32_type(p->type));
 }
 
 void test_parsing_function(void) {
@@ -533,7 +533,7 @@ void test_parsing_function(void) {
     assert(q->body->kind == node_compound);
 
     assert(t->kind == type_function);
-    assert(t->return_type == type_get_int32());
+    assert(is_int32_type(t->return_type));
     assert(t->num_params == 0);
 }
 
@@ -556,7 +556,7 @@ void test_parsing_function_prototype(void) {
     assert(q->body == NULL);
 
     assert(t->kind == type_function);
-    assert(t->return_type == type_get_int32());
+    assert(is_int32_type(t->return_type));
     assert(t->num_params == 0);
 }
 
@@ -579,16 +579,16 @@ void test_parsing_function_param(void) {
     assert(q->body == NULL);
 
     assert(t->kind == type_function);
-    assert(t->return_type == type_get_int32());
+    assert(is_int32_type(t->return_type));
     assert(t->num_params == 1);
-    assert(t->param_types[0] == type_get_int32());
+    assert(is_int32_type(t->param_types[0]));
 
     ParamNode *a = q->params[0];
 
     assert(a->kind == node_param);
     assert(a->line == 1);
     assert(strcmp(a->identifier, "a") == 0);
-    assert(a->type == type_get_int32());
+    assert(is_int32_type(a->type));
 }
 
 void test_parsing_function_params(void) {
@@ -610,10 +610,10 @@ void test_parsing_function_params(void) {
     assert(q->body == NULL);
 
     assert(t->kind == type_function);
-    assert(t->return_type == type_get_int32());
+    assert(is_int32_type(t->return_type));
     assert(t->num_params == 2);
-    assert(t->param_types[0] == type_get_int32());
-    assert(t->param_types[1] == type_get_int32());
+    assert(is_int32_type(t->param_types[0]));
+    assert(is_int32_type(t->param_types[1]));
 
     ParamNode *a = q->params[0];
     ParamNode *b = q->params[1];
@@ -621,12 +621,12 @@ void test_parsing_function_params(void) {
     assert(a->kind == node_param);
     assert(a->line == 1);
     assert(strcmp(a->identifier, "a") == 0);
-    assert(a->type == type_get_int32());
+    assert(is_int32_type(a->type));
 
     assert(b->kind == node_param);
     assert(b->line == 1);
     assert(strcmp(b->identifier, "b") == 0);
-    assert(b->type == type_get_int32());
+    assert(is_int32_type(b->type));
 }
 
 void test_parsing_translation_unit(void) {
@@ -648,7 +648,7 @@ void test_parsing_translation_unit(void) {
     assert(f->body->kind == node_compound);
 
     assert(t->kind == type_function);
-    assert(t->return_type == type_get_int32());
+    assert(is_int32_type(t->return_type));
     assert(t->num_params == 0);
 }
 

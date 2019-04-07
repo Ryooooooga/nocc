@@ -95,6 +95,12 @@ Type *type_get_void(void);
 Type *type_get_int32(void);
 Type *function_type_new(Type *return_type, Type **param_types, int num_params);
 
+bool is_void_type(Type *t);
+bool is_int32_type(Type *t);
+bool is_function_type(Type *t);
+
+Type *function_return_type(Type *t);
+
 enum {
     node_integer,
     node_identifier,

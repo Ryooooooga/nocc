@@ -126,7 +126,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
 
     /* callee type */
     /* TODO: fix to function pointer */
-    if (callee->type->kind != type_function) {
+    if (!is_function_type(callee->type)) {
         fprintf(stderr, "invalid callee type\n");
         exit(1);
     }
@@ -141,8 +141,9 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
 
     for (i = 0; i < num_args; i++) {
         /* TODO: remove type limitation */
-        if (args[i]->type != func_type->param_types[i] ||
-            args[i]->type != type_get_int32()) {
+        if (args[i]->type !=
+                func_type->param_types[i] || /* FIXME: type check */
+            !is_int32_type(args[i]->type)) {
             fprintf(stderr, "invalid type of argument\n");
             exit(1);
         }
@@ -173,7 +174,7 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     switch (t->kind) {
     case '+':
     case '-':
-        if (operand->type != type_get_int32()) {
+        if (!is_int32_type(operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
             exit(1);
@@ -215,7 +216,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case '/':
     case '%':
         /* arithmetic operator */
-        if (left->type != type_get_int32() || right->type != type_get_int32()) {
+        if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -231,7 +232,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case token_equal:
     case token_not_equal:
         /* relational operator */
-        if (left->type != type_get_int32() || right->type != type_get_int32()) {
+        if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -247,7 +248,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             exit(1);
         }
 
-        if (left->type != type_get_int32() || right->type != type_get_int32()) {
+        if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -302,7 +303,7 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
 StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
                            ExprNode *return_value, const Token *semi) {
     ReturnNode *p;
-    FunctionType *function_type;
+    Type *return_type;
 
     assert(ctx);
     assert(ctx->current_function);
@@ -315,16 +316,16 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
     p->return_value = return_value;
 
     /* type check */
-    function_type = (FunctionType *)ctx->current_function->type;
+    return_type = function_return_type(ctx->current_function->type);
 
-    if (function_type->return_type == type_get_void()) {
+    if (is_void_type(return_type)) {
         if (return_value != NULL) {
             fprintf(stderr, "void function should not return a value\n");
             exit(1);
         }
     } else {
         if (return_value == NULL ||
-            function_type->return_type != return_value->type) {
+            return_type != return_value->type) { /* FIXME: type check */
             fprintf(stderr, "invalid return type\n");
             exit(1);
         }
@@ -364,7 +365,7 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
     p->else_ = else_;
 
     /* type check */
-    if (condition->type != type_get_int32()) {
+    if (!is_int32_type(condition->type)) {
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
@@ -406,7 +407,7 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     p->body = body;
 
     /* type check */
-    if (condition->type != type_get_int32()) {
+    if (!is_int32_type(condition->type)) {
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
@@ -451,7 +452,7 @@ StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
     p->condition = condition;
 
     /* type check */
-    if (condition->type != type_get_int32()) {
+    if (!is_int32_type(condition->type)) {
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
@@ -496,7 +497,7 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
     p->body = body;
 
     /* type check */
-    if (condition && condition->type != type_get_int32()) {
+    if (condition && !is_int32_type(condition->type)) {
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
@@ -589,7 +590,7 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     p->generated_location = NULL;
 
     /* type check */
-    if (type == type_get_void()) {
+    if (is_void_type(type)) {
         fprintf(stderr, "variable type must not be void\n");
         exit(1);
     }
@@ -630,7 +631,7 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
     p->generated_location = NULL;
 
     /* type check */
-    if (type == type_get_void()) {
+    if (is_void_type(type)) {
         fprintf(stderr, "parameter type must not be void\n");
         exit(1);
     }

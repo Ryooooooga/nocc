@@ -42,11 +42,25 @@ void pop_continue_target(GeneratorContext *ctx) {
     vec_pop(ctx->continue_targets);
 }
 
+LLVMTypeRef generate_function_type(GeneratorContext *ctx, FunctionType *p) {
+    LLVMTypeRef return_type;
+    LLVMTypeRef *param_types;
+    int i;
+
+    return_type = generate_type(ctx, p->return_type);
+    param_types = malloc(sizeof(LLVMTypeRef) * p->num_params);
+
+    for (i = 0; i < p->num_params; i++) {
+        param_types[i] = generate_type(ctx, p->param_types[i]);
+    }
+
+    return LLVMFunctionType(return_type, param_types, p->num_params,
+                            false); /* TODO: var args */
+}
+
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     assert(ctx);
     assert(p);
-
-    (void)ctx;
 
     switch (p->kind) {
     case type_void:
@@ -54,6 +68,9 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
 
     case type_int32:
         return LLVMInt32Type();
+
+    case type_function:
+        return generate_function_type(ctx, (FunctionType *)p);
 
     default:
         fprintf(stderr, "unknown type %d\n", p->kind);
@@ -527,32 +544,27 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
 }
 
 LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
+    LLVMTypeRef function_type;
     LLVMTypeRef return_type;
     LLVMTypeRef *param_types;
-    LLVMTypeRef function_type;
     LLVMValueRef function;
     LLVMBasicBlockRef entry_basic_block;
 
-    FunctionType *type;
     bool is_terminated;
     int i;
 
     assert(ctx);
     assert(p);
-    assert(p->type->kind == type_function);
+    assert(is_function_type(p->type));
 
-    type = (FunctionType *)p->type;
-    return_type = generate_type(ctx, type->return_type);
+    /* build LLVM function type */
+    function_type = generate_type(ctx, p->type);
+    return_type = LLVMGetReturnType(function_type);
+    param_types =
+        malloc(sizeof(LLVMTypeRef) * LLVMCountParamTypes(function_type));
+    LLVMGetParamTypes(function_type, param_types);
 
-    param_types = malloc(sizeof(LLVMTypeRef) * type->num_params);
-
-    for (i = 0; i < type->num_params; i++) {
-        param_types[i] = generate_type(ctx, type->param_types[i]);
-    }
-
-    function_type = LLVMFunctionType(return_type, param_types, type->num_params,
-                                     p->var_args);
-
+    /* create function */
     function = LLVMAddFunction(ctx->module, p->identifier, function_type);
 
     p->generated_location = function;

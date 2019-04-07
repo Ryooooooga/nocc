@@ -31,3 +31,28 @@ Type *function_type_new(Type *return_type, Type **param_types, int num_params) {
 
     return (Type *)t;
 }
+
+bool is_void_type(Type *t) {
+    assert(t);
+    return t->kind == type_void;
+}
+
+bool is_int32_type(Type *t) {
+    assert(t);
+    return t->kind == type_int32;
+}
+
+bool is_function_type(Type *t) {
+    assert(t);
+    return t->kind == type_function;
+}
+
+Type *function_return_type(Type *t) {
+    assert(t);
+
+    if (!is_function_type(t)) {
+        return NULL;
+    }
+
+    return ((FunctionType *)t)->return_type;
+}
