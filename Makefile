@@ -12,7 +12,7 @@ LDFLAGS  += $(shell llvm-config --ldflags --system-libs --libs core support anal
 
 all: nocc test_nocc
 
-test: test_nocc
+test: nocc test_nocc
 	./test_nocc
 
 nocc: main.o libnocc.a
@@ -22,7 +22,10 @@ test_nocc: test.o test_vec.o test_map.o test_lexer.o test_parser.o test_generato
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
 
 libnocc.a: generator.o lexer.o map.o parser.o sema.o scope_stack.o type.o util.o vec.o
-	${AR} rcv $@ $^
+	${AR} rc $@ $^
+
+%.o: %.c nocc.h
+	${CC} ${CFLAGS} -c -o $@ $<
 
 clean:
 	${RM} nocc test_nocc *.a *.o
