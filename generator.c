@@ -42,6 +42,14 @@ void pop_continue_target(GeneratorContext *ctx) {
     vec_pop(ctx->continue_targets);
 }
 
+LLVMTypeRef generate_pointer_type(GeneratorContext *ctx, PointerType *p) {
+    LLVMTypeRef element_type;
+
+    element_type = generate_type(ctx, p->element_type);
+
+    return LLVMPointerType(element_type, 0);
+}
+
 LLVMTypeRef generate_function_type(GeneratorContext *ctx, FunctionType *p) {
     LLVMTypeRef return_type;
     LLVMTypeRef *param_types;
@@ -68,6 +76,9 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
 
     case type_int32:
         return LLVMInt32Type();
+
+    case type_pointer:
+        return generate_pointer_type(ctx, (PointerType *)p);
 
     case type_function:
         return generate_function_type(ctx, (FunctionType *)p);

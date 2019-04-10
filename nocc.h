@@ -107,6 +107,7 @@ Type *pointer_type_new(Type *element_type);
 Type *function_type_new(Type *return_type, Type **param_types, int num_params,
                         bool var_args);
 
+bool type_equals(Type *a, Type *b);
 bool is_void_type(Type *t);
 bool is_int32_type(Type *t);
 bool is_pointer_type(Type *t);
@@ -116,6 +117,8 @@ bool is_incomplete_pointer_type(Type *t);
 
 Type *pointer_element_type(Type *t);
 Type *function_return_type(Type *t);
+int function_count_param_types(Type *t);
+Type *function_param_type(Type *t, int index);
 
 enum {
     node_integer,

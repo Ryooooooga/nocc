@@ -46,6 +46,18 @@ bool is_continue_accepted(ParserContext *ctx) {
     return control_flow_current_state(ctx) & control_flow_state_continue_bit;
 }
 
+bool assign_into(ExprNode **expr, Type *dest_type) {
+    if (is_incomplete_type((*expr)->type)) {
+        return false;
+    }
+
+    if (type_equals((*expr)->type, dest_type)) {
+        return true;
+    }
+
+    return false;
+}
+
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close) {
     assert(ctx);
@@ -101,7 +113,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
                          const Token *close) {
     CallNode *p;
-    FunctionType *func_type;
+    Type *callee_type;
     int i;
 
     assert(ctx);
@@ -131,26 +143,23 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
         exit(1);
     }
 
-    func_type = (FunctionType *)callee->type;
+    callee_type = callee->type;
 
     /* check argument types */
-    if (num_args != func_type->num_params) {
+    if (num_args != function_count_param_types(callee_type)) {
         fprintf(stderr, "invalid number of arguments\n");
         exit(1);
     }
 
     for (i = 0; i < num_args; i++) {
-        /* TODO: remove type limitation */
-        if (args[i]->type !=
-                func_type->param_types[i] || /* FIXME: type check */
-            !is_int32_type(args[i]->type)) {
+        if (!assign_into(&p->args[i], function_param_type(callee_type, i))) {
             fprintf(stderr, "invalid type of argument\n");
             exit(1);
         }
     }
 
     /* result type */
-    p->type = func_type->return_type;
+    p->type = function_return_type(callee_type);
 
     return (ExprNode *)p;
 }
@@ -274,8 +283,8 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             exit(1);
         }
 
-        /* TODO: assign type */
-        if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
+        /* assignment type conversion */
+        if (!assign_into(&right, left->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -346,13 +355,13 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
     return_type = function_return_type(ctx->current_function->type);
 
     if (is_void_type(return_type)) {
-        if (return_value != NULL) {
+        if (p->return_value != NULL) {
             fprintf(stderr, "void function should not return a value\n");
             exit(1);
         }
     } else {
-        if (return_value == NULL ||
-            return_type != return_value->type) { /* FIXME: type check */
+        if (p->return_value == NULL ||
+            !assign_into(&p->return_value, return_type)) {
             fprintf(stderr, "invalid return type\n");
             exit(1);
         }

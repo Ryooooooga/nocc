@@ -143,4 +143,37 @@ void test_engine(void) {
                              "  return a;\n"
                              "}\n",
                              "pointer", 10, 10);
+
+    test_engine_run_function("pointer2",
+                             "int pointer2(int n) {\n"
+                             "  int a;\n"
+                             "  int *p;\n"
+                             "  p = &a;\n"
+                             "  *p = n + 2;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "pointer2", 10, 12);
+
+    test_engine_run_function("pointer3",
+                             "int pointer3(int n) {\n"
+                             "  int a;\n"
+                             "  int *p;\n"
+                             "  int **pp;\n"
+                             "  p = &a;\n"
+                             "  pp = &p;\n"
+                             "  **pp = n + 2;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "pointer3", 10, 12);
+
+    test_engine_run_function("pointer4",
+                             "int *f(int *p, int a) {\n"
+                             "  *p = a;\n"
+                             "  return p;\n"
+                             "}\n"
+                             "int pointer4(int n) {\n"
+                             "  int a;\n"
+                             "  return *f(&a, n);\n"
+                             "}\n",
+                             "pointer4", 42, 42);
 }

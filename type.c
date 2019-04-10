@@ -46,6 +46,43 @@ Type *function_type_new(Type *return_type, Type **param_types, int num_params,
     return (Type *)t;
 }
 
+bool type_equals(Type *a, Type *b) {
+    int i;
+
+    assert(a);
+    assert(b);
+
+    if (a->kind != b->kind) {
+        return false;
+    }
+
+    switch (a->kind) {
+    case type_pointer:
+        return type_equals(pointer_element_type(a), pointer_element_type(b));
+
+    case type_function:
+        if (!type_equals(function_return_type(a), function_return_type(b))) {
+            return false;
+        }
+
+        if (function_count_param_types(a) != function_count_param_types(b)) {
+            return false;
+        }
+
+        for (i = 0; i < function_count_param_types(a); i++) {
+            if (!type_equals(function_param_type(a, i),
+                             function_param_type(b, i))) {
+                return false;
+            }
+        }
+
+        return true;
+
+    default:
+        return true;
+    }
+}
+
 bool is_void_type(Type *t) {
     assert(t);
     return t->kind == type_void;
@@ -105,4 +142,22 @@ Type *function_return_type(Type *t) {
     }
 
     return ((FunctionType *)t)->return_type;
+}
+
+int function_count_param_types(Type *t) {
+    assert(t);
+
+    if (!is_function_type(t)) {
+        return -1;
+    }
+
+    return ((FunctionType *)t)->num_params;
+}
+
+Type *function_param_type(Type *t, int index) {
+    assert(t);
+    assert(index >= 0);
+    assert(index < function_count_param_types(t));
+
+    return ((FunctionType *)t)->param_types[index];
 }
