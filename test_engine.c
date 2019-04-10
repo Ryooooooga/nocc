@@ -176,4 +176,16 @@ void test_engine(void) {
                              "  return *f(&a, n);\n"
                              "}\n",
                              "pointer4", 42, 42);
+
+    test_engine_run_function("struct",
+                             "int struct_(int n) {\n"
+                             "  struct tag {\n"
+                             "    int x;\n"
+                             "    int y;\n"
+                             "  } a;\n"
+                             "  a.x = 10;\n"
+                             "  a.y = n;\n"
+                             "  return a.x * a.y;\n"
+                             "}\n",
+                             "struct_", 42, 420);
 }
