@@ -66,6 +66,32 @@ LLVMTypeRef generate_function_type(GeneratorContext *ctx, FunctionType *p) {
                             p->var_args);
 }
 
+LLVMTypeRef generate_struct_type(GeneratorContext *ctx, StructType *p) {
+    LLVMContextRef context;
+    LLVMTypeRef *element_types;
+    int i;
+
+    if (p->generated_type) {
+        return p->generated_type;
+    }
+
+    context = LLVMGetModuleContext(ctx->module);
+    p->generated_type = LLVMStructCreateNamed(context, p->identifier);
+
+    if (p->is_incomplete) {
+        return p->generated_type;
+    }
+
+    element_types = malloc(sizeof(LLVMTypeRef) * p->num_members);
+
+    for (i = 0; i < p->num_members; i++) {
+        element_types[i] = generate_type(ctx, p->members[i]->type);
+    }
+
+    LLVMStructSetBody(p->generated_type, element_types, p->num_members, false);
+    return p->generated_type;
+}
+
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     assert(ctx);
     assert(p);
@@ -82,6 +108,9 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
 
     case type_function:
         return generate_function_type(ctx, (FunctionType *)p);
+
+    case type_struct:
+        return generate_struct_type(ctx, (StructType *)p);
 
     default:
         fprintf(stderr, "unknown type %d\n", p->kind);

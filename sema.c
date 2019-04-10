@@ -129,6 +129,7 @@ StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
     p->members = NULL;
     p->num_members = 0;
     p->is_incomplete = true;
+    p->generated_type = NULL;
 
     /* register struct type symbol */
     scope_stack_register(ctx->struct_env, p->identifier, p);

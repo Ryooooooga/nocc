@@ -111,6 +111,7 @@ struct StructType {
     struct MemberNode **members;
     int num_members;
     bool is_incomplete;
+    LLVMTypeRef generated_type;
 };
 
 Type *type_get_void(void);
