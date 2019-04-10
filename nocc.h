@@ -164,6 +164,7 @@ typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
 typedef struct DeclNode DeclNode;
+typedef struct MemberNode MemberNode;
 typedef struct VariableNode VariableNode;
 typedef struct ParamNode ParamNode;
 typedef struct FunctionNode FunctionNode;
@@ -302,6 +303,13 @@ struct DeclNode {
     LLVMValueRef generated_location;
 };
 
+struct MemberNode {
+    int kind;
+    int line;
+    char *identifier;
+    Type *type;
+};
+
 struct VariableNode {
     int kind;
     int line;
@@ -370,6 +378,13 @@ DeclNode *parse_var_decl(ParserContext *ctx);
 ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
+
+MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t);
+Type *sema_struct_type_name(ParserContext *ctx, const Token *t,
+                            const Token *identifier);
+void sema_struct_type_enter(ParserContext *ctx);
+Type *sema_struct_type_leave(ParserContext *ctx, Type *type,
+                             MemberNode **members, int num_members);
 
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close);
