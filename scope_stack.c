@@ -30,8 +30,8 @@ void scope_stack_pop(ScopeStack *s) {
     vec_pop(s->scopes);
 }
 
-DeclNode *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
-    DeclNode *decl;
+void *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
+    void *value;
     int i;
 
     assert(s);
@@ -41,20 +41,20 @@ DeclNode *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
     i = s->scopes->size - 1;
 
     do {
-        decl = map_get(s->scopes->data[i], name);
+        value = map_get(s->scopes->data[i], name);
 
-        if (decl != NULL) {
-            return decl;
+        if (value != NULL) {
+            return value;
         }
     } while (--i >= 0 && recursive);
 
     return NULL;
 }
 
-void scope_stack_register(ScopeStack *s, DeclNode *decl) {
+void scope_stack_register(ScopeStack *s, const char *name, void *value) {
     assert(s);
     assert(s->scopes->size > 0);
-    assert(decl);
+    assert(value);
 
-    map_add(vec_back(s->scopes), decl->identifier, decl);
+    map_add(vec_back(s->scopes), name, value);
 }

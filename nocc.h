@@ -308,6 +308,7 @@ struct MemberNode {
     int line;
     char *identifier;
     Type *type;
+    LLVMValueRef generated_location;
 };
 
 struct VariableNode {
@@ -356,11 +357,12 @@ ScopeStack *scope_stack_new(void);
 int scope_stack_depth(ScopeStack *s);
 void scope_stack_push(ScopeStack *s);
 void scope_stack_pop(ScopeStack *s);
-DeclNode *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
-void scope_stack_register(ScopeStack *s, DeclNode *decl);
+void *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
+void scope_stack_register(ScopeStack *s, const char *name, void *value);
 
 struct ParserContext {
     ScopeStack *env;
+    ScopeStack *struct_env;
     FunctionNode *current_function;
     Vec *locals;
     Vec *flow_state;

@@ -78,6 +78,10 @@ bool type_equals(Type *a, Type *b) {
 
         return true;
 
+    case type_struct:
+        assert(0); /* TODO: implement */
+        return false;
+
     default:
         return true;
     }
@@ -111,7 +115,8 @@ bool is_incomplete_type(Type *t) {
     case type_function:
         return true;
 
-        /* TODO: incomplete struct */
+    case type_struct:
+        return ((StructType *)t)->is_incomplete;
 
     default:
         return false;
