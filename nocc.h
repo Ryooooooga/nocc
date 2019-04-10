@@ -57,6 +57,7 @@ enum {
     token_continue,
     token_void,
     token_int,
+    token_struct,
     token_lesser_equal,
     token_greater_equal,
     token_equal,
