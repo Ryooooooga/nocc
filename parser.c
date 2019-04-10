@@ -61,7 +61,7 @@ MemberNode *parse_struct_member(ParserContext *ctx) {
 }
 
 Type *parse_struct_type(ParserContext *ctx) {
-    Type *type;
+    StructType *type;
 
     const Token *t;
     const Token *identifier;
@@ -88,8 +88,7 @@ Type *parse_struct_type(ParserContext *ctx) {
 
     /* { */
     if (current_token(ctx)->kind != '{') {
-        fprintf(stderr, "expected {, but got %s\n", current_token(ctx)->text);
-        exit(1);
+        return (Type *)type;
     }
     consume_token(ctx);
 

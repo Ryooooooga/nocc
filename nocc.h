@@ -79,11 +79,13 @@ enum {
     type_int32,
     type_pointer,
     type_function,
+    type_struct,
 };
 
 typedef struct Type Type;
 typedef struct PointerType PointerType;
 typedef struct FunctionType FunctionType;
+typedef struct StructType StructType;
 
 struct Type {
     int kind;
@@ -100,6 +102,15 @@ struct FunctionType {
     Type **param_types;
     int num_params;
     bool var_args;
+};
+
+struct StructType {
+    int kind;
+    int line;
+    char *identifier;
+    struct MemberNode **members;
+    int num_members;
+    bool is_incomplete;
 };
 
 Type *type_get_void(void);
@@ -139,6 +150,7 @@ enum {
     node_decl,
     node_expr,
 
+    node_member,
     node_variable,
     node_param,
     node_function,
@@ -382,10 +394,10 @@ DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
 
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t);
-Type *sema_struct_type_name(ParserContext *ctx, const Token *t,
-                            const Token *identifier);
+StructType *sema_struct_type_name(ParserContext *ctx, const Token *t,
+                                  const Token *identifier);
 void sema_struct_type_enter(ParserContext *ctx);
-Type *sema_struct_type_leave(ParserContext *ctx, Type *type,
+Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
                              MemberNode **members, int num_members);
 
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,

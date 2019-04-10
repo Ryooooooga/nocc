@@ -52,11 +52,19 @@ bool type_equals(Type *a, Type *b) {
     assert(a);
     assert(b);
 
+    if (a == b) {
+        return true;
+    }
+
     if (a->kind != b->kind) {
         return false;
     }
 
     switch (a->kind) {
+    case type_void:
+    case type_int32:
+        return true;
+
     case type_pointer:
         return type_equals(pointer_element_type(a), pointer_element_type(b));
 
@@ -79,11 +87,11 @@ bool type_equals(Type *a, Type *b) {
         return true;
 
     case type_struct:
-        assert(0); /* TODO: implement */
         return false;
 
     default:
-        return true;
+        fprintf(stderr, "unknown type %d\n", a->kind);
+        exit(1);
     }
 }
 

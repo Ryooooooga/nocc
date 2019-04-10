@@ -72,6 +72,113 @@ bool assign_into(ExprNode **expr, Type *dest_type) {
     return false;
 }
 
+MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
+    MemberNode *p;
+
+    assert(ctx);
+    assert(type);
+    assert(t);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_member;
+    p->line = t->line;
+    p->type = type;
+    p->identifier = str_dup(t->text);
+    p->generated_location = NULL;
+
+    /* type check */
+    if (is_incomplete_type(type)) {
+        fprintf(stderr, "member of struct must be a complete type\n");
+        exit(1);
+    }
+
+    /* redefinition check */
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
+        fprintf(stderr, "member %s is already defined\n", p->identifier);
+        exit(1);
+    }
+
+    /* register member symbol */
+    scope_stack_register(ctx->env, p->identifier, p);
+
+    return (MemberNode *)p;
+}
+
+StructType *sema_struct_type_name(ParserContext *ctx, const Token *t,
+                                  const Token *identifier) {
+    StructType *p;
+
+    assert(ctx);
+    assert(t);
+    assert(identifier);
+
+    /* find type from symbol if exists */
+    p = scope_stack_find(ctx->struct_env, identifier->text, true);
+
+    if (p) {
+        return p;
+    }
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = type_struct;
+    p->line = t->line;
+    p->identifier = str_dup(identifier->text);
+    p->members = NULL;
+    p->num_members = 0;
+    p->is_incomplete = true;
+
+    /* register struct type symbol */
+    scope_stack_register(ctx->struct_env, p->identifier, p);
+
+    return p;
+}
+
+void sema_struct_type_enter(ParserContext *ctx) {
+    assert(ctx);
+
+    /* enter struct member scope */
+    sema_push_scope(ctx);
+}
+
+Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
+                             MemberNode **members, int num_members) {
+    int i;
+
+    assert(ctx);
+    assert(type);
+    assert(members != NULL || num_members == 0);
+    assert(num_members >= 0);
+
+    /* leave struct member scope */
+    sema_pop_scope(ctx);
+
+    /* redefinition check */
+    if (!type->is_incomplete) {
+        fprintf(stderr, "redefinition of struct %s\n",
+                type->identifier ? type->identifier : "<anonymous>");
+        exit(1);
+    }
+
+    /* check the number of members */
+    if (num_members == 0) {
+        fprintf(stderr, "empty struct is not supported\n");
+        exit(1);
+    }
+
+    /* fix struct type */
+    type->members = malloc(sizeof(MemberNode *) * num_members);
+    type->num_members = num_members;
+    type->is_incomplete = false;
+
+    for (i = 0; i < num_members; i++) {
+        type->members[i] = members[i];
+    }
+
+    return (Type *)type;
+}
+
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close) {
     assert(ctx);
