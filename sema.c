@@ -105,8 +105,9 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     return (MemberNode *)p;
 }
 
-StructType *sema_struct_type_name(ParserContext *ctx, const Token *t,
-                                  const Token *identifier) {
+StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
+                                             const Token *identifier,
+                                             bool search_recursively) {
     StructType *p;
 
     assert(ctx);
@@ -114,7 +115,7 @@ StructType *sema_struct_type_name(ParserContext *ctx, const Token *t,
     assert(identifier);
 
     /* find type from symbol if exists */
-    p = scope_stack_find(ctx->struct_env, identifier->text, true);
+    p = scope_stack_find(ctx->struct_env, identifier->text, search_recursively);
 
     if (p) {
         return p;
@@ -135,11 +136,29 @@ StructType *sema_struct_type_name(ParserContext *ctx, const Token *t,
     return p;
 }
 
-void sema_struct_type_enter(ParserContext *ctx) {
-    assert(ctx);
+Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
+                                    const Token *identifier) {
+    return (Type *)sema_struct_type_register_or_new(ctx, t, identifier, true);
+}
+
+StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
+                                   const Token *identifier) {
+    StructType *p;
+
+    /* find type from symbol if exists */
+    p = sema_struct_type_register_or_new(ctx, t, identifier, false);
+
+    /* redefinition check */
+    if (!p->is_incomplete) {
+        fprintf(stderr, "redefinition of struct %s\n",
+                p->identifier ? p->identifier : "<anonymous>");
+        exit(1);
+    }
 
     /* enter struct member scope */
     sema_push_scope(ctx);
+
+    return p;
 }
 
 Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
@@ -148,18 +167,12 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
 
     assert(ctx);
     assert(type);
+    assert(type->is_incomplete);
     assert(members != NULL || num_members == 0);
     assert(num_members >= 0);
 
     /* leave struct member scope */
     sema_pop_scope(ctx);
-
-    /* redefinition check */
-    if (!type->is_incomplete) {
-        fprintf(stderr, "redefinition of struct %s\n",
-                type->identifier ? type->identifier : "<anonymous>");
-        exit(1);
-    }
 
     /* check the number of members */
     if (num_members == 0) {

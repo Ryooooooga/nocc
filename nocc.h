@@ -394,9 +394,10 @@ DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
 
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t);
-StructType *sema_struct_type_name(ParserContext *ctx, const Token *t,
-                                  const Token *identifier);
-void sema_struct_type_enter(ParserContext *ctx);
+Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
+                                    const Token *identifier);
+StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
+                                   const Token *identifier);
 Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
                              MemberNode **members, int num_members);
 

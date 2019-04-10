@@ -83,17 +83,14 @@ Type *parse_struct_type(ParserContext *ctx) {
         exit(1);
     }
 
-    /* register struct type */
-    type = sema_struct_type_name(ctx, t, identifier);
-
     /* { */
     if (current_token(ctx)->kind != '{') {
-        return (Type *)type;
+        return sema_struct_type_without_body(ctx, t, identifier);
     }
     consume_token(ctx);
 
-    /* enter struct scope */
-    sema_struct_type_enter(ctx);
+    /* register symbol and enter struct scope */
+    type = sema_struct_type_enter(ctx, t, identifier);
 
     /* member declarations */
     members = vec_new();
