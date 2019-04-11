@@ -28,6 +28,20 @@ Type *pointer_type_new(Type *element_type) {
     return (Type *)t;
 }
 
+Type *array_type_new(Type *element_type, int length) {
+    ArrayType *t;
+
+    assert(element_type);
+    assert(length >= 1);
+
+    t = malloc(sizeof(*t));
+    t->kind = type_array;
+    t->element_type = element_type;
+    t->length = length;
+
+    return (Type *)t;
+}
+
 Type *function_type_new(Type *return_type, Type **param_types, int num_params,
                         bool var_args) {
     FunctionType *t;
@@ -73,6 +87,10 @@ bool type_equals(Type *a, Type *b) {
     case type_pointer:
         return type_equals(pointer_element_type(a), pointer_element_type(b));
 
+    case type_array:
+        return array_type_count_elements(a) == array_type_count_elements(b) &&
+               type_equals(array_element_type(a), array_element_type(b));
+
     case type_function:
         if (!type_equals(function_return_type(a), function_return_type(b))) {
             return false;
@@ -113,6 +131,11 @@ bool is_int32_type(Type *t) {
 bool is_pointer_type(Type *t) {
     assert(t);
     return t->kind == type_pointer;
+}
+
+bool is_array_type(Type *t) {
+    assert(t);
+    return t->kind == type_array;
 }
 
 bool is_function_type(Type *t) {
@@ -161,6 +184,26 @@ Type *pointer_element_type(Type *t) {
     }
 
     return ((PointerType *)t)->element_type;
+}
+
+Type *array_element_type(Type *t) {
+    assert(t);
+
+    if (!is_array_type(t)) {
+        return NULL;
+    }
+
+    return ((ArrayType *)t)->element_type;
+}
+
+int array_type_count_elements(Type *t) {
+    assert(t);
+
+    if (!is_array_type(t)) {
+        return -1;
+    }
+
+    return ((ArrayType *)t)->length;
 }
 
 Type *function_return_type(Type *t) {

@@ -286,6 +286,28 @@ ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value) {
     return (ExprNode *)p;
 }
 
+ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
+                           const char *string, int length) {
+    StringNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(string != NULL || length == 0);
+    assert(length >= 0);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_string;
+    p->line = t->line;
+    p->type = array_type_new(type_get_int8(), length + 1);
+    p->string = malloc(sizeof(char) * (length + 1));
+    p->len_string = length;
+
+    strncpy(p->string, string, length);
+    p->string[length] = '\0';
+
+    return (ExprNode *)p;
+}
+
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     IdentifierNode *p;
 

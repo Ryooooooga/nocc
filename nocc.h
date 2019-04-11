@@ -85,12 +85,14 @@ enum {
     type_int8,
     type_int32,
     type_pointer,
+    type_array,
     type_function,
     type_struct,
 };
 
 typedef struct Type Type;
 typedef struct PointerType PointerType;
+typedef struct ArrayType ArrayType;
 typedef struct FunctionType FunctionType;
 typedef struct StructType StructType;
 
@@ -101,6 +103,12 @@ struct Type {
 struct PointerType {
     int kind;
     Type *element_type;
+};
+
+struct ArrayType {
+    int kind;
+    Type *element_type;
+    int length;
 };
 
 struct FunctionType {
@@ -125,6 +133,7 @@ Type *type_get_void(void);
 Type *type_get_int8(void);
 Type *type_get_int32(void);
 Type *pointer_type_new(Type *element_type);
+Type *array_type_new(Type *element_type, int length);
 Type *function_type_new(Type *return_type, Type **param_types, int num_params,
                         bool var_args);
 
@@ -133,6 +142,7 @@ bool is_void_type(Type *t);
 bool is_int8_type(Type *t);
 bool is_int32_type(Type *t);
 bool is_pointer_type(Type *t);
+bool is_array_type(Type *t);
 bool is_function_type(Type *t);
 bool is_struct_type(Type *t);
 bool is_incomplete_type(Type *t);
@@ -140,6 +150,8 @@ bool is_void_pointer_type(Type *t);
 bool is_incomplete_pointer_type(Type *t);
 
 Type *pointer_element_type(Type *t);
+Type *array_element_type(Type *t);
+int array_type_count_elements(Type *t);
 Type *function_return_type(Type *t);
 int function_count_param_types(Type *t);
 Type *function_param_type(Type *t, int index);
@@ -150,6 +162,7 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
 
 enum {
     node_integer,
+    node_string,
     node_identifier,
     node_call,
     node_unary,
@@ -177,6 +190,7 @@ enum {
 
 typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
+typedef struct StringNode StringNode;
 typedef struct IdentifierNode IdentifierNode;
 typedef struct CallNode CallNode;
 typedef struct UnaryNode UnaryNode;
@@ -218,6 +232,15 @@ struct IntegerNode {
     Type *type;
     bool is_lvalue;
     int value;
+};
+
+struct StringNode {
+    int kind;
+    int line;
+    Type *type;
+    bool is_lvalue;
+    char *string;
+    int len_string;
 };
 
 struct IdentifierNode {
@@ -454,6 +477,8 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close);
 ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value);
+ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
+                           const char *string, int length);
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t);
 ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
