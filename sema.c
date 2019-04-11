@@ -815,9 +815,14 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
     p->type = type;
     p->generated_location = NULL;
 
-    /* TODO: redefinition check */
+    /* redefinition check */
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
+        fprintf(stderr, "redefinition of symbol %s\n", p->identifier);
+        exit(1);
+    }
 
-    /* TODO: register type symbol */
+    /* register type symbol */
+    scope_stack_register(ctx->env, p->identifier, p);
 
     return (DeclNode *)p;
 }
