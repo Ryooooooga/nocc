@@ -330,7 +330,7 @@ void test_engine(void) {
     test_engine_run_function("string",
                              "int strlen(const char *s);\n"
                              "int string(int n) {\n"
-                             "  return strlen(\"hello\");\n"
+                             "  return strlen(\"Hello, world!\\n\");\n"
                              "}\n",
-                             "string", 0, 5);
+                             "string", 0, 14);
 }

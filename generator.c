@@ -121,8 +121,17 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     }
 }
 
-LLVMValueRef generate_integer_expr(IntegerNode *p) {
+LLVMValueRef generate_integer_expr(GeneratorContext *ctx, IntegerNode *p) {
+    (void)ctx;
+
     return LLVMConstInt(LLVMInt32Type(), p->value, true);
+}
+
+LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
+    (void)ctx;
+
+    /* TODO: '\0' in string */
+    return LLVMBuildGlobalStringPtr(ctx->builder, p->string, "str");
 }
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
@@ -248,6 +257,11 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
             src = generate_expr(ctx, p->operand);
             return LLVMBuildPointerCast(ctx->builder, src, dest_type,
                                         "ptrtoptr");
+
+        case type_array:
+            /* [N x T] -> T* */
+            src = generate_expr(ctx, p->operand);
+            return LLVMBuildInBoundsGEP(ctx->builder, src, NULL, 0, "arrtoptr");
 
         case type_function:
             /* F -> T* */
@@ -407,7 +421,10 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
     switch (p->kind) {
     case node_integer:
-        return generate_integer_expr((IntegerNode *)p);
+        return generate_integer_expr(ctx, (IntegerNode *)p);
+
+    case node_string:
+        return generate_string_expr(ctx, (StringNode *)p);
 
     case node_identifier:
         return generate_identifier_expr(ctx, (IdentifierNode *)p);

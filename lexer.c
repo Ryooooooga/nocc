@@ -47,6 +47,10 @@ char parse_literal_char(const char *src, int *index, int *line) {
         fprintf(stderr, "unexpected end of file in a literal\n");
         exit(1);
 
+    case '\n':
+        fprintf(stderr, "unterminated literal\n");
+        exit(1);
+
     case '\\':
         *index += 1; /* eat \ */
 
