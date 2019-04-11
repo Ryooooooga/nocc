@@ -183,9 +183,11 @@ void test_engine(void) {
                              "    int x;\n"
                              "    int y;\n"
                              "  } a;\n"
+                             "  struct tag b;\n"
                              "  a.x = 10;\n"
                              "  a.y = n;\n"
-                             "  return a.x * a.y;\n"
+                             "  b = a;\n"
+                             "  return b.x * b.y;\n"
                              "}\n",
                              "struct_", 42, 420);
 }

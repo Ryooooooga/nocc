@@ -278,6 +278,30 @@ ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
                           args->size, close);
 }
 
+ExprNode *parse_dot_expr(ParserContext *ctx, ExprNode *parent) {
+    const Token *t;
+    const Token *identifier;
+
+    /* . */
+    t = consume_token(ctx);
+
+    if (t->kind != '.') {
+        fprintf(stderr, "expected ., but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* identifier */
+    identifier = consume_token(ctx);
+
+    if (identifier->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
+        exit(1);
+    }
+
+    /* make node */
+    return sema_dot_expr(ctx, parent, t, identifier);
+}
+
 ExprNode *parse_postfix_expr(ParserContext *ctx) {
     ExprNode *operand;
 
@@ -287,6 +311,10 @@ ExprNode *parse_postfix_expr(ParserContext *ctx) {
         switch (current_token(ctx)->kind) {
         case '(':
             operand = parse_call_expr(ctx, operand);
+            break;
+
+        case '.':
+            operand = parse_dot_expr(ctx, operand);
             break;
 
         default:

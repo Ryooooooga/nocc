@@ -299,6 +299,46 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     return (ExprNode *)p;
 }
 
+ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
+                        const Token *identifier) {
+    DotNode *p;
+    MemberNode *member;
+
+    assert(ctx);
+    assert(parent);
+    assert(t);
+    assert(identifier);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_dot;
+    p->line = t->line;
+    p->type = NULL;
+    p->is_lvalue = false;
+    p->parent = parent;
+    p->identifier = str_dup(identifier->text);
+
+    /* check the parent type */
+    if (!is_struct_type(parent->type)) {
+        fprintf(stderr, "member reference base type must be a struct type");
+        exit(1);
+    }
+
+    /* resolve member */
+    member = struct_type_find_member(parent->type, p->identifier);
+
+    if (member == NULL) {
+        fprintf(stderr, "cannot find member named %s\n", p->identifier);
+        exit(1);
+    }
+
+    /* resolve expression type */
+    p->type = member->type;
+    p->is_lvalue = parent->is_lvalue;
+
+    return (ExprNode *)p;
+}
+
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand) {
     UnaryNode *p;

@@ -115,6 +115,11 @@ bool is_function_type(Type *t) {
     return t->kind == type_function;
 }
 
+bool is_struct_type(Type *t) {
+    assert(t);
+    return t->kind == type_struct;
+}
+
 bool is_incomplete_type(Type *t) {
     assert(t);
 
@@ -173,4 +178,44 @@ Type *function_param_type(Type *t, int index) {
     assert(index < function_count_param_types(t));
 
     return ((FunctionType *)t)->param_types[index];
+}
+
+int struct_type_count_members(Type *t) {
+    assert(t);
+
+    if (!is_struct_type(t)) {
+        return -1;
+    }
+
+    return ((StructType *)t)->num_members;
+}
+
+struct MemberNode *struct_type_member(Type *t, int index) {
+    assert(t);
+    assert(index >= 0);
+    assert(index < struct_type_count_members(t));
+
+    return ((StructType *)t)->members[index];
+}
+
+struct MemberNode *struct_type_find_member(Type *t, const char *member_name) {
+    MemberNode *member;
+    int i;
+
+    assert(t);
+    assert(member_name);
+
+    if (!is_struct_type(t)) {
+        return NULL;
+    }
+
+    for (i = 0; struct_type_count_members(t); i++) {
+        member = struct_type_member(t, i);
+
+        if (strcmp(member->identifier, member_name) == 0) {
+            return member;
+        }
+    }
+
+    return NULL;
 }
