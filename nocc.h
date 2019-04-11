@@ -147,6 +147,7 @@ bool is_function_type(Type *t);
 bool is_struct_type(Type *t);
 bool is_incomplete_type(Type *t);
 bool is_void_pointer_type(Type *t);
+bool is_function_pointer_type(Type *t);
 bool is_incomplete_pointer_type(Type *t);
 
 Type *pointer_element_type(Type *t);

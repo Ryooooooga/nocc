@@ -110,15 +110,18 @@ void test_parsing_call(void) {
     scope_stack_register(ctx->env, decl->identifier, decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
-    IdentifierNode *callee = (IdentifierNode *)p->callee;
+    CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
     assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 0);
 
-    assert(callee->kind == node_identifier);
-    assert(strcmp(callee->identifier, "f") == 0);
+    assert(callee->kind == node_cast);
+    assert(is_function_pointer_type(callee->type));
+
+    assert(callee->operand->kind == node_identifier);
+    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
 }
 
 void test_parsing_call_arg(void) {
@@ -149,15 +152,18 @@ void test_parsing_call_arg(void) {
     scope_stack_register(ctx->env, decl->identifier, decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
-    IdentifierNode *callee = (IdentifierNode *)p->callee;
+    CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
     assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 1);
 
-    assert(callee->kind == node_identifier);
-    assert(strcmp(callee->identifier, "f") == 0);
+    assert(callee->kind == node_cast);
+    assert(is_function_pointer_type(callee->type));
+
+    assert(callee->operand->kind == node_identifier);
+    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
 }
 
 void test_parsing_call_args(void) {
@@ -190,15 +196,18 @@ void test_parsing_call_args(void) {
     scope_stack_register(ctx->env, decl->identifier, decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
-    IdentifierNode *callee = (IdentifierNode *)p->callee;
+    CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
     assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 3);
 
-    assert(callee->kind == node_identifier);
-    assert(strcmp(callee->identifier, "f") == 0);
+    assert(callee->kind == node_cast);
+    assert(is_function_pointer_type(callee->type));
+
+    assert(callee->operand->kind == node_identifier);
+    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
 }
 
 void test_parsing_negative(void) {
