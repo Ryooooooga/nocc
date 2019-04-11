@@ -5,6 +5,16 @@ const Token *current_token(ParserContext *ctx) {
     return ctx->tokens[ctx->index];
 }
 
+const Token *peek_token(ParserContext *ctx) {
+    assert(ctx);
+
+    if (current_token(ctx)->kind == '\0') {
+        return current_token(ctx);
+    }
+
+    return ctx->tokens[ctx->index + 1];
+}
+
 const Token *consume_token(ParserContext *ctx) {
     assert(ctx);
 
@@ -352,9 +362,43 @@ ExprNode *parse_postfix_expr(ParserContext *ctx) {
     }
 }
 
+ExprNode *parse_cast_expr(ParserContext *ctx) {
+    const Token *open;
+    const Token *close;
+    Type *type;
+    ExprNode *operand;
+
+    /* ( */
+    open = consume_token(ctx);
+
+    if (open->kind != '(') {
+        fprintf(stderr, "expected (, but got %s\n", open->text);
+        exit(1);
+    }
+
+    /* type */
+    type = parse_type(ctx);
+
+    /* ) */
+    close = consume_token(ctx);
+
+    if (close->kind != ')') {
+        fprintf(stderr, "expected ), but got %s\n", close->text);
+        exit(1);
+    }
+
+    /* unary expression */
+    operand = parse_unary_expr(ctx);
+
+    /* make node */
+    return sema_cast_expr(ctx, open, type, close, operand);
+}
+
 ExprNode *parse_unary_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *operand;
+
+    assert(ctx);
 
     t = current_token(ctx);
 
@@ -371,9 +415,17 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
         /* make node */
         return sema_unary_expr(ctx, t, operand);
 
+    case '(':
+        if (is_type_specifier_token(ctx, peek_token(ctx))) {
+            return parse_cast_expr(ctx);
+        }
+        break;
+
     default:
-        return parse_postfix_expr(ctx);
+        break;
     }
+
+    return parse_postfix_expr(ctx);
 }
 
 ExprNode *parse_multiplicative_expr(ParserContext *ctx) {

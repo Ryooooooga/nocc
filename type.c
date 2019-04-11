@@ -136,6 +136,12 @@ bool is_incomplete_type(Type *t) {
     }
 }
 
+bool is_void_pointer_type(Type *t) {
+    assert(t);
+
+    return is_pointer_type(t) && is_void_type(pointer_element_type(t));
+}
+
 bool is_incomplete_pointer_type(Type *t) {
     assert(t);
 

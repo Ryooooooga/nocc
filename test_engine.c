@@ -214,4 +214,13 @@ void test_engine(void) {
                              "  return b.x;\n"
                              "}\n",
                              "typedef_", 42, 42);
+
+    test_engine_run_function("cast",
+                             "int cast(int n) {\n"
+                             "  int *p;\n"
+                             "  p = (void*)0;\n"
+                             "  (void)n;\n"
+                             "  return 9;\n"
+                             "}\n",
+                             "cast", 42, 9);
 }
