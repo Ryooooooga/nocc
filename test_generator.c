@@ -300,6 +300,8 @@ void test_generating_function_prototype(void) {
         .num_params = 0,
         .var_args = false,
         .body = NULL,
+        .locals = NULL,
+        .num_locals = 0,
     };
 
     LLVMValueRef function = generate_function(ctx, p);
@@ -334,6 +336,8 @@ void test_generating_function(void) {
                 .stmts = NULL,
                 .num_stmts = 0,
             },
+        .locals = NULL,
+        .num_locals = 0,
     };
 
     LLVMValueRef function = generate_function(ctx, p);
@@ -380,6 +384,8 @@ void test_generating_function_with_param(void) {
                 .stmts = NULL,
                 .num_stmts = 0,
             },
+        .locals = NULL,
+        .num_locals = 0,
     };
 
     LLVMValueRef function = generate_function(ctx, p);
@@ -435,6 +441,8 @@ void test_generating_function_with_params(void) {
                 .stmts = NULL,
                 .num_stmts = 0,
             },
+        .locals = NULL,
+        .num_locals = 0,
     };
 
     LLVMValueRef function = generate_function(ctx, p);

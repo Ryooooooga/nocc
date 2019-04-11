@@ -33,8 +33,10 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
 
     switch (t->kind) {
     case token_void:
+    case token_char:
     case token_int:
     case token_struct:
+    case token_const:
         return true;
 
     case token_identifier:
@@ -153,6 +155,10 @@ Type *parse_primary_type(ParserContext *ctx) {
         consume_token(ctx); /* eat void */
         return type_get_void();
 
+    case token_char:
+        consume_token(ctx); /* eat char */
+        return type_get_int8();
+
     case token_int:
         consume_token(ctx); /* eat int */
         return type_get_int32();
@@ -171,11 +177,25 @@ Type *parse_primary_type(ParserContext *ctx) {
 }
 
 Type *parse_type(ParserContext *ctx) {
+    bool is_const;
     Type *type;
 
     assert(ctx);
 
+    /* const? */
+    is_const = false;
+
+    if (current_token(ctx)->kind == token_const) {
+        consume_token(ctx); /* eat const */
+
+        is_const = true;
+    }
+
+    /* primary type */
     type = parse_primary_type(ctx);
+
+    /* TODO: const type */
+    (void)is_const;
 
     /* pointer type */
     while (current_token(ctx)->kind == '*') {
@@ -241,6 +261,21 @@ ExprNode *parse_number_expr(ParserContext *ctx) {
     return sema_integer_expr(ctx, t, (int)value);
 }
 
+ExprNode *parse_string_expr(ParserContext *ctx) {
+    const Token *t;
+
+    /* string */
+    t = consume_token(ctx);
+
+    if (t->kind != token_string) {
+        fprintf(stderr, "expected string, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* make node */
+    return sema_string_expr(ctx, t, t->string, t->len_string);
+}
+
 ExprNode *parse_identifier_expr(ParserContext *ctx) {
     const Token *t;
 
@@ -263,6 +298,9 @@ ExprNode *parse_primary_expr(ParserContext *ctx) {
 
     case token_number:
         return parse_number_expr(ctx);
+
+    case token_string:
+        return parse_string_expr(ctx);
 
     case token_identifier:
         return parse_identifier_expr(ctx);

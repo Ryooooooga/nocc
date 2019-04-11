@@ -6,8 +6,8 @@ void test_parsing_type_void(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_void, "void", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_void, "void", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -23,8 +23,8 @@ void test_parsing_type_int(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_int, "int", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_int, "int", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -40,8 +40,8 @@ void test_parsing_integer(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "42", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -61,8 +61,8 @@ void test_parsing_identifier(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_identifier, "xyz", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_identifier, "xyz", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -110,15 +110,18 @@ void test_parsing_call(void) {
     scope_stack_register(ctx->env, decl->identifier, decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
-    IdentifierNode *callee = (IdentifierNode *)p->callee;
+    CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
     assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 0);
 
-    assert(callee->kind == node_identifier);
-    assert(strcmp(callee->identifier, "f") == 0);
+    assert(callee->kind == node_cast);
+    assert(is_function_pointer_type(callee->type));
+
+    assert(callee->operand->kind == node_identifier);
+    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
 }
 
 void test_parsing_call_arg(void) {
@@ -149,15 +152,18 @@ void test_parsing_call_arg(void) {
     scope_stack_register(ctx->env, decl->identifier, decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
-    IdentifierNode *callee = (IdentifierNode *)p->callee;
+    CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
     assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 1);
 
-    assert(callee->kind == node_identifier);
-    assert(strcmp(callee->identifier, "f") == 0);
+    assert(callee->kind == node_cast);
+    assert(is_function_pointer_type(callee->type));
+
+    assert(callee->operand->kind == node_identifier);
+    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
 }
 
 void test_parsing_call_args(void) {
@@ -190,15 +196,18 @@ void test_parsing_call_args(void) {
     scope_stack_register(ctx->env, decl->identifier, decl);
 
     CallNode *p = (CallNode *)parse_expr(ctx);
-    IdentifierNode *callee = (IdentifierNode *)p->callee;
+    CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
     assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 3);
 
-    assert(callee->kind == node_identifier);
-    assert(strcmp(callee->identifier, "f") == 0);
+    assert(callee->kind == node_cast);
+    assert(is_function_pointer_type(callee->type));
+
+    assert(callee->operand->kind == node_identifier);
+    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
 }
 
 void test_parsing_negative(void) {
@@ -207,9 +216,9 @@ void test_parsing_negative(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){'-', "-", 1},
-                &(Token){token_number, "10", 2},
-                &(Token){'\0', "", 1},
+                &(Token){'-', "-", 1, NULL, 0},
+                &(Token){token_number, "10", 2, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -236,11 +245,11 @@ void test_parsing_addition(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "6", 1},
-                &(Token){'+', "+", 1},
-                &(Token){token_number, "12", 2},
-                &(Token){token_number, "10", 2},
-                &(Token){'\0', "", 1},
+                &(Token){token_number, "6", 1, NULL, 0},
+                &(Token){'+', "+", 1, NULL, 0},
+                &(Token){token_number, "12", 2, NULL, 0},
+                &(Token){token_number, "10", 2, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -271,12 +280,12 @@ void test_parsing_multiplication(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "6", 1},
-                &(Token){'+', "+", 1},
-                &(Token){token_number, "4", 1},
-                &(Token){'*', "*", 1},
-                &(Token){token_number, "3", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_number, "6", 1, NULL, 0},
+                &(Token){'+', "+", 1, NULL, 0},
+                &(Token){token_number, "4", 1, NULL, 0},
+                &(Token){'*', "*", 1, NULL, 0},
+                &(Token){token_number, "3", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -309,14 +318,14 @@ void test_parsing_paren(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){'(', "(", 1},
-                &(Token){token_number, "6", 1},
-                &(Token){'+', "+", 1},
-                &(Token){token_number, "4", 1},
-                &(Token){')', ")", 1},
-                &(Token){'*', "*", 1},
-                &(Token){token_number, "3", 1},
-                &(Token){'\0', "", 2},
+                &(Token){'(', "(", 1, NULL, 0},
+                &(Token){token_number, "6", 1, NULL, 0},
+                &(Token){'+', "+", 1, NULL, 0},
+                &(Token){token_number, "4", 1, NULL, 0},
+                &(Token){')', ")", 1, NULL, 0},
+                &(Token){'*', "*", 1, NULL, 0},
+                &(Token){token_number, "3", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -349,9 +358,9 @@ void test_parsing_expr_stmt(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "42", 1},
-                &(Token){';', ";", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -380,10 +389,10 @@ void test_parsing_return_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){token_return, "return", 1},
-                &(Token){token_number, "42", 1},
-                &(Token){';', ";", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_return, "return", 1, NULL, 0},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -413,9 +422,9 @@ void test_parsing_return_void_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){token_return, "return", 1},
-                &(Token){';', ";", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_return, "return", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -452,13 +461,13 @@ void test_parsing_compound_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){'{', "{", 1},
-                &(Token){token_number, "42", 1},
-                &(Token){';', ";", 1},
-                &(Token){token_return, "return", 1},
-                &(Token){';', ";", 1},
-                &(Token){'}', "}", 1},
-                &(Token){'\0', "", 2},
+                &(Token){'{', "{", 1, NULL, 0},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){token_return, "return", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'}', "}", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };

@@ -76,8 +76,55 @@ ExprNode *implicit_cast_node_new(ExprNode *expr, Type *dest_type) {
     return (ExprNode *)p;
 }
 
-bool assign_into(ExprNode **expr, Type *dest_type) {
-    if (is_incomplete_type((*expr)->type)) {
+bool can_cast_into(Type *src_type, Type *dest_type) {
+    assert(src_type);
+    assert(dest_type);
+
+    switch (dest_type->kind) {
+    case type_void:
+        /* OK: T -> void */
+        return true;
+
+    case type_int8:
+    case type_int32:
+    case type_pointer:
+        switch (src_type->kind) {
+        case type_int8:
+        case type_int32:
+        case type_pointer:
+            return true;
+
+        default:
+            return false;
+        }
+
+    default:
+        return false;
+    }
+}
+
+ExprNode *decay_type_convert(ExprNode *expr) {
+    assert(expr);
+
+    if (is_array_type(expr->type)) {
+        return implicit_cast_node_new(
+            expr, pointer_type_new(array_element_type(expr->type)));
+    }
+
+    if (is_function_type(expr->type)) {
+        return implicit_cast_node_new(expr, pointer_type_new(expr->type));
+    }
+
+    return expr;
+}
+
+bool assign_type_convert(ExprNode **expr, Type *dest_type) {
+    assert(expr);
+    assert(dest_type);
+
+    *expr = decay_type_convert(*expr);
+
+    if (is_incomplete_type((*expr)->type) || is_incomplete_type(dest_type)) {
         return false;
     }
 
@@ -85,12 +132,12 @@ bool assign_into(ExprNode **expr, Type *dest_type) {
         return true;
     }
 
-    if (is_void_pointer_type((*expr)->type) && is_pointer_type(dest_type)) {
-        *expr = implicit_cast_node_new(*expr, dest_type);
-        return true;
+    if (!can_cast_into((*expr)->type, dest_type)) {
+        return false;
     }
 
-    return false;
+    *expr = implicit_cast_node_new(*expr, dest_type);
+    return true;
 }
 
 Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
@@ -263,6 +310,28 @@ ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value) {
     return (ExprNode *)p;
 }
 
+ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
+                           const char *string, int length) {
+    StringNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(string != NULL || length == 0);
+    assert(length >= 0);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_string;
+    p->line = t->line;
+    p->type = array_type_new(type_get_int8(), length + 1);
+    p->string = malloc(sizeof(char) * (length + 1));
+    p->len_string = length;
+
+    strncpy(p->string, string, length);
+    p->string[length] = '\0';
+
+    return (ExprNode *)p;
+}
+
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     IdentifierNode *p;
 
@@ -303,7 +372,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
                          const Token *close) {
     CallNode *p;
-    Type *callee_type;
+    Type *func_type;
     int i;
 
     assert(ctx);
@@ -318,38 +387,38 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     p->line = open->line;
     p->type = NULL;
     p->is_lvalue = false;
-    p->callee = callee;
+    p->callee = decay_type_convert(callee);
     p->args = malloc(sizeof(ExprNode *) * num_args);
     p->num_args = num_args;
 
     for (i = 0; i < num_args; i++) {
-        p->args[i] = args[i];
+        p->args[i] = decay_type_convert(args[i]);
     }
 
     /* callee type */
-    /* TODO: fix to function pointer */
-    if (!is_function_type(callee->type)) {
+    if (!is_function_pointer_type(p->callee->type)) {
         fprintf(stderr, "invalid callee type\n");
         exit(1);
     }
 
-    callee_type = callee->type;
+    func_type = pointer_element_type(p->callee->type);
 
     /* check argument types */
-    if (num_args != function_count_param_types(callee_type)) {
+    if (num_args != function_count_param_types(func_type)) {
         fprintf(stderr, "invalid number of arguments\n");
         exit(1);
     }
 
     for (i = 0; i < num_args; i++) {
-        if (!assign_into(&p->args[i], function_param_type(callee_type, i))) {
+        if (!assign_type_convert(&p->args[i],
+                                 function_param_type(func_type, i))) {
             fprintf(stderr, "invalid type of argument\n");
             exit(1);
         }
     }
 
     /* result type */
-    p->type = function_return_type(callee_type);
+    p->type = function_return_type(func_type);
 
     return (ExprNode *)p;
 }
@@ -474,46 +543,18 @@ ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
     p->is_lvalue = false;
     p->operand = operand;
 
-    /* type check */
     if (type_equals(p->type, p->operand->type)) {
         /* T -> T */
         return (ExprNode *)p;
     }
 
-    if (!is_void_type(p->type) && is_incomplete_type(p->type)) {
-        /* T -> <incomplete type> */
-        fprintf(stderr, "cannot convert to an incomplete type\n");
+    /* type check */
+    if (!can_cast_into(p->operand->type, p->type)) {
+        fprintf(stderr, "invalid type cast\n");
         exit(1);
     }
 
-    if (is_void_type(p->operand->type)) {
-        /* void -> T */
-        fprintf(stderr, "invalid cast from void\n");
-        exit(1);
-    }
-
-    if (is_void_type(p->type)) {
-        /* T -> void */
-        return (ExprNode *)p;
-    }
-
-    if (is_pointer_type(p->type) && is_pointer_type(p->operand->type)) {
-        /* T* -> U* */
-        return (ExprNode *)p;
-    }
-
-    if (is_pointer_type(p->type) && is_int32_type(p->operand->type)) {
-        /* int32 -> T* */
-        return (ExprNode *)p;
-    }
-
-    if (is_int32_type(p->type) && is_pointer_type(p->operand->type)) {
-        /* T* -> int32 */
-        return (ExprNode *)p;
-    }
-
-    fprintf(stderr, "invalid cast\n");
-    exit(1);
+    return (ExprNode *)p;
 }
 
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
@@ -580,7 +621,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         }
 
         /* assignment type conversion */
-        if (!assign_into(&p->right, p->left->type)) {
+        if (!assign_type_convert(&p->right, p->left->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -657,7 +698,7 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
         }
     } else {
         if (p->return_value == NULL ||
-            !assign_into(&p->return_value, return_type)) {
+            !assign_type_convert(&p->return_value, return_type)) {
             fprintf(stderr, "invalid return type\n");
             exit(1);
         }

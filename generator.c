@@ -100,6 +100,9 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     case type_void:
         return LLVMVoidType();
 
+    case type_int8:
+        return LLVMInt8Type();
+
     case type_int32:
         return LLVMInt32Type();
 
@@ -118,8 +121,17 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     }
 }
 
-LLVMValueRef generate_integer_expr(IntegerNode *p) {
+LLVMValueRef generate_integer_expr(GeneratorContext *ctx, IntegerNode *p) {
+    (void)ctx;
+
     return LLVMConstInt(LLVMInt32Type(), p->value, true);
+}
+
+LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
+    (void)ctx;
+
+    /* TODO: '\0' in string */
+    return LLVMBuildGlobalStringPtr(ctx->builder, p->string, "str");
 }
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
@@ -135,7 +147,7 @@ LLVMValueRef generate_call_expr(GeneratorContext *ctx, CallNode *p) {
     LLVMValueRef *args;
     int i;
 
-    callee = generate_expr_addr(ctx, p->callee);
+    callee = generate_expr(ctx, p->callee);
 
     args = malloc(sizeof(LLVMValueRef) * p->num_args);
 
@@ -173,40 +185,103 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
 }
 
 LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
-    LLVMValueRef operand;
+    LLVMValueRef src;
     LLVMTypeRef dest_type;
     char *src_type_str;
     char *dest_type_str;
 
-    operand = generate_expr(ctx, p->operand);
     dest_type = generate_type(ctx, p->type);
 
     switch (p->type->kind) {
     case type_void:
         /* T -> void */
-        return operand;
+        src = generate_expr(ctx, p->operand);
+        return src;
 
-    case type_pointer:
+    case type_int8:
+        /* T -> int8 */
+        src = generate_expr(ctx, p->operand);
+
         switch (p->operand->type->kind) {
+        case type_int8:
+            /* int8 -> int8 */
+            return src;
+
         case type_int32:
-            /* int32 -> T* */
-            return LLVMBuildIntToPtr(ctx->builder, operand, dest_type,
-                                     "inttoptr");
+            /* int32 -> int8 */
+            return LLVMBuildTrunc(ctx->builder, src, dest_type, "trunc");
 
         case type_pointer:
-            /* T* -> U* */
-            return LLVMBuildPointerCast(ctx->builder, operand, dest_type,
-                                        "ptrcast");
+            /* T* -> int8 */
+            return LLVMBuildPtrToInt(ctx->builder, src, dest_type, "ptrtoint8");
 
         default:
             break;
         }
+        break;
+
+    case type_int32:
+        /* T -> int32 */
+        src = generate_expr(ctx, p->operand);
+
+        switch (p->operand->type->kind) {
+        case type_int8:
+            /* int8 -> int32 */
+            return LLVMBuildSExt(ctx->builder, src, dest_type, "sext");
+
+        case type_int32:
+            /* int32 -> int32 */
+            return src;
+
+        case type_pointer:
+            /* T* -> int32 */
+            return LLVMBuildPtrToInt(ctx->builder, src, dest_type,
+                                     "ptrtoint32");
+
+        default:
+            break;
+        }
+        break;
+
+    case type_pointer:
+        /* U -> T* */
+        switch (p->operand->type->kind) {
+        case type_int8:
+        case type_int32:
+            /* intN -> T* */
+            src = generate_expr(ctx, p->operand);
+            return LLVMBuildIntToPtr(ctx->builder, src, dest_type, "inttoptr");
+
+        case type_pointer:
+            /* T* -> U* */
+            src = generate_expr(ctx, p->operand);
+            return LLVMBuildPointerCast(ctx->builder, src, dest_type,
+                                        "ptrtoptr");
+
+        case type_array:
+            /* [N x T] -> T* */
+            src = generate_expr(ctx, p->operand);
+            return LLVMBuildInBoundsGEP(ctx->builder, src, NULL, 0, "arrtoptr");
+
+        case type_function:
+            /* F -> T* */
+            if (type_equals(p->operand->type, pointer_element_type(p->type))) {
+                /* F -> F* */
+                return generate_expr_addr(ctx, p->operand);
+            }
+            break;
+
+        default:
+            break;
+        }
+        break;
 
     default:
         break;
     }
 
-    src_type_str = LLVMPrintTypeToString(LLVMTypeOf(operand));
+    src = generate_expr(ctx, p->operand);
+    src_type_str = LLVMPrintTypeToString(LLVMTypeOf(src));
     dest_type_str = LLVMPrintTypeToString(dest_type);
 
     fprintf(stderr, "unimplemented type cast %s -> %s\n", src_type_str,
@@ -346,7 +421,10 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
     switch (p->kind) {
     case node_integer:
-        return generate_integer_expr((IntegerNode *)p);
+        return generate_integer_expr(ctx, (IntegerNode *)p);
+
+    case node_string:
+        return generate_string_expr(ctx, (StringNode *)p);
 
     case node_identifier:
         return generate_identifier_expr(ctx, (IdentifierNode *)p);
@@ -409,7 +487,7 @@ LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     assert(ctx);
 
     if (!p->is_lvalue) {
-        fprintf(stderr, "expression must be a lvalue\n");
+        fprintf(stderr, "expression must be a lvalue %d\n", p->kind);
         exit(1);
     }
 
@@ -737,6 +815,7 @@ void generate_global_variable(GeneratorContext *ctx, VariableNode *p) {
     p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
 
     switch (p->type->kind) {
+    case type_int8:
     case type_int32:
         LLVMSetInitializer(p->generated_location, LLVMConstInt(type, 0, true));
         break;
