@@ -100,6 +100,9 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     case type_void:
         return LLVMVoidType();
 
+    case type_int8:
+        return LLVMInt8Type();
+
     case type_int32:
         return LLVMInt32Type();
 
@@ -737,6 +740,7 @@ void generate_global_variable(GeneratorContext *ctx, VariableNode *p) {
     p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
 
     switch (p->type->kind) {
+    case type_int8:
     case type_int32:
         LLVMSetInitializer(p->generated_location, LLVMConstInt(type, 0, true));
         break;
