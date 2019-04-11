@@ -557,7 +557,13 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case token_equal:
     case token_not_equal:
         /* relational operator */
-        if (!is_int32_type(p->left->type) || !is_int32_type(p->right->type)) {
+        if (!type_equals(p->left->type, p->right->type)) {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (!is_int32_type(p->left->type) && !is_pointer_type(p->left->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -962,8 +968,7 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
         /* local variable */
         vec_push(ctx->locals, (DeclNode *)p);
     } else {
-        /* TODO: global variable */
-        assert(0);
+        /* global variable */
     }
 
     return (DeclNode *)p;

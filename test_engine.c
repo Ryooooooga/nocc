@@ -73,6 +73,56 @@ void test_engine(void) {
                              "}\n",
                              "variables", 4, 20);
 
+    test_engine_run_function("global",
+                             "int a;\n"
+                             "int global(int n) {\n"
+                             "  return a;\n"
+                             "}\n",
+                             "global", 4, 0);
+
+    test_engine_run_function("global2",
+                             "int a;\n"
+                             "int global2(int n) {\n"
+                             "  a = n;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "global2", 4, 4);
+
+    test_engine_run_function("global2",
+                             "int a;\n"
+                             "int global2(int n) {\n"
+                             "  a = n;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "global2", 4, 4);
+
+    test_engine_run_function("global3",
+                             "int a;\n"
+                             "int b;\n"
+                             "int global3(int n) {\n"
+                             "  a = n;\n"
+                             "  b = 3;\n"
+                             "  return a * b;\n"
+                             "}\n",
+                             "global3", 4, 12);
+
+    test_engine_run_function("global4",
+                             "int *a;\n"
+                             "int b;\n"
+                             "int global4(int n) {\n"
+                             "  a = &n;\n"
+                             "  b = 3;\n"
+                             "  return *a * b;\n"
+                             "}\n",
+                             "global4", 4, 12);
+
+    test_engine_run_function("global5",
+                             "int *a;\n"
+                             "int global5(int n) {\n"
+                             "  return a == (int *)0;\n"
+                             "}\n",
+                             "global5", 0, 1);
+
     test_engine_run_function("sum",
                              "int sum(int n) {\n"
                              "  int sum;\n"

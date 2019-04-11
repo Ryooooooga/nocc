@@ -1052,7 +1052,13 @@ DeclNode *parse_function(ParserContext *ctx) {
         exit(1);
     }
 
-    /* TODO: global variable */
+    /* ;? */
+    if (current_token(ctx)->kind == ';') {
+        consume_token(ctx);
+
+        /* global variable */
+        return sema_var_decl(ctx, return_type, t);
+    }
 
     /* ( */
     if (current_token(ctx)->kind != '(') {
