@@ -195,6 +195,7 @@ Type *parse_type(ParserContext *ctx) {
     type = parse_primary_type(ctx);
 
     /* TODO: const type */
+    (void)is_const;
 
     /* pointer type */
     while (current_token(ctx)->kind == '*') {

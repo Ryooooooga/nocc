@@ -207,6 +207,7 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
         default:
             break;
         }
+        break;
 
     case type_int32:
         /* T -> int32 */
@@ -227,6 +228,7 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
         default:
             break;
         }
+        break;
 
     case type_pointer:
         /* U -> T* */
@@ -244,6 +246,7 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
         default:
             break;
         }
+        break;
 
     default:
         break;
@@ -452,7 +455,7 @@ LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     assert(ctx);
 
     if (!p->is_lvalue) {
-        fprintf(stderr, "expression must be a lvalue\n");
+        fprintf(stderr, "expression must be a lvalue %d\n", p->kind);
         exit(1);
     }
 
