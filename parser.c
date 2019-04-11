@@ -15,7 +15,9 @@ const Token *consume_token(ParserContext *ctx) {
     return ctx->tokens[ctx->index++];
 }
 
-bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
+bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
+    DeclNode *symbol;
+
     assert(ctx);
     assert(t);
 
@@ -26,11 +28,21 @@ bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
         return true;
 
     case token_identifier:
-        /* TODO: typedef name */
-        return false;
+        symbol = scope_stack_find(ctx->env, t->text, true);
+        return symbol->kind == node_typedef;
 
     default:
         return false;
+    }
+}
+
+bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
+    switch (t->kind) {
+    case token_typedef:
+        return true;
+
+    default:
+        return is_type_specifier_token(ctx, t);
     }
 }
 
@@ -58,6 +70,20 @@ MemberNode *parse_struct_member(ParserContext *ctx) {
 
     /* make node */
     return sema_struct_member(ctx, type, t);
+}
+
+Type *parse_identifier_type(ParserContext *ctx) {
+    const Token *t;
+
+    /* identifier */
+    t = consume_token(ctx);
+
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", t->text);
+    }
+
+    /* get type */
+    return sema_identifier_type(ctx, t);
 }
 
 Type *parse_struct_type(ParserContext *ctx) {
@@ -120,6 +146,9 @@ Type *parse_primary_type(ParserContext *ctx) {
     case token_int:
         consume_token(ctx); /* eat int */
         return type_get_int32();
+
+    case token_identifier:
+        return parse_identifier_type(ctx);
 
     case token_struct:
         return parse_struct_type(ctx);
@@ -774,8 +803,8 @@ StmtNode *parse_decl_stmt(ParserContext *ctx) {
     const Token *t;
     DeclNode *decl;
 
-    /* variable declaration */
-    decl = parse_var_decl(ctx);
+    /* declaration */
+    decl = parse_decl(ctx);
 
     /* ; */
     t = consume_token(ctx);
@@ -844,11 +873,37 @@ StmtNode *parse_stmt(ParserContext *ctx) {
     }
 }
 
+DeclNode *parse_typedef(ParserContext *ctx) {
+    const Token *t;
+    const Token *identifier;
+    Type *type;
+
+    /* typedef */
+    t = consume_token(ctx);
+
+    if (t->kind != token_typedef) {
+        fprintf(stderr, "expected typedef, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* type */
+    type = parse_type(ctx);
+
+    /* identifier */
+    identifier = consume_token(ctx);
+
+    if (identifier->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
+        exit(1);
+    }
+
+    /* register type symbol and make node */
+    return sema_typedef(ctx, t, type, identifier);
+}
+
 DeclNode *parse_var_decl(ParserContext *ctx) {
     Type *type;
     const Token *t;
-
-    assert(ctx);
 
     /* type */
     type = parse_type(ctx);
@@ -863,6 +918,18 @@ DeclNode *parse_var_decl(ParserContext *ctx) {
 
     /* register symbol and make node */
     return sema_var_decl(ctx, type, t);
+}
+
+DeclNode *parse_decl(ParserContext *ctx) {
+    assert(ctx);
+
+    switch (current_token(ctx)->kind) {
+    case token_typedef:
+        return parse_typedef(ctx);
+
+    default:
+        return parse_var_decl(ctx);
+    }
 }
 
 ParamNode *parse_param(ParserContext *ctx) {

@@ -58,6 +58,7 @@ enum {
     token_void,
     token_int,
     token_struct,
+    token_typedef,
     token_lesser_equal,
     token_greater_equal,
     token_equal,
@@ -157,6 +158,7 @@ enum {
     node_decl,
     node_expr,
 
+    node_typedef,
     node_member,
     node_variable,
     node_param,
@@ -184,6 +186,7 @@ typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
 typedef struct DeclNode DeclNode;
+typedef struct TypedefNode TypedefNode;
 typedef struct MemberNode MemberNode;
 typedef struct VariableNode VariableNode;
 typedef struct ParamNode ParamNode;
@@ -333,12 +336,20 @@ struct DeclNode {
     LLVMValueRef generated_location;
 };
 
+struct TypedefNode {
+    int kind;
+    int line;
+    char *identifier;
+    Type *type;
+    LLVMValueRef generated_location; /* unused */
+};
+
 struct MemberNode {
     int kind;
     int line;
     char *identifier;
     Type *type;
-    LLVMValueRef generated_location;
+    LLVMValueRef generated_location; /* unused */
 };
 
 struct VariableNode {
@@ -406,11 +417,12 @@ Type *parse_type(ParserContext *ctx);
 ExprNode *parse_assign_expr(ParserContext *ctx);
 ExprNode *parse_expr(ParserContext *ctx);
 StmtNode *parse_stmt(ParserContext *ctx);
-DeclNode *parse_var_decl(ParserContext *ctx);
+DeclNode *parse_decl(ParserContext *ctx);
 ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
 
+Type *sema_identifier_type(ParserContext *ctx, const Token *t);
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t);
 Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
                                     const Token *identifier);
@@ -460,6 +472,8 @@ StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t);
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
 
+DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
+                       const Token *identifier);
 DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t);
 ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
 

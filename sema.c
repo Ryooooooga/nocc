@@ -72,6 +72,29 @@ bool assign_into(ExprNode **expr, Type *dest_type) {
     return false;
 }
 
+Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
+    DeclNode *p;
+
+    assert(ctx);
+    assert(t);
+
+    /* find symbol */
+    p = scope_stack_find(ctx->env, t->text, true);
+
+    if (p == NULL) {
+        fprintf(stderr, "type %s not found in this scope\n", t->text);
+        exit(1);
+    }
+
+    /* check the symbol kind */
+    if (p->kind != node_typedef) {
+        fprintf(stderr, "symbol %s is not a type\n", t->text);
+        exit(1);
+    }
+
+    return ((TypedefNode *)p)->type;
+}
+
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     MemberNode *p;
 
@@ -238,8 +261,19 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
         exit(1);
     }
 
-    p->type = p->declaration->type;
-    p->is_lvalue = true;
+    switch (p->declaration->kind) {
+    case node_variable:
+    case node_param:
+    case node_function:
+        p->type = p->declaration->type;
+        p->is_lvalue = true;
+        break;
+
+    default:
+        fprintf(stderr, "symbol %s is not a variable: %d\n", p->identifier,
+                p->declaration->kind);
+        exit(1);
+    }
 
     return (ExprNode *)p;
 }
@@ -787,6 +821,34 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     return (StmtNode *)p;
 }
 
+DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
+                       const Token *identifier) {
+    TypedefNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(type);
+    assert(identifier);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_typedef;
+    p->line = t->line;
+    p->identifier = str_dup(identifier->text);
+    p->type = type;
+    p->generated_location = NULL;
+
+    /* redefinition check */
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
+        fprintf(stderr, "redefinition of symbol %s\n", p->identifier);
+        exit(1);
+    }
+
+    /* register type symbol */
+    scope_stack_register(ctx->env, p->identifier, p);
+
+    return (DeclNode *)p;
+}
 DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     VariableNode *p;
 
