@@ -875,7 +875,6 @@ StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t) {
     DeclStmtNode *p;
 
     assert(ctx);
-    assert(decl);
     assert(t);
 
     p = malloc(sizeof(*p));

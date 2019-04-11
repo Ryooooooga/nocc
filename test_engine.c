@@ -206,6 +206,15 @@ void test_engine(void) {
                              "}\n",
                              "struct2", 42, 84);
 
+    test_engine_run_function("struct4",
+                             "int struct4(int n) {\n"
+                             "  struct a { int x; };\n"
+                             "  struct a a;\n"
+                             "  a.x = n;\n"
+                             "  return a.x;\n"
+                             "}\n",
+                             "struct4", 42, 42);
+
     test_engine_run_function("typedef",
                              "int typedef_(int n) {\n"
                              "  typedef struct a {int x;} a;\n"

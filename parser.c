@@ -960,6 +960,11 @@ DeclNode *parse_var_decl(ParserContext *ctx) {
     /* type */
     type = parse_type(ctx);
 
+    /* ;? */
+    if (current_token(ctx)->kind == ';') {
+        return NULL;
+    }
+
     /* identifier */
     t = consume_token(ctx);
 
