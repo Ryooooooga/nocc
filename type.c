@@ -52,11 +52,19 @@ bool type_equals(Type *a, Type *b) {
     assert(a);
     assert(b);
 
+    if (a == b) {
+        return true;
+    }
+
     if (a->kind != b->kind) {
         return false;
     }
 
     switch (a->kind) {
+    case type_void:
+    case type_int32:
+        return true;
+
     case type_pointer:
         return type_equals(pointer_element_type(a), pointer_element_type(b));
 
@@ -78,8 +86,12 @@ bool type_equals(Type *a, Type *b) {
 
         return true;
 
+    case type_struct:
+        return false;
+
     default:
-        return true;
+        fprintf(stderr, "unknown type %d\n", a->kind);
+        exit(1);
     }
 }
 
@@ -103,6 +115,11 @@ bool is_function_type(Type *t) {
     return t->kind == type_function;
 }
 
+bool is_struct_type(Type *t) {
+    assert(t);
+    return t->kind == type_struct;
+}
+
 bool is_incomplete_type(Type *t) {
     assert(t);
 
@@ -111,7 +128,8 @@ bool is_incomplete_type(Type *t) {
     case type_function:
         return true;
 
-        /* TODO: incomplete struct */
+    case type_struct:
+        return ((StructType *)t)->is_incomplete;
 
     default:
         return false;
@@ -160,4 +178,46 @@ Type *function_param_type(Type *t, int index) {
     assert(index < function_count_param_types(t));
 
     return ((FunctionType *)t)->param_types[index];
+}
+
+int struct_type_count_members(Type *t) {
+    assert(t);
+
+    if (!is_struct_type(t)) {
+        return -1;
+    }
+
+    return ((StructType *)t)->num_members;
+}
+
+struct MemberNode *struct_type_member(Type *t, int index) {
+    assert(t);
+    assert(index >= 0);
+    assert(index < struct_type_count_members(t));
+
+    return ((StructType *)t)->members[index];
+}
+
+struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
+                                           int *index) {
+    MemberNode *member;
+
+    assert(t);
+    assert(member_name);
+    assert(index);
+
+    if (!is_struct_type(t)) {
+        return NULL;
+    }
+
+    for (*index = 0; struct_type_count_members(t); (*index)++) {
+        member = struct_type_member(t, *index);
+
+        if (strcmp(member->identifier, member_name) == 0) {
+            return member;
+        }
+    }
+
+    *index = -1;
+    return NULL;
 }

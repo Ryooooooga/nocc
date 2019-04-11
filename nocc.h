@@ -57,6 +57,7 @@ enum {
     token_continue,
     token_void,
     token_int,
+    token_struct,
     token_lesser_equal,
     token_greater_equal,
     token_equal,
@@ -78,11 +79,13 @@ enum {
     type_int32,
     type_pointer,
     type_function,
+    type_struct,
 };
 
 typedef struct Type Type;
 typedef struct PointerType PointerType;
 typedef struct FunctionType FunctionType;
+typedef struct StructType StructType;
 
 struct Type {
     int kind;
@@ -101,6 +104,16 @@ struct FunctionType {
     bool var_args;
 };
 
+struct StructType {
+    int kind;
+    int line;
+    char *identifier;
+    struct MemberNode **members;
+    int num_members;
+    bool is_incomplete;
+    LLVMTypeRef generated_type;
+};
+
 Type *type_get_void(void);
 Type *type_get_int32(void);
 Type *pointer_type_new(Type *element_type);
@@ -112,6 +125,7 @@ bool is_void_type(Type *t);
 bool is_int32_type(Type *t);
 bool is_pointer_type(Type *t);
 bool is_function_type(Type *t);
+bool is_struct_type(Type *t);
 bool is_incomplete_type(Type *t);
 bool is_incomplete_pointer_type(Type *t);
 
@@ -119,6 +133,10 @@ Type *pointer_element_type(Type *t);
 Type *function_return_type(Type *t);
 int function_count_param_types(Type *t);
 Type *function_param_type(Type *t, int index);
+int struct_type_count_members(Type *t);
+struct MemberNode *struct_type_member(Type *t, int index);
+struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
+                                           int *index);
 
 enum {
     node_integer,
@@ -126,6 +144,7 @@ enum {
     node_call,
     node_unary,
     node_binary,
+    node_dot,
 
     node_compound,
     node_return,
@@ -138,6 +157,7 @@ enum {
     node_decl,
     node_expr,
 
+    node_member,
     node_variable,
     node_param,
     node_function,
@@ -149,6 +169,7 @@ typedef struct IdentifierNode IdentifierNode;
 typedef struct CallNode CallNode;
 typedef struct UnaryNode UnaryNode;
 typedef struct BinaryNode BinaryNode;
+typedef struct DotNode DotNode;
 
 typedef struct StmtNode StmtNode;
 typedef struct CompoundNode CompoundNode;
@@ -163,6 +184,7 @@ typedef struct DeclStmtNode DeclStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 
 typedef struct DeclNode DeclNode;
+typedef struct MemberNode MemberNode;
 typedef struct VariableNode VariableNode;
 typedef struct ParamNode ParamNode;
 typedef struct FunctionNode FunctionNode;
@@ -220,6 +242,16 @@ struct BinaryNode {
     int operator_;
     ExprNode *left;
     ExprNode *right;
+};
+
+struct DotNode {
+    int kind;
+    int line;
+    Type *type;
+    bool is_lvalue;
+    ExprNode *parent;
+    char *identifier;
+    int index;
 };
 
 struct StmtNode {
@@ -301,6 +333,14 @@ struct DeclNode {
     LLVMValueRef generated_location;
 };
 
+struct MemberNode {
+    int kind;
+    int line;
+    char *identifier;
+    Type *type;
+    LLVMValueRef generated_location;
+};
+
 struct VariableNode {
     int kind;
     int line;
@@ -347,11 +387,12 @@ ScopeStack *scope_stack_new(void);
 int scope_stack_depth(ScopeStack *s);
 void scope_stack_push(ScopeStack *s);
 void scope_stack_pop(ScopeStack *s);
-DeclNode *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
-void scope_stack_register(ScopeStack *s, DeclNode *decl);
+void *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
+void scope_stack_register(ScopeStack *s, const char *name, void *value);
 
 struct ParserContext {
     ScopeStack *env;
+    ScopeStack *struct_env;
     FunctionNode *current_function;
     Vec *locals;
     Vec *flow_state;
@@ -370,6 +411,14 @@ ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
 
+MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t);
+Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
+                                    const Token *identifier);
+StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
+                                   const Token *identifier);
+Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
+                             MemberNode **members, int num_members);
+
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close);
 ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value);
@@ -377,6 +426,8 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t);
 ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
                          const Token *close);
+ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
+                        const Token *identifier);
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand);
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,

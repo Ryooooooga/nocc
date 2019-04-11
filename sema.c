@@ -6,6 +6,20 @@ enum {
     control_flow_state_continue_bit = 2,
 };
 
+void sema_push_scope(ParserContext *ctx) {
+    assert(ctx);
+
+    scope_stack_push(ctx->env);
+    scope_stack_push(ctx->struct_env);
+}
+
+void sema_pop_scope(ParserContext *ctx) {
+    assert(ctx);
+
+    scope_stack_pop(ctx->struct_env);
+    scope_stack_pop(ctx->env);
+}
+
 Vec *control_flow_state_new(void) {
     Vec *state;
 
@@ -56,6 +70,127 @@ bool assign_into(ExprNode **expr, Type *dest_type) {
     }
 
     return false;
+}
+
+MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
+    MemberNode *p;
+
+    assert(ctx);
+    assert(type);
+    assert(t);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_member;
+    p->line = t->line;
+    p->type = type;
+    p->identifier = str_dup(t->text);
+    p->generated_location = NULL;
+
+    /* type check */
+    if (is_incomplete_type(type)) {
+        fprintf(stderr, "member of struct must be a complete type\n");
+        exit(1);
+    }
+
+    /* redefinition check */
+    if (scope_stack_find(ctx->env, p->identifier, false)) {
+        fprintf(stderr, "member %s is already defined\n", p->identifier);
+        exit(1);
+    }
+
+    /* register member symbol */
+    scope_stack_register(ctx->env, p->identifier, p);
+
+    return (MemberNode *)p;
+}
+
+StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
+                                             const Token *identifier,
+                                             bool search_recursively) {
+    StructType *p;
+
+    assert(ctx);
+    assert(t);
+    assert(identifier);
+
+    /* find type from symbol if exists */
+    p = scope_stack_find(ctx->struct_env, identifier->text, search_recursively);
+
+    if (p) {
+        return p;
+    }
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = type_struct;
+    p->line = t->line;
+    p->identifier = str_dup(identifier->text);
+    p->members = NULL;
+    p->num_members = 0;
+    p->is_incomplete = true;
+    p->generated_type = NULL;
+
+    /* register struct type symbol */
+    scope_stack_register(ctx->struct_env, p->identifier, p);
+
+    return p;
+}
+
+Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
+                                    const Token *identifier) {
+    return (Type *)sema_struct_type_register_or_new(ctx, t, identifier, true);
+}
+
+StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
+                                   const Token *identifier) {
+    StructType *p;
+
+    /* find type from symbol if exists */
+    p = sema_struct_type_register_or_new(ctx, t, identifier, false);
+
+    /* redefinition check */
+    if (!p->is_incomplete) {
+        fprintf(stderr, "redefinition of struct %s\n",
+                p->identifier ? p->identifier : "<anonymous>");
+        exit(1);
+    }
+
+    /* enter struct member scope */
+    sema_push_scope(ctx);
+
+    return p;
+}
+
+Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
+                             MemberNode **members, int num_members) {
+    int i;
+
+    assert(ctx);
+    assert(type);
+    assert(type->is_incomplete);
+    assert(members != NULL || num_members == 0);
+    assert(num_members >= 0);
+
+    /* leave struct member scope */
+    sema_pop_scope(ctx);
+
+    /* check the number of members */
+    if (num_members == 0) {
+        fprintf(stderr, "empty struct is not supported\n");
+        exit(1);
+    }
+
+    /* fix struct type */
+    type->members = malloc(sizeof(MemberNode *) * num_members);
+    type->num_members = num_members;
+    type->is_incomplete = false;
+
+    for (i = 0; i < num_members; i++) {
+        type->members[i] = members[i];
+    }
+
+    return (Type *)type;
 }
 
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
@@ -160,6 +295,47 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
 
     /* result type */
     p->type = function_return_type(callee_type);
+
+    return (ExprNode *)p;
+}
+
+ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
+                        const Token *identifier) {
+    DotNode *p;
+    MemberNode *member;
+
+    assert(ctx);
+    assert(parent);
+    assert(t);
+    assert(identifier);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_dot;
+    p->line = t->line;
+    p->type = NULL;
+    p->is_lvalue = false;
+    p->parent = parent;
+    p->identifier = str_dup(identifier->text);
+    p->index = -1;
+
+    /* check the parent type */
+    if (!is_struct_type(parent->type)) {
+        fprintf(stderr, "member reference base type must be a struct type");
+        exit(1);
+    }
+
+    /* resolve member */
+    member = struct_type_find_member(parent->type, p->identifier, &p->index);
+
+    if (member == NULL) {
+        fprintf(stderr, "cannot find member named %s\n", p->identifier);
+        exit(1);
+    }
+
+    /* resolve expression type */
+    p->type = member->type;
+    p->is_lvalue = parent->is_lvalue;
 
     return (ExprNode *)p;
 }
@@ -305,7 +481,7 @@ void sema_compound_stmt_enter(ParserContext *ctx) {
     assert(ctx);
 
     /* enter scope */
-    scope_stack_push(ctx->env);
+    sema_push_scope(ctx);
 }
 
 StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
@@ -321,7 +497,7 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
     assert(close);
 
     /* leave scope */
-    scope_stack_pop(ctx->env);
+    sema_pop_scope(ctx);
 
     p = malloc(sizeof(*p));
     p->kind = node_compound;
@@ -374,14 +550,14 @@ void sema_if_stmt_enter_block(ParserContext *ctx) {
     assert(ctx);
 
     /* enter scope */
-    scope_stack_push(ctx->env);
+    sema_push_scope(ctx);
 }
 
 void sema_if_stmt_leave_block(ParserContext *ctx) {
     assert(ctx);
 
     /* leave scope */
-    scope_stack_pop(ctx->env);
+    sema_pop_scope(ctx);
 }
 
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
@@ -413,7 +589,7 @@ void sema_while_stmt_enter_body(ParserContext *ctx) {
     assert(ctx);
 
     /* enter scope */
-    scope_stack_push(ctx->env);
+    sema_push_scope(ctx);
 
     /* push loop state */
     control_flow_push_state(ctx, control_flow_state_break_bit |
@@ -433,7 +609,7 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     control_flow_pop_state(ctx);
 
     /* leave scope */
-    scope_stack_pop(ctx->env);
+    sema_pop_scope(ctx);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -455,7 +631,7 @@ void sema_do_stmt_enter_body(ParserContext *ctx) {
     assert(ctx);
 
     /* enter scope */
-    scope_stack_push(ctx->env);
+    sema_push_scope(ctx);
 
     /* push loop state */
     control_flow_push_state(ctx, control_flow_state_break_bit |
@@ -469,7 +645,7 @@ void sema_do_stmt_leave_body(ParserContext *ctx) {
     control_flow_pop_state(ctx);
 
     /* leave scope */
-    scope_stack_pop(ctx->env);
+    sema_pop_scope(ctx);
 }
 
 StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
@@ -500,7 +676,7 @@ void sema_for_stmt_enter_body(ParserContext *ctx) {
     assert(ctx);
 
     /* enter scope */
-    scope_stack_push(ctx->env);
+    sema_push_scope(ctx);
 
     /* push loop state */
     control_flow_push_state(ctx, control_flow_state_break_bit |
@@ -521,7 +697,7 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
     control_flow_pop_state(ctx);
 
     /* leave scope */
-    scope_stack_pop(ctx->env);
+    sema_pop_scope(ctx);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -639,7 +815,7 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     }
 
     /* register symbol */
-    scope_stack_register(ctx->env, (DeclNode *)p);
+    scope_stack_register(ctx->env, p->identifier, p);
 
     if (ctx->current_function) {
         /* local variable */
@@ -680,7 +856,7 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
     }
 
     /* register symbol */
-    scope_stack_register(ctx->env, (DeclNode *)p);
+    scope_stack_register(ctx->env, p->identifier, p);
 
     return p;
 }
@@ -689,7 +865,7 @@ void sema_function_enter_params(ParserContext *ctx) {
     assert(ctx);
 
     /* enter parameter scope */
-    scope_stack_push(ctx->env);
+    sema_push_scope(ctx);
 }
 
 FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
@@ -707,7 +883,7 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     assert(num_params >= 0);
 
     /* leave parameter scope */
-    scope_stack_pop(ctx->env);
+    sema_pop_scope(ctx);
 
     /* make function type */
     param_types = malloc(sizeof(Type *) * num_params);
@@ -745,7 +921,7 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     }
 
     /* register symbol */
-    scope_stack_register(ctx->env, (DeclNode *)p);
+    scope_stack_register(ctx->env, p->identifier, p);
 
     return p;
 }
@@ -760,11 +936,11 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
     ctx->locals = vec_new();
 
     /* enter parameter scope */
-    scope_stack_push(ctx->env);
+    sema_push_scope(ctx);
 
     /* register parameters */
     for (i = 0; i < p->num_params; i++) {
-        scope_stack_register(ctx->env, (DeclNode *)p->params[i]);
+        scope_stack_register(ctx->env, p->params[i]->identifier, p->params[i]);
     }
 }
 
@@ -787,7 +963,7 @@ FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
     }
 
     /* leave parameter scope */
-    scope_stack_pop(ctx->env);
+    sema_pop_scope(ctx);
 
     ctx->current_function = NULL;
     ctx->locals = NULL;
@@ -805,6 +981,7 @@ ParserContext *sema_translation_unit_enter(const char *src) {
 
     ctx = malloc(sizeof(*ctx));
     ctx->env = scope_stack_new();
+    ctx->struct_env = scope_stack_new();
     ctx->tokens = (const Token **)tokens->data;
     ctx->index = 0;
     ctx->current_function = NULL;
@@ -823,6 +1000,7 @@ TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
 
     assert(ctx);
     assert(scope_stack_depth(ctx->env) == 1);
+    assert(scope_stack_depth(ctx->struct_env) == 1);
     assert(ctx->flow_state->size == 1);
     assert(filename);
     assert(decls != NULL || num_decls == 0);

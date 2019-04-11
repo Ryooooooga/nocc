@@ -15,13 +15,14 @@ const Token *consume_token(ParserContext *ctx) {
     return ctx->tokens[ctx->index++];
 }
 
-bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
+bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
     assert(ctx);
     assert(t);
 
     switch (t->kind) {
     case token_void:
     case token_int:
+    case token_struct:
         return true;
 
     case token_identifier:
@@ -33,6 +34,83 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     }
 }
 
+MemberNode *parse_struct_member(ParserContext *ctx) {
+    Type *type;
+    const Token *t;
+
+    /* type */
+    type = parse_type(ctx);
+
+    /* identifier */
+    t = consume_token(ctx);
+
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* make node */
+    return sema_struct_member(ctx, type, t);
+}
+
+Type *parse_struct_type(ParserContext *ctx) {
+    StructType *type;
+
+    const Token *t;
+    const Token *identifier;
+    Vec *members;
+
+    /* struct */
+    t = consume_token(ctx);
+
+    if (t->kind != token_struct) {
+        fprintf(stderr, "expected struct, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* identifier */
+    identifier = consume_token(ctx);
+
+    if (identifier->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
+        exit(1);
+    }
+
+    /* { */
+    if (current_token(ctx)->kind != '{') {
+        return sema_struct_type_without_body(ctx, t, identifier);
+    }
+    consume_token(ctx);
+
+    /* register symbol and enter struct scope */
+    type = sema_struct_type_enter(ctx, t, identifier);
+
+    /* member declarations */
+    members = vec_new();
+
+    while (current_token(ctx)->kind != '}') {
+        vec_push(members, parse_struct_member(ctx));
+    }
+
+    /* } */
+    if (current_token(ctx)->kind != '}') {
+        fprintf(stderr, "expected }, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* leave struct scope and make node */
+    return sema_struct_type_leave(ctx, type, (MemberNode **)members->data,
+                                  members->size);
+}
+
 Type *parse_primary_type(ParserContext *ctx) {
     switch (current_token(ctx)->kind) {
     case token_void:
@@ -42,6 +120,9 @@ Type *parse_primary_type(ParserContext *ctx) {
     case token_int:
         consume_token(ctx); /* eat int */
         return type_get_int32();
+
+    case token_struct:
+        return parse_struct_type(ctx);
 
     default:
         fprintf(stderr, "expected type, but got %s\n",
@@ -197,6 +278,30 @@ ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
                           args->size, close);
 }
 
+ExprNode *parse_dot_expr(ParserContext *ctx, ExprNode *parent) {
+    const Token *t;
+    const Token *identifier;
+
+    /* . */
+    t = consume_token(ctx);
+
+    if (t->kind != '.') {
+        fprintf(stderr, "expected ., but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* identifier */
+    identifier = consume_token(ctx);
+
+    if (identifier->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
+        exit(1);
+    }
+
+    /* make node */
+    return sema_dot_expr(ctx, parent, t, identifier);
+}
+
 ExprNode *parse_postfix_expr(ParserContext *ctx) {
     ExprNode *operand;
 
@@ -206,6 +311,10 @@ ExprNode *parse_postfix_expr(ParserContext *ctx) {
         switch (current_token(ctx)->kind) {
         case '(':
             operand = parse_call_expr(ctx, operand);
+            break;
+
+        case '.':
+            operand = parse_dot_expr(ctx, operand);
             break;
 
         default:
@@ -728,7 +837,7 @@ StmtNode *parse_stmt(ParserContext *ctx) {
         return parse_continue_stmt(ctx);
 
     default:
-        if (is_type_specifier_token(ctx, current_token(ctx))) {
+        if (is_declaration_specifier_token(ctx, current_token(ctx))) {
             return parse_decl_stmt(ctx);
         }
         return parse_expr_stmt(ctx);

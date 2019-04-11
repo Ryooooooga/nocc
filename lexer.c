@@ -76,6 +76,8 @@ Token *lex_token(const char *src, int *index, int *line) {
                 t->kind = token_void;
             } else if (strcmp(t->text, "int") == 0) {
                 t->kind = token_int;
+            } else if (strcmp(t->text, "struct") == 0) {
+                t->kind = token_struct;
             }
 
             return t;
