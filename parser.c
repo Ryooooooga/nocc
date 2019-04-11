@@ -960,6 +960,11 @@ DeclNode *parse_var_decl(ParserContext *ctx) {
     /* type */
     type = parse_type(ctx);
 
+    /* ;? */
+    if (current_token(ctx)->kind == ';') {
+        return NULL;
+    }
+
     /* identifier */
     t = consume_token(ctx);
 
@@ -1005,7 +1010,23 @@ ParamNode *parse_param(ParserContext *ctx) {
     return sema_param(ctx, type, t);
 }
 
-DeclNode *parse_top_level(ParserContext *ctx) {
+DeclNode *parse_top_level_typedef(ParserContext *ctx) {
+    DeclNode *decl;
+
+    /* typedef */
+    decl = parse_typedef(ctx);
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    return decl;
+}
+
+DeclNode *parse_function(ParserContext *ctx) {
     const Token *t;
     Type *return_type;
     Vec *params;
@@ -1013,10 +1034,15 @@ DeclNode *parse_top_level(ParserContext *ctx) {
 
     FunctionNode *p;
 
-    assert(ctx);
-
     /* type */
     return_type = parse_type(ctx);
+
+    /* ;? */
+    if (current_token(ctx)->kind == ';') {
+        consume_token(ctx);
+
+        return NULL;
+    }
 
     /* identifier */
     t = consume_token(ctx);
@@ -1024,6 +1050,14 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     if (t->kind != token_identifier) {
         fprintf(stderr, "expected identifier, but got %s\n", t->text);
         exit(1);
+    }
+
+    /* ;? */
+    if (current_token(ctx)->kind == ';') {
+        consume_token(ctx);
+
+        /* global variable */
+        return sema_var_decl(ctx, return_type, t);
     }
 
     /* ( */
@@ -1083,8 +1117,21 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     return (DeclNode *)sema_function_leave_body(ctx, p, body);
 }
 
+DeclNode *parse_top_level(ParserContext *ctx) {
+    assert(ctx);
+
+    switch (current_token(ctx)->kind) {
+    case token_typedef:
+        return parse_top_level_typedef(ctx);
+
+    default:
+        return parse_function(ctx);
+    }
+}
+
 TranslationUnitNode *parse(const char *filename, const char *src) {
     ParserContext *ctx;
+    DeclNode *decl;
     Vec *decls;
 
     assert(filename);
@@ -1097,7 +1144,11 @@ TranslationUnitNode *parse(const char *filename, const char *src) {
     decls = vec_new();
 
     while (current_token(ctx)->kind != '\0') {
-        vec_push(decls, parse_top_level(ctx));
+        decl = parse_top_level(ctx);
+
+        if (decl) {
+            vec_push(decls, decl);
+        }
     }
 
     /* make node */

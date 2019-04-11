@@ -73,6 +73,56 @@ void test_engine(void) {
                              "}\n",
                              "variables", 4, 20);
 
+    test_engine_run_function("global",
+                             "int a;\n"
+                             "int global(int n) {\n"
+                             "  return a;\n"
+                             "}\n",
+                             "global", 4, 0);
+
+    test_engine_run_function("global2",
+                             "int a;\n"
+                             "int global2(int n) {\n"
+                             "  a = n;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "global2", 4, 4);
+
+    test_engine_run_function("global2",
+                             "int a;\n"
+                             "int global2(int n) {\n"
+                             "  a = n;\n"
+                             "  return a;\n"
+                             "}\n",
+                             "global2", 4, 4);
+
+    test_engine_run_function("global3",
+                             "int a;\n"
+                             "int b;\n"
+                             "int global3(int n) {\n"
+                             "  a = n;\n"
+                             "  b = 3;\n"
+                             "  return a * b;\n"
+                             "}\n",
+                             "global3", 4, 12);
+
+    test_engine_run_function("global4",
+                             "int *a;\n"
+                             "int b;\n"
+                             "int global4(int n) {\n"
+                             "  a = &n;\n"
+                             "  b = 3;\n"
+                             "  return *a * b;\n"
+                             "}\n",
+                             "global4", 4, 12);
+
+    test_engine_run_function("global5",
+                             "int *a;\n"
+                             "int global5(int n) {\n"
+                             "  return a == (int *)0;\n"
+                             "}\n",
+                             "global5", 0, 1);
+
     test_engine_run_function("sum",
                              "int sum(int n) {\n"
                              "  int sum;\n"
@@ -206,6 +256,28 @@ void test_engine(void) {
                              "}\n",
                              "struct2", 42, 84);
 
+    test_engine_run_function("struct3",
+                             "struct a {\n"
+                             "  int x;\n"
+                             "  int y;\n"
+                             "};\n"
+                             "int struct3(int n) {\n"
+                             "  struct a a;\n"
+                             "  a.x = n;\n"
+                             "  a.y = 3;\n"
+                             "  return a.x + a.y;\n"
+                             "}\n",
+                             "struct3", 42, 45);
+
+    test_engine_run_function("struct4",
+                             "int struct4(int n) {\n"
+                             "  struct a { int x; };\n"
+                             "  struct a a;\n"
+                             "  a.x = n;\n"
+                             "  return a.x;\n"
+                             "}\n",
+                             "struct4", 42, 42);
+
     test_engine_run_function("typedef",
                              "int typedef_(int n) {\n"
                              "  typedef struct a {int x;} a;\n"
@@ -214,6 +286,13 @@ void test_engine(void) {
                              "  return b.x;\n"
                              "}\n",
                              "typedef_", 42, 42);
+
+    test_engine_run_function("typedef2",
+                             "typedef int a;\n"
+                             "int typedef2(a n) {\n"
+                             "  return n;\n"
+                             "}\n",
+                             "typedef2", 42, 42);
 
     test_engine_run_function("cast",
                              "int cast(int n) {\n"
