@@ -15,7 +15,7 @@ const Token *consume_token(ParserContext *ctx) {
     return ctx->tokens[ctx->index++];
 }
 
-bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
+bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     assert(ctx);
     assert(t);
 
@@ -31,6 +31,16 @@ bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
 
     default:
         return false;
+    }
+}
+
+bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
+    switch (t->kind) {
+    case token_typedef:
+        return true;
+
+    default:
+        return is_type_specifier_token(ctx, t);
     }
 }
 
@@ -774,8 +784,8 @@ StmtNode *parse_decl_stmt(ParserContext *ctx) {
     const Token *t;
     DeclNode *decl;
 
-    /* variable declaration */
-    decl = parse_var_decl(ctx);
+    /* declaration */
+    decl = parse_decl(ctx);
 
     /* ; */
     t = consume_token(ctx);
@@ -844,11 +854,37 @@ StmtNode *parse_stmt(ParserContext *ctx) {
     }
 }
 
+DeclNode *parse_typedef(ParserContext *ctx) {
+    const Token *t;
+    const Token *identifier;
+    Type *type;
+
+    /* typedef */
+    t = consume_token(ctx);
+
+    if (t->kind != token_typedef) {
+        fprintf(stderr, "expected typedef, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* type */
+    type = parse_type(ctx);
+
+    /* identifier */
+    identifier = consume_token(ctx);
+
+    if (identifier->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
+        exit(1);
+    }
+
+    /* register type symbol and make node */
+    return sema_typedef(ctx, t, type, identifier);
+}
+
 DeclNode *parse_var_decl(ParserContext *ctx) {
     Type *type;
     const Token *t;
-
-    assert(ctx);
 
     /* type */
     type = parse_type(ctx);
@@ -863,6 +899,18 @@ DeclNode *parse_var_decl(ParserContext *ctx) {
 
     /* register symbol and make node */
     return sema_var_decl(ctx, type, t);
+}
+
+DeclNode *parse_decl(ParserContext *ctx) {
+    assert(ctx);
+
+    switch (current_token(ctx)->kind) {
+    case token_typedef:
+        return parse_typedef(ctx);
+
+    default:
+        return parse_var_decl(ctx);
+    }
 }
 
 ParamNode *parse_param(ParserContext *ctx) {

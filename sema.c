@@ -238,8 +238,19 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
         exit(1);
     }
 
-    p->type = p->declaration->type;
-    p->is_lvalue = true;
+    switch (p->declaration->kind) {
+    case node_variable:
+    case node_param:
+    case node_function:
+        p->type = p->declaration->type;
+        p->is_lvalue = true;
+        break;
+
+    default:
+        fprintf(stderr, "symbol %s is not a variable: %d\n", p->identifier,
+                p->declaration->kind);
+        exit(1);
+    }
 
     return (ExprNode *)p;
 }
@@ -787,6 +798,29 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     return (StmtNode *)p;
 }
 
+DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
+                       const Token *identifier) {
+    TypedefNode *p;
+
+    assert(ctx);
+    assert(t);
+    assert(type);
+    assert(identifier);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_typedef;
+    p->line = t->line;
+    p->identifier = str_dup(identifier->text);
+    p->type = type;
+    p->generated_location = NULL;
+
+    /* TODO: redefinition check */
+
+    /* TODO: register type symbol */
+
+    return (DeclNode *)p;
+}
 DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     VariableNode *p;
 
