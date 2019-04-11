@@ -205,4 +205,13 @@ void test_engine(void) {
                              "  return f(n, 2 * n).y;\n"
                              "}\n",
                              "struct2", 42, 84);
+
+    test_engine_run_function("typedef",
+                             "int typedef_(int n) {\n"
+                             "  typedef struct a {int x;} a;\n"
+                             "  a b;\n"
+                             "  b.x = n;\n"
+                             "  return b.x;\n"
+                             "}\n",
+                             "typedef_", 42, 42);
 }
