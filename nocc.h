@@ -46,6 +46,7 @@ void map_add(Map *m, const char *k, void *v);
 
 enum {
     token_number = 256,
+    token_string,
     token_identifier,
     token_if,
     token_else,
@@ -71,6 +72,8 @@ struct Token {
     int kind;
     char *text;
     int line;
+    char *string;
+    int len_string;
 };
 
 typedef struct Token Token;

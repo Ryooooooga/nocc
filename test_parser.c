@@ -6,8 +6,8 @@ void test_parsing_type_void(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_void, "void", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_void, "void", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -23,8 +23,8 @@ void test_parsing_type_int(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_int, "int", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_int, "int", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -40,8 +40,8 @@ void test_parsing_integer(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "42", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -61,8 +61,8 @@ void test_parsing_identifier(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_identifier, "xyz", 1},
-                &(Token){'\0', "", 1},
+                &(Token){token_identifier, "xyz", 1, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -207,9 +207,9 @@ void test_parsing_negative(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){'-', "-", 1},
-                &(Token){token_number, "10", 2},
-                &(Token){'\0', "", 1},
+                &(Token){'-', "-", 1, NULL, 0},
+                &(Token){token_number, "10", 2, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -236,11 +236,11 @@ void test_parsing_addition(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "6", 1},
-                &(Token){'+', "+", 1},
-                &(Token){token_number, "12", 2},
-                &(Token){token_number, "10", 2},
-                &(Token){'\0', "", 1},
+                &(Token){token_number, "6", 1, NULL, 0},
+                &(Token){'+', "+", 1, NULL, 0},
+                &(Token){token_number, "12", 2, NULL, 0},
+                &(Token){token_number, "10", 2, NULL, 0},
+                &(Token){'\0', "", 1, NULL, 0},
             },
         .index = 0,
     };
@@ -271,12 +271,12 @@ void test_parsing_multiplication(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "6", 1},
-                &(Token){'+', "+", 1},
-                &(Token){token_number, "4", 1},
-                &(Token){'*', "*", 1},
-                &(Token){token_number, "3", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_number, "6", 1, NULL, 0},
+                &(Token){'+', "+", 1, NULL, 0},
+                &(Token){token_number, "4", 1, NULL, 0},
+                &(Token){'*', "*", 1, NULL, 0},
+                &(Token){token_number, "3", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -309,14 +309,14 @@ void test_parsing_paren(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){'(', "(", 1},
-                &(Token){token_number, "6", 1},
-                &(Token){'+', "+", 1},
-                &(Token){token_number, "4", 1},
-                &(Token){')', ")", 1},
-                &(Token){'*', "*", 1},
-                &(Token){token_number, "3", 1},
-                &(Token){'\0', "", 2},
+                &(Token){'(', "(", 1, NULL, 0},
+                &(Token){token_number, "6", 1, NULL, 0},
+                &(Token){'+', "+", 1, NULL, 0},
+                &(Token){token_number, "4", 1, NULL, 0},
+                &(Token){')', ")", 1, NULL, 0},
+                &(Token){'*', "*", 1, NULL, 0},
+                &(Token){token_number, "3", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -349,9 +349,9 @@ void test_parsing_expr_stmt(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "42", 1},
-                &(Token){';', ";", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -380,10 +380,10 @@ void test_parsing_return_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){token_return, "return", 1},
-                &(Token){token_number, "42", 1},
-                &(Token){';', ";", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_return, "return", 1, NULL, 0},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -413,9 +413,9 @@ void test_parsing_return_void_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){token_return, "return", 1},
-                &(Token){';', ";", 1},
-                &(Token){'\0', "", 2},
+                &(Token){token_return, "return", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
@@ -452,13 +452,13 @@ void test_parsing_compound_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){'{', "{", 1},
-                &(Token){token_number, "42", 1},
-                &(Token){';', ";", 1},
-                &(Token){token_return, "return", 1},
-                &(Token){';', ";", 1},
-                &(Token){'}', "}", 1},
-                &(Token){'\0', "", 2},
+                &(Token){'{', "{", 1, NULL, 0},
+                &(Token){token_number, "42", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){token_return, "return", 1, NULL, 0},
+                &(Token){';', ";", 1, NULL, 0},
+                &(Token){'}', "}", 1, NULL, 0},
+                &(Token){'\0', "", 2, NULL, 0},
             },
         .index = 0,
     };
