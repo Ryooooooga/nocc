@@ -16,6 +16,8 @@ const Token *consume_token(ParserContext *ctx) {
 }
 
 bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
+    DeclNode *symbol;
+
     assert(ctx);
     assert(t);
 
@@ -26,8 +28,8 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
         return true;
 
     case token_identifier:
-        /* TODO: typedef name */
-        return false;
+        symbol = scope_stack_find(ctx->env, t->text, true);
+        return symbol->kind == node_typedef;
 
     default:
         return false;
@@ -68,6 +70,20 @@ MemberNode *parse_struct_member(ParserContext *ctx) {
 
     /* make node */
     return sema_struct_member(ctx, type, t);
+}
+
+Type *parse_identifier_type(ParserContext *ctx) {
+    const Token *t;
+
+    /* identifier */
+    t = consume_token(ctx);
+
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", t->text);
+    }
+
+    /* get type */
+    return sema_identifier_type(ctx, t);
 }
 
 Type *parse_struct_type(ParserContext *ctx) {
@@ -130,6 +146,9 @@ Type *parse_primary_type(ParserContext *ctx) {
     case token_int:
         consume_token(ctx); /* eat int */
         return type_get_int32();
+
+    case token_identifier:
+        return parse_identifier_type(ctx);
 
     case token_struct:
         return parse_struct_type(ctx);

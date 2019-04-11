@@ -72,6 +72,29 @@ bool assign_into(ExprNode **expr, Type *dest_type) {
     return false;
 }
 
+Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
+    DeclNode *p;
+
+    assert(ctx);
+    assert(t);
+
+    /* find symbol */
+    p = scope_stack_find(ctx->env, t->text, true);
+
+    if (p == NULL) {
+        fprintf(stderr, "type %s not found in this scope\n", t->text);
+        exit(1);
+    }
+
+    /* check the symbol kind */
+    if (p->kind != node_typedef) {
+        fprintf(stderr, "symbol %s is not a type\n", t->text);
+        exit(1);
+    }
+
+    return ((TypedefNode *)p)->type;
+}
+
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     MemberNode *p;
 

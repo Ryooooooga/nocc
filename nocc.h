@@ -422,6 +422,7 @@ ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src);
 
+Type *sema_identifier_type(ParserContext *ctx, const Token *t);
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t);
 Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
                                     const Token *identifier);
