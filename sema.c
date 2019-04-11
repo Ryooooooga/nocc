@@ -372,7 +372,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
                          const Token *close) {
     CallNode *p;
-    Type *callee_type;
+    Type *func_type;
     int i;
 
     assert(ctx);
@@ -401,24 +401,24 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
         exit(1);
     }
 
-    callee_type = pointer_element_type(p->callee->type);
+    func_type = pointer_element_type(p->callee->type);
 
     /* check argument types */
-    if (num_args != function_count_param_types(callee_type)) {
+    if (num_args != function_count_param_types(func_type)) {
         fprintf(stderr, "invalid number of arguments\n");
         exit(1);
     }
 
     for (i = 0; i < num_args; i++) {
         if (!assign_type_convert(&p->args[i],
-                                 function_param_type(callee_type, i))) {
+                                 function_param_type(func_type, i))) {
             fprintf(stderr, "invalid type of argument\n");
             exit(1);
         }
     }
 
     /* result type */
-    p->type = function_return_type(callee_type);
+    p->type = function_return_type(func_type);
 
     return (ExprNode *)p;
 }
