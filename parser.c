@@ -33,8 +33,10 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
 
     switch (t->kind) {
     case token_void:
+    case token_char:
     case token_int:
     case token_struct:
+    case token_const:
         return true;
 
     case token_identifier:
@@ -153,6 +155,10 @@ Type *parse_primary_type(ParserContext *ctx) {
         consume_token(ctx); /* eat void */
         return type_get_void();
 
+    case token_char:
+        consume_token(ctx); /* eat char */
+        return type_get_int8();
+
     case token_int:
         consume_token(ctx); /* eat int */
         return type_get_int32();
@@ -171,11 +177,24 @@ Type *parse_primary_type(ParserContext *ctx) {
 }
 
 Type *parse_type(ParserContext *ctx) {
+    bool is_const;
     Type *type;
 
     assert(ctx);
 
+    /* const? */
+    is_const = false;
+
+    if (current_token(ctx)->kind == token_const) {
+        consume_token(ctx); /* eat const */
+
+        is_const = true;
+    }
+
+    /* primary type */
     type = parse_primary_type(ctx);
+
+    /* TODO: const type */
 
     /* pointer type */
     while (current_token(ctx)->kind == '*') {

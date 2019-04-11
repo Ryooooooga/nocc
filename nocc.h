@@ -56,7 +56,9 @@ enum {
     token_break,
     token_continue,
     token_void,
+    token_char,
     token_int,
+    token_const,
     token_struct,
     token_typedef,
     token_lesser_equal,
@@ -77,6 +79,7 @@ Vec *lex(const char *src);
 
 enum {
     type_void,
+    type_int8,
     type_int32,
     type_pointer,
     type_function,
@@ -116,6 +119,7 @@ struct StructType {
 };
 
 Type *type_get_void(void);
+Type *type_get_int8(void);
 Type *type_get_int32(void);
 Type *pointer_type_new(Type *element_type);
 Type *function_type_new(Type *return_type, Type **param_types, int num_params,
@@ -123,6 +127,7 @@ Type *function_type_new(Type *return_type, Type **param_types, int num_params,
 
 bool type_equals(Type *a, Type *b);
 bool is_void_type(Type *t);
+bool is_int8_type(Type *t);
 bool is_int32_type(Type *t);
 bool is_pointer_type(Type *t);
 bool is_function_type(Type *t);

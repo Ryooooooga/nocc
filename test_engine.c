@@ -302,4 +302,35 @@ void test_engine(void) {
                              "  return 9;\n"
                              "}\n",
                              "cast", 42, 9);
+
+    test_engine_run_function("char1",
+                             "char c;\n"
+                             "int char1(int n) {\n"
+                             "  return c;\n"
+                             "}\n",
+                             "char1", 0, 0);
+
+    test_engine_run_function("char2",
+                             "int char2(int n) {\n"
+                             "  char c;\n"
+                             "  c = n;\n"
+                             "  return c;\n"
+                             "}\n",
+                             "char2", 5, 5);
+
+    test_engine_run_function("char3",
+                             "int char3(int n) {\n"
+                             "  char c;\n"
+                             "  c = n;\n"
+                             "  n = c;\n"
+                             "  return n + c;\n"
+                             "}\n",
+                             "char3", 5, 10);
+
+    test_engine_run_function("string",
+                             "int strlen(const char *s);\n"
+                             "int string(int n) {\n"
+                             "  return strlen(\"hello\");\n"
+                             "}\n",
+                             "string", 0, 5);
 }
