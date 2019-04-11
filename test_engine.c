@@ -206,6 +206,19 @@ void test_engine(void) {
                              "}\n",
                              "struct2", 42, 84);
 
+    test_engine_run_function("struct3",
+                             "struct a {\n"
+                             "  int x;\n"
+                             "  int y;\n"
+                             "};\n"
+                             "int struct3(int n) {\n"
+                             "  struct a a;\n"
+                             "  a.x = n;\n"
+                             "  a.y = 3;\n"
+                             "  return a.x + a.y;\n"
+                             "}\n",
+                             "struct3", 42, 45);
+
     test_engine_run_function("struct4",
                              "int struct4(int n) {\n"
                              "  struct a { int x; };\n"
@@ -223,6 +236,13 @@ void test_engine(void) {
                              "  return b.x;\n"
                              "}\n",
                              "typedef_", 42, 42);
+
+    test_engine_run_function("typedef2",
+                             "typedef int a;\n"
+                             "int typedef2(a n) {\n"
+                             "  return n;\n"
+                             "}\n",
+                             "typedef2", 42, 42);
 
     test_engine_run_function("cast",
                              "int cast(int n) {\n"
