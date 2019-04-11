@@ -135,7 +135,8 @@ int function_count_param_types(Type *t);
 Type *function_param_type(Type *t, int index);
 int struct_type_count_members(Type *t);
 struct MemberNode *struct_type_member(Type *t, int index);
-struct MemberNode *struct_type_find_member(Type *t, const char *member_name);
+struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
+                                           int *index);
 
 enum {
     node_integer,
@@ -250,6 +251,7 @@ struct DotNode {
     bool is_lvalue;
     ExprNode *parent;
     char *identifier;
+    int index;
 };
 
 struct StmtNode {

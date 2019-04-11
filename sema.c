@@ -317,6 +317,7 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
     p->is_lvalue = false;
     p->parent = parent;
     p->identifier = str_dup(identifier->text);
+    p->index = -1;
 
     /* check the parent type */
     if (!is_struct_type(parent->type)) {
@@ -325,7 +326,7 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
     }
 
     /* resolve member */
-    member = struct_type_find_member(parent->type, p->identifier);
+    member = struct_type_find_member(parent->type, p->identifier, &p->index);
 
     if (member == NULL) {
         fprintf(stderr, "cannot find member named %s\n", p->identifier);

@@ -198,24 +198,26 @@ struct MemberNode *struct_type_member(Type *t, int index) {
     return ((StructType *)t)->members[index];
 }
 
-struct MemberNode *struct_type_find_member(Type *t, const char *member_name) {
+struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
+                                           int *index) {
     MemberNode *member;
-    int i;
 
     assert(t);
     assert(member_name);
+    assert(index);
 
     if (!is_struct_type(t)) {
         return NULL;
     }
 
-    for (i = 0; struct_type_count_members(t); i++) {
-        member = struct_type_member(t, i);
+    for (*index = 0; struct_type_count_members(t); (*index)++) {
+        member = struct_type_member(t, *index);
 
         if (strcmp(member->identifier, member_name) == 0) {
             return member;
         }
     }
 
+    *index = -1;
     return NULL;
 }

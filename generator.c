@@ -237,6 +237,15 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
     }
 }
 
+LLVMValueRef generate_dot_expr(GeneratorContext *ctx, DotNode *p) {
+    LLVMValueRef addr;
+
+    addr = generate_expr_addr(ctx, (ExprNode *)p);
+
+    /* TODO: member of rvalue */
+    return LLVMBuildLoad(ctx->builder, addr, "member");
+}
+
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
     assert(p);
     assert(ctx);
@@ -256,6 +265,9 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
     case node_binary:
         return generate_binary_expr(ctx, (BinaryNode *)p);
+
+    case node_dot:
+        return generate_dot_expr(ctx, (DotNode *)p);
 
     default:
         fprintf(stderr, "unknown expression %d\n", p->kind);
@@ -283,6 +295,16 @@ LLVMValueRef generate_unary_expr_addr(GeneratorContext *ctx, UnaryNode *p) {
     }
 }
 
+LLVMValueRef generate_dot_expr_addr(GeneratorContext *ctx, DotNode *p) {
+    LLVMValueRef parent;
+
+    assert(p->is_lvalue);
+
+    parent = generate_expr_addr(ctx, p->parent);
+
+    return LLVMBuildStructGEP(ctx->builder, parent, p->index, "memaddr");
+}
+
 LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     assert(p);
     assert(ctx);
@@ -298,6 +320,9 @@ LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
 
     case node_unary:
         return generate_unary_expr_addr(ctx, (UnaryNode *)p);
+
+    case node_dot:
+        return generate_dot_expr_addr(ctx, (DotNode *)p);
 
     default:
         fprintf(stderr, "unknown expression address %d\n", p->kind);
