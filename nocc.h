@@ -128,6 +128,7 @@ bool is_pointer_type(Type *t);
 bool is_function_type(Type *t);
 bool is_struct_type(Type *t);
 bool is_incomplete_type(Type *t);
+bool is_void_pointer_type(Type *t);
 bool is_incomplete_pointer_type(Type *t);
 
 Type *pointer_element_type(Type *t);
@@ -144,6 +145,7 @@ enum {
     node_identifier,
     node_call,
     node_unary,
+    node_cast,
     node_binary,
     node_dot,
 
@@ -170,6 +172,7 @@ typedef struct IntegerNode IntegerNode;
 typedef struct IdentifierNode IdentifierNode;
 typedef struct CallNode CallNode;
 typedef struct UnaryNode UnaryNode;
+typedef struct CastNode CastNode;
 typedef struct BinaryNode BinaryNode;
 typedef struct DotNode DotNode;
 
@@ -234,6 +237,14 @@ struct UnaryNode {
     Type *type;
     bool is_lvalue;
     int operator_;
+    ExprNode *operand;
+};
+
+struct CastNode {
+    int kind;
+    int line;
+    Type *type;
+    bool is_lvalue;
     ExprNode *operand;
 };
 
@@ -414,6 +425,7 @@ struct ParserContext {
 typedef struct ParserContext ParserContext;
 
 Type *parse_type(ParserContext *ctx);
+ExprNode *parse_unary_expr(ParserContext *ctx);
 ExprNode *parse_assign_expr(ParserContext *ctx);
 ExprNode *parse_expr(ParserContext *ctx);
 StmtNode *parse_stmt(ParserContext *ctx);
@@ -442,6 +454,8 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
                         const Token *identifier);
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand);
+ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
+                         const Token *close, ExprNode *operand);
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
                            ExprNode *right);
 

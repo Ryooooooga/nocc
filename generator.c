@@ -170,6 +170,51 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
     }
 }
 
+LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
+    LLVMValueRef operand;
+    LLVMTypeRef dest_type;
+    char *src_type_str;
+    char *dest_type_str;
+
+    operand = generate_expr(ctx, p->operand);
+    dest_type = generate_type(ctx, p->type);
+
+    switch (p->type->kind) {
+    case type_void:
+        /* T -> void */
+        return operand;
+
+    case type_pointer:
+        switch (p->operand->type->kind) {
+        case type_int32:
+            /* int32 -> T* */
+            return LLVMBuildIntToPtr(ctx->builder, operand, dest_type,
+                                     "inttoptr");
+
+        case type_pointer:
+            /* T* -> U* */
+            return LLVMBuildPointerCast(ctx->builder, operand, dest_type,
+                                        "ptrcast");
+
+        default:
+            break;
+        }
+
+    default:
+        break;
+    }
+
+    src_type_str = LLVMPrintTypeToString(LLVMTypeOf(operand));
+    dest_type_str = LLVMPrintTypeToString(dest_type);
+
+    fprintf(stderr, "unimplemented type cast %s -> %s\n", src_type_str,
+            dest_type_str);
+
+    LLVMDisposeMessage(dest_type_str);
+    LLVMDisposeMessage(src_type_str);
+    exit(1);
+}
+
 LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
     LLVMValueRef left;
     LLVMValueRef right;
@@ -261,6 +306,9 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
     case node_unary:
         return generate_unary_expr(ctx, (UnaryNode *)p);
+
+    case node_cast:
+        return generate_cast_expr(ctx, (CastNode *)p);
 
     case node_binary:
         return generate_binary_expr(ctx, (BinaryNode *)p);

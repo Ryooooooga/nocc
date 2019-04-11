@@ -60,12 +60,33 @@ bool is_continue_accepted(ParserContext *ctx) {
     return control_flow_current_state(ctx) & control_flow_state_continue_bit;
 }
 
+ExprNode *implicit_cast_node_new(ExprNode *expr, Type *dest_type) {
+    CastNode *p;
+
+    assert(expr);
+    assert(dest_type);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_cast;
+    p->line = expr->line;
+    p->type = dest_type;
+    p->is_lvalue = false;
+    p->operand = expr;
+
+    return (ExprNode *)p;
+}
+
 bool assign_into(ExprNode **expr, Type *dest_type) {
     if (is_incomplete_type((*expr)->type)) {
         return false;
     }
 
     if (type_equals((*expr)->type, dest_type)) {
+        return true;
+    }
+
+    if (is_void_pointer_type((*expr)->type) && is_pointer_type(dest_type)) {
+        *expr = implicit_cast_node_new(*expr, dest_type);
         return true;
     }
 
@@ -436,6 +457,65 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     return (ExprNode *)p;
 }
 
+ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
+                         const Token *close, ExprNode *operand) {
+    CastNode *p;
+
+    assert(ctx);
+    assert(open);
+    assert(type);
+    assert(close);
+    assert(operand);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_cast;
+    p->line = open->line;
+    p->type = type;
+    p->is_lvalue = false;
+    p->operand = operand;
+
+    /* type check */
+    if (type_equals(p->type, p->operand->type)) {
+        /* T -> T */
+        return (ExprNode *)p;
+    }
+
+    if (!is_void_type(p->type) && is_incomplete_type(p->type)) {
+        /* T -> <incomplete type> */
+        fprintf(stderr, "cannot convert to an incomplete type\n");
+        exit(1);
+    }
+
+    if (is_void_type(p->operand->type)) {
+        /* void -> T */
+        fprintf(stderr, "invalid cast from void\n");
+        exit(1);
+    }
+
+    if (is_void_type(p->type)) {
+        /* T -> void */
+        return (ExprNode *)p;
+    }
+
+    if (is_pointer_type(p->type) && is_pointer_type(p->operand->type)) {
+        /* T* -> U* */
+        return (ExprNode *)p;
+    }
+
+    if (is_pointer_type(p->type) && is_int32_type(p->operand->type)) {
+        /* int32 -> T* */
+        return (ExprNode *)p;
+    }
+
+    if (is_int32_type(p->type) && is_pointer_type(p->operand->type)) {
+        /* T* -> int32 */
+        return (ExprNode *)p;
+    }
+
+    fprintf(stderr, "invalid cast\n");
+    exit(1);
+}
+
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
                            ExprNode *right) {
     BinaryNode *p;
@@ -477,7 +557,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case token_equal:
     case token_not_equal:
         /* relational operator */
-        if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
+        if (!is_int32_type(p->left->type) || !is_int32_type(p->right->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -488,19 +568,19 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 
     case '=':
         /* assignment operator */
-        if (!left->is_lvalue) {
+        if (!p->left->is_lvalue) {
             fprintf(stderr, "cannot assign to rvalue\n");
             exit(1);
         }
 
         /* assignment type conversion */
-        if (!assign_into(&right, left->type)) {
+        if (!assign_into(&p->right, p->left->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
         }
 
-        p->type = right->type;
+        p->type = p->right->type;
         break;
 
     default:
