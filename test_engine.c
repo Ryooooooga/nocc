@@ -323,7 +323,7 @@ void test_engine(void) {
                              "  char c;\n"
                              "  c = n;\n"
                              "  n = c;\n"
-                             "  return n + c;\n"
+                             "  return n + (int)c;\n"
                              "}\n",
                              "char3", 5, 10);
 

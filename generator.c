@@ -176,30 +176,70 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
 }
 
 LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
-    LLVMValueRef operand;
+    LLVMValueRef src;
     LLVMTypeRef dest_type;
     char *src_type_str;
     char *dest_type_str;
 
-    operand = generate_expr(ctx, p->operand);
+    src = generate_expr(ctx, p->operand);
     dest_type = generate_type(ctx, p->type);
 
     switch (p->type->kind) {
     case type_void:
         /* T -> void */
-        return operand;
+        return src;
+
+    case type_int8:
+        /* T -> int8 */
+        switch (p->operand->type->kind) {
+        case type_int8:
+            /* int8 -> int8 */
+            return src;
+
+        case type_int32:
+            /* int32 -> int8 */
+            return LLVMBuildTrunc(ctx->builder, src, dest_type, "trunc");
+
+        case type_pointer:
+            /* T* -> int8 */
+            return LLVMBuildPtrToInt(ctx->builder, src, dest_type, "ptrtoint8");
+
+        default:
+            break;
+        }
+
+    case type_int32:
+        /* T -> int32 */
+        switch (p->operand->type->kind) {
+        case type_int8:
+            /* int8 -> int32 */
+            return LLVMBuildSExt(ctx->builder, src, dest_type, "sext");
+
+        case type_int32:
+            /* int32 -> int32 */
+            return src;
+
+        case type_pointer:
+            /* T* -> int32 */
+            return LLVMBuildPtrToInt(ctx->builder, src, dest_type,
+                                     "ptrtoint32");
+
+        default:
+            break;
+        }
 
     case type_pointer:
+        /* U -> T* */
         switch (p->operand->type->kind) {
+        case type_int8:
         case type_int32:
-            /* int32 -> T* */
-            return LLVMBuildIntToPtr(ctx->builder, operand, dest_type,
-                                     "inttoptr");
+            /* intN -> T* */
+            return LLVMBuildIntToPtr(ctx->builder, src, dest_type, "inttoptr");
 
         case type_pointer:
             /* T* -> U* */
-            return LLVMBuildPointerCast(ctx->builder, operand, dest_type,
-                                        "ptrcast");
+            return LLVMBuildPointerCast(ctx->builder, src, dest_type,
+                                        "ptrtoptr");
 
         default:
             break;
@@ -209,7 +249,7 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
         break;
     }
 
-    src_type_str = LLVMPrintTypeToString(LLVMTypeOf(operand));
+    src_type_str = LLVMPrintTypeToString(LLVMTypeOf(src));
     dest_type_str = LLVMPrintTypeToString(dest_type);
 
     fprintf(stderr, "unimplemented type cast %s -> %s\n", src_type_str,
