@@ -238,12 +238,11 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 }
 
 LLVMValueRef generate_dot_expr(GeneratorContext *ctx, DotNode *p) {
-    LLVMValueRef addr;
+    LLVMValueRef parent;
 
-    addr = generate_expr_addr(ctx, (ExprNode *)p);
+    parent = generate_expr(ctx, p->parent);
 
-    /* TODO: member of rvalue */
-    return LLVMBuildLoad(ctx->builder, addr, "member");
+    return LLVMBuildExtractValue(ctx->builder, parent, p->index, "member");
 }
 
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
