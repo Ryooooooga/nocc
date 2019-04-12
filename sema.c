@@ -118,6 +118,18 @@ ExprNode *decay_type_convert(ExprNode *expr) {
     return expr;
 }
 
+ExprNode *integer_promotion(ExprNode *expr) {
+    assert(expr);
+
+    expr = decay_type_convert(expr);
+
+    if (is_int8_type(expr->type)) {
+        return implicit_cast_node_new(expr, type_get_int32());
+    }
+
+    return expr;
+}
+
 bool assign_type_convert(ExprNode **expr, Type *dest_type) {
     assert(expr);
     assert(*expr);
@@ -145,13 +157,10 @@ bool default_argument_promotion(ExprNode **expr) {
     assert(expr);
     assert(*expr);
 
-    *expr = decay_type_convert(*expr);
+    *expr = integer_promotion(*expr);
 
     switch ((*expr)->type->kind) {
     case type_int8:
-        *expr = implicit_cast_node_new(*expr, type_get_int32());
-        return true;
-
     case type_int32:
     case type_pointer:
     case type_struct:
@@ -468,7 +477,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     p->num_args = num_args;
 
     for (i = 0; i < num_args; i++) {
-        p->args[i] = decay_type_convert(args[i]);
+        p->args[i] = args[i];
     }
 
     /* callee type */
@@ -569,6 +578,8 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     switch (t->kind) {
     case '+':
     case '-':
+        p->operand = integer_promotion(p->operand);
+
         if (!is_int32_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
@@ -579,6 +590,8 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         break;
 
     case '*':
+        p->operand = decay_type_convert(p->operand);
+
         if (!is_pointer_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
