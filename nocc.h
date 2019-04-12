@@ -68,6 +68,7 @@ enum {
     token_not_equal,
     token_increment,
     token_decrement,
+    token_var_args,
 };
 
 struct Token {

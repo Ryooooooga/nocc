@@ -385,4 +385,21 @@ void test_engine(void) {
                              "  return (a == n - 1) * (b == n);\n"
                              "}\n",
                              "postdec", 8, 1);
+
+    test_engine_run_function("var_args",
+                             "void *malloc(int s);\n"
+                             "void free(void *p);\n"
+                             "int strcmp(const char *a, const char* b);\n"
+                             "int sprintf(char *p, const char *f, ...);\n"
+                             "int var_args(int n) {\n"
+                             "  char *p;\n"
+                             "  int res;\n"
+                             "  p = malloc(100);\n"
+                             "  sprintf(p, \"%d\", n);\n"
+                             "  res = strcmp(p, \"100\");\n"
+                             "  free(0);\n"
+                             "  return res;\n"
+                             "return n;"
+                             "}\n",
+                             "var_args", 100, 0);
 }

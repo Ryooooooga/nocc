@@ -1080,6 +1080,7 @@ DeclNode *parse_function(ParserContext *ctx) {
     Type *return_type;
     Vec *params;
     StmtNode *body;
+    bool var_args;
 
     FunctionNode *p;
 
@@ -1121,6 +1122,7 @@ DeclNode *parse_function(ParserContext *ctx) {
 
     /* parameters */
     params = vec_new();
+    var_args = false;
 
     if (current_token(ctx)->kind == token_void &&
         peek_token(ctx)->kind == ')') {
@@ -1135,6 +1137,13 @@ DeclNode *parse_function(ParserContext *ctx) {
             /* , */
             consume_token(ctx);
 
+            if (current_token(ctx)->kind == token_var_args) {
+                consume_token(ctx); /* eat ... */
+
+                var_args = true;
+                break;
+            }
+
             /* param */
             vec_push(params, parse_param(ctx));
         }
@@ -1148,8 +1157,9 @@ DeclNode *parse_function(ParserContext *ctx) {
     consume_token(ctx);
 
     /* leave parameter scope and make node */
-    p = sema_function_leave_params(
-        ctx, return_type, t, (ParamNode **)params->data, params->size, false);
+    p = sema_function_leave_params(ctx, return_type, t,
+                                   (ParamNode **)params->data, params->size,
+                                   var_args);
 
     if (current_token(ctx)->kind == ';') {
         consume_token(ctx); /* eat ; */
