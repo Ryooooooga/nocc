@@ -1,13 +1,5 @@
-int putchar(int c);
 int puts(const char *s);
-
-void print_int(int n) {
-    if (n >= 10) {
-        print_int(n / 10);
-    }
-
-    putchar(48 + n % 10);
-}
+int printf(const char *f, ...);
 
 void fizzbuzz(int n) {
     int i;
@@ -19,8 +11,7 @@ void fizzbuzz(int n) {
         } else if (i % 5 == 0) {
             puts("Buzz");
         } else {
-            print_int(i);
-            putchar(10);
+            printf("%d\n", i);
         }
     }
 }

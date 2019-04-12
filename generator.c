@@ -164,7 +164,7 @@ LLVMValueRef generate_postfix_expr(GeneratorContext *ctx, PostfixNode *p) {
                 result = LLVMBuildSub(ctx->builder, value, one, "dec");
             }
         } else if (is_pointer_type(p->operand->type)) {
-            fprintf(stderr, "TODO: ptr++ not implemented\n");
+            fprintf(stderr, "ptr++ not implemented\n"); /* TODO: increment */
             exit(1);
         } else {
             fprintf(stderr,
@@ -238,7 +238,7 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
                 value = LLVMBuildSub(ctx->builder, value, one, "dec");
             }
         } else if (is_pointer_type(p->operand->type)) {
-            fprintf(stderr, "TODO: ++ptr not implemented\n");
+            fprintf(stderr, "++ptr not implemented\n"); /* TODO: increment */
             exit(1);
         } else {
             fprintf(stderr,

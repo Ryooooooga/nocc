@@ -208,6 +208,12 @@ Token *lex_token(const char *src, int *index, int *line) {
             return token_new(token_decrement, src + start, 2, line_start);
         }
 
+        if (src[*index + 0] == '.' && src[*index + 1] == '.' &&
+            src[*index + 2] == '.') {
+            *index += 3;
+            return token_new(token_var_args, src + start, 3, line_start);
+        }
+
         /* single character */
         kind = src[start];
         *index += 1;
