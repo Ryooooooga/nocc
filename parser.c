@@ -1177,20 +1177,29 @@ DeclNode *parse_function(ParserContext *ctx) {
         return NULL;
     }
 
+    if (current_token(ctx)->kind == token_identifier &&
+        peek_token(ctx)->kind != '(') {
+        /* declarator */
+        parse_declarator(ctx, &return_type, &t);
+
+        /* ; */
+        if (current_token(ctx)->kind != ';') {
+            fprintf(stderr, "expected ;, but got %s\n",
+                    current_token(ctx)->text);
+            exit(1);
+        }
+        consume_token(ctx);
+
+        /* variable declaration */
+        return sema_var_decl(ctx, return_type, t);
+    }
+
     /* identifier */
     t = consume_token(ctx);
 
     if (t->kind != token_identifier) {
         fprintf(stderr, "expected identifier, but got %s\n", t->text);
         exit(1);
-    }
-
-    /* ;? */
-    if (current_token(ctx)->kind == ';') {
-        consume_token(ctx);
-
-        /* global variable */
-        return sema_var_decl(ctx, return_type, t);
     }
 
     /* ( */

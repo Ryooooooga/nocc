@@ -939,21 +939,7 @@ void generate_global_variable(GeneratorContext *ctx, VariableNode *p) {
     type = generate_type(ctx, p->type);
 
     p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
-
-    switch (p->type->kind) {
-    case type_int8:
-    case type_int32:
-        LLVMSetInitializer(p->generated_location, LLVMConstInt(type, 0, true));
-        break;
-
-    case type_pointer:
-        LLVMSetInitializer(p->generated_location, LLVMConstPointerNull(type));
-        break;
-
-    default:
-        fprintf(stderr, "unknown type of global variable %s\n", p->identifier);
-        exit(1);
-    }
+    LLVMSetInitializer(p->generated_location, LLVMConstNull(type));
 }
 
 LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
