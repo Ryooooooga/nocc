@@ -480,7 +480,67 @@ void test_engine(void) {
                              "  int *a;\n"
                              "  a = &n;\n"
                              "  a[0] = n + 1;\n"
-                             "  return n;\n"
+                             "  return n == a[0];\n"
                              "}\n",
-                             "index2", 5, 6);
+                             "index2", 5, 1);
+
+    test_engine_run_function("array",
+                             "int array(int n) {\n"
+                             "  int a[3];\n"
+                             "\"a\"[0] = 0;"
+                             "  a[0] = 2;\n"
+                             "  a[1] = 3;\n"
+                             "  a[2] = 5;\n"
+                             "  return a[0] * a[1] * a[2];\n"
+                             "}\n",
+                             "array", 0, 30);
+
+    test_engine_run_function("param_array",
+                             "int param_array(int n[1]) {\n"
+                             "  return (int)n;\n"
+                             "}\n",
+                             "param_array", 30, 30);
+
+    test_engine_run_function("global_array",
+                             "int a[3];\n"
+                             "int global_array(int n) {\n"
+                             "  a[0] = 2;\n"
+                             "  a[1] = 3;\n"
+                             "  a[2] = 5;\n"
+                             "  return a[0] * a[1] * a[2];\n"
+                             "}\n",
+                             "global_array", 0, 30);
+
+    test_engine_run_function("multi_array",
+                             "int multi_array(int n) {\n"
+                             "  int a[2][2];\n"
+                             "  a[0][0] = 2;\n"
+                             "  a[0][1] = 3;\n"
+                             "  a[1][0] = 5;\n"
+                             "  a[1][1] = 7;\n"
+                             "  return a[0][0] * a[0][1] * a[1][0] * a[1][1];\n"
+                             "}\n",
+                             "multi_array", 0, 210);
+
+    test_engine_run_function("struct_array",
+                             "int struct_array(int n) {\n"
+                             "  struct t {int x[2];} a[2];\n"
+                             "  a[0].x[0] = 2;\n"
+                             "  a[0].x[1] = 3;\n"
+                             "  a[1].x[0] = 5;\n"
+                             "  a[1].x[1] = 7;\n"
+                             "  return a[0].x[0] * a[0].x[1]\n"
+                             "       * a[1].x[0] * a[1].x[1];\n"
+                             "}\n",
+                             "struct_array", 0, 210);
+
+    test_engine_run_function("typedef_array",
+                             "int typedef_array(int n) {\n"
+                             "  typedef int t[2];\n"
+                             "  t a;\n"
+                             "  a[0] = 3;\n"
+                             "  a[1] = 5;\n"
+                             "  return a[0] * a[1];\n"
+                             "}\n",
+                             "typedef_array", 0, 15);
 }

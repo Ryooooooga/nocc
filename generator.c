@@ -50,6 +50,14 @@ LLVMTypeRef generate_pointer_type(GeneratorContext *ctx, PointerType *p) {
     return LLVMPointerType(element_type, 0);
 }
 
+LLVMTypeRef generate_array_type(GeneratorContext *ctx, ArrayType *p) {
+    LLVMTypeRef element_type;
+
+    element_type = generate_type(ctx, p->element_type);
+
+    return LLVMArrayType(element_type, p->length);
+}
+
 LLVMTypeRef generate_function_type(GeneratorContext *ctx, FunctionType *p) {
     LLVMTypeRef return_type;
     LLVMTypeRef *param_types;
@@ -108,6 +116,9 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
 
     case type_pointer:
         return generate_pointer_type(ctx, (PointerType *)p);
+
+    case type_array:
+        return generate_array_type(ctx, (ArrayType *)p);
 
     case type_function:
         return generate_function_type(ctx, (FunctionType *)p);
@@ -331,8 +342,20 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
 
         case type_array:
             /* [N x T] -> T* */
-            src = generate_expr(ctx, p->operand);
-            return LLVMBuildInBoundsGEP(ctx->builder, src, NULL, 0, "arrtoptr");
+            if (p->operand->kind == node_string) {
+                src = generate_expr(ctx, p->operand);
+                return LLVMBuildInBoundsGEP(ctx->builder, src, NULL, 0,
+                                            "strtoptr");
+            } else {
+                LLVMValueRef indices[2];
+
+                indices[0] = indices[1] =
+                    LLVMConstInt(LLVMInt32Type(), 0, true);
+
+                src = generate_expr_addr(ctx, p->operand);
+                return LLVMBuildInBoundsGEP(ctx->builder, src, indices, 2,
+                                            "arrtoptr");
+            }
 
         case type_function:
             /* F -> T* */
@@ -1038,6 +1061,7 @@ void generate_decl(GeneratorContext *ctx, DeclNode *p) {
 LLVMModuleRef generate(TranslationUnitNode *p) {
     GeneratorContext ctx;
     int i;
+    char *error;
 
     assert(p);
 
@@ -1051,7 +1075,12 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     }
 
     LLVMDisposeBuilder(ctx.builder);
-    LLVMVerifyModule(ctx.module, LLVMAbortProcessAction, NULL);
+
+    if (LLVMVerifyModule(ctx.module, LLVMReturnStatusAction, &error)) {
+        LLVMDumpModule(ctx.module);
+        fprintf(stderr, "\n%s", error);
+        exit(1);
+    }
 
     return ctx.module;
 }

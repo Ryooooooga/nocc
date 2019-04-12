@@ -364,6 +364,7 @@ ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
     p->kind = node_string;
     p->line = t->line;
     p->type = array_type_new(type_get_int8(), length + 1);
+    p->is_lvalue = false;
     p->string = malloc(sizeof(char) * (length + 1));
     p->len_string = length;
 
