@@ -130,6 +130,16 @@ ExprNode *integer_promotion(ExprNode *expr) {
     return expr;
 }
 
+void usual_arithmetic_conversion(ExprNode **left, ExprNode **right) {
+    assert(left);
+    assert(*left);
+    assert(right);
+    assert(*right);
+
+    *left = integer_promotion(*left);
+    *right = integer_promotion(*right);
+}
+
 bool assign_type_conversion(ExprNode **expr, Type *dest_type) {
     assert(expr);
     assert(*expr);
@@ -702,18 +712,66 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 
     switch (t->kind) {
     case '+':
-    case '-':
-    case '*':
-    case '/':
-    case '%':
-        /* arithmetic operator */
-        if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
+        /* a + b */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+            /* int + int -> int */
+            p->type = p->left->type;
+        } else if (is_pointer_type(p->left->type) &&
+                   is_integer_type(p->right->type)) {
+            /* T* + int -> T* */
+            if (is_incomplete_pointer_type(p->left->type)) {
+                fprintf(stderr,
+                        "arithmetic on a pointer to an incomplete type\n");
+                exit(1);
+            }
+
+            p->type = p->left->type;
+        } else if (is_integer_type(p->left->type) &&
+                   is_pointer_type(p->right->type)) {
+            /* int + T* -> T* */
+            if (is_incomplete_pointer_type(p->right->type)) {
+                fprintf(stderr,
+                        "arithmetic on a pointer to an incomplete type\n");
+                exit(1);
+            }
+
+            p->type = p->right->type;
+        } else {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
         }
+        break;
 
-        p->type = left->type;
+    case '-':
+        /* a - b */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+            p->type = p->left->type;
+        } else {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+        break;
+
+    case '*':
+    case '/':
+    case '%':
+        /* other arithmetic operator */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+            /* int * int -> int */
+            p->type = p->left->type;
+        } else {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
         break;
 
     case '<':
