@@ -41,7 +41,8 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
 
     case token_identifier:
         symbol = scope_stack_find(ctx->env, t->text, true);
-        return symbol->kind == node_typedef;
+
+        return symbol && symbol->kind == node_typedef;
 
     default:
         return false;
