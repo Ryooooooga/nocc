@@ -1019,8 +1019,7 @@ void parse_direct_declarator(ParserContext *ctx, Type **type, const Token **t) {
 }
 
 void parse_array_declarator(ParserContext *ctx, Type **type, const Token **t) {
-    const ExprNode *size_expr;
-    int size;
+    ExprNode *size;
 
     (void)t;
 
@@ -1032,10 +1031,7 @@ void parse_array_declarator(ParserContext *ctx, Type **type, const Token **t) {
     consume_token(ctx);
 
     /* expression */
-    size_expr =
-        parse_number_expr(ctx); /* TODO: more complex constant expression */
-    assert(size_expr->kind == node_integer);
-    size = ((IntegerNode *)size_expr)->value;
+    size = parse_expr(ctx);
 
     /* ] */
     if (current_token(ctx)->kind != ']') {
@@ -1044,14 +1040,8 @@ void parse_array_declarator(ParserContext *ctx, Type **type, const Token **t) {
     }
     consume_token(ctx);
 
-    /* size check */
-    if (size <= 0) {
-        fprintf(stderr, "invalid array size %d\n", size);
-        exit(1);
-    }
-
     /* make array type */
-    *type = array_type_new(*type, size);
+    *type = sema_array_declarator(ctx, *type, size);
 }
 
 void parse_postfix_declarator(ParserContext *ctx, Type **type,
@@ -1146,11 +1136,14 @@ ParamNode *parse_param(ParserContext *ctx) {
     type = parse_type(ctx);
 
     /* identifier */
-    t = consume_token(ctx);
+    parse_declarator(ctx, &type, &t);
 
-    if (t->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", t->text);
-        exit(1);
+    if (is_array_type(type)) {
+        /* array type parameter is treated as a pointer */
+        type = pointer_type_new(array_element_type(type));
+    } else if (is_function_type(type)) {
+        /* function type parameter is treated as a pointer */
+        type = pointer_type_new(type);
     }
 
     /* register symbol and make node */

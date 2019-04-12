@@ -539,6 +539,8 @@ StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t);
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
 
+Type *sema_array_declarator(ParserContext *ctx, Type *type, ExprNode *size);
+
 DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
                        const Token *identifier);
 DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t);

@@ -1153,6 +1153,26 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     return (StmtNode *)p;
 }
 
+Type *sema_array_declarator(ParserContext *ctx, Type *type, ExprNode *size) {
+    int array_size;
+
+    assert(ctx);
+    assert(type);
+    assert(size);
+
+    /* TODO: more complex constant expression */
+    assert(size->kind == node_integer);
+    array_size = ((IntegerNode *)size)->value;
+
+    /* size check */
+    if (array_size <= 0) {
+        fprintf(stderr, "invalid array size %d\n", array_size);
+        exit(1);
+    }
+
+    return array_type_new(type, array_size);
+}
+
 DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
                        const Token *identifier) {
     TypedefNode *p;
