@@ -123,6 +123,11 @@ bool is_void_type(Type *t) {
     return t->kind == type_void;
 }
 
+bool is_int8_type(Type *t) {
+    assert(t);
+    return t->kind == type_int8;
+}
+
 bool is_int32_type(Type *t) {
     assert(t);
     return t->kind == type_int32;
@@ -166,20 +171,27 @@ bool is_incomplete_type(Type *t) {
 
 bool is_void_pointer_type(Type *t) {
     assert(t);
-
     return is_pointer_type(t) && is_void_type(pointer_element_type(t));
 }
 
 bool is_function_pointer_type(Type *t) {
     assert(t);
-
     return is_pointer_type(t) && is_function_type(pointer_element_type(t));
 }
 
 bool is_incomplete_pointer_type(Type *t) {
     assert(t);
-
     return is_pointer_type(t) && is_incomplete_type(pointer_element_type(t));
+}
+
+bool is_integer_type(Type *t) {
+    assert(t);
+    return is_int8_type(t) || is_int32_type(t);
+}
+
+bool is_scalar_type(Type *t) {
+    assert(t);
+    return is_integer_type(t) || is_pointer_type(t);
 }
 
 Type *pointer_element_type(Type *t) {

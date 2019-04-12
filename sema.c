@@ -483,39 +483,65 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     switch (t->kind) {
     case '+':
     case '-':
-        if (!is_int32_type(operand->type)) {
+        if (!is_int32_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
             exit(1);
         }
 
-        p->type = operand->type;
+        p->type = p->operand->type;
         break;
 
     case '*':
-        if (!is_pointer_type(operand->type)) {
+        if (!is_pointer_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
             exit(1);
         }
 
-        if (is_incomplete_pointer_type(operand->type)) {
+        if (is_incomplete_pointer_type(p->operand->type)) {
             fprintf(stderr, "cannot dereference pointer of incomplete type\n");
             exit(1);
         }
 
-        p->type = pointer_element_type(operand->type);
+        p->type = pointer_element_type(p->operand->type);
         p->is_lvalue = true;
         break;
 
     case '&':
-        if (!operand->is_lvalue) {
+        if (!p->operand->is_lvalue) {
             fprintf(stderr, "operand of unary operator %s must be a lvalue\n",
                     t->text);
             exit(1);
         }
 
-        p->type = pointer_type_new(operand->type);
+        p->type = pointer_type_new(p->operand->type);
+        break;
+
+    case token_increment:
+    case token_decrement:
+        if (!operand->is_lvalue) {
+            fprintf(stderr, "operand of prefix operator %s must be a lvalue\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (is_incomplete_pointer_type(p->operand->type)) {
+            fprintf(stderr,
+                    "operand of prefix operator %s cannot be a pointer "
+                    "of incomplete type\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (!is_scalar_type(p->operand->type)) {
+            fprintf(stderr, "invalid operand type of prefix operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = p->operand->type;
+        p->is_lvalue = false; /* ++x is rvalue in C */
         break;
 
     default:
