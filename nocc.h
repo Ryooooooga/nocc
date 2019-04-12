@@ -66,6 +66,8 @@ enum {
     token_greater_equal,
     token_equal,
     token_not_equal,
+    token_increment,
+    token_decrement,
 };
 
 struct Token {
@@ -149,6 +151,8 @@ bool is_incomplete_type(Type *t);
 bool is_void_pointer_type(Type *t);
 bool is_function_pointer_type(Type *t);
 bool is_incomplete_pointer_type(Type *t);
+bool is_integer_type(Type *t);
+bool is_scalar_type(Type *t);
 
 Type *pointer_element_type(Type *t);
 Type *array_element_type(Type *t);
@@ -165,6 +169,7 @@ enum {
     node_integer,
     node_string,
     node_identifier,
+    node_postfix,
     node_call,
     node_unary,
     node_cast,
@@ -193,6 +198,7 @@ typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
 typedef struct StringNode StringNode;
 typedef struct IdentifierNode IdentifierNode;
+typedef struct PostfixNode PostfixNode;
 typedef struct CallNode CallNode;
 typedef struct UnaryNode UnaryNode;
 typedef struct CastNode CastNode;
@@ -251,6 +257,15 @@ struct IdentifierNode {
     bool is_lvalue;
     char *identifier;
     DeclNode *declaration;
+};
+
+struct PostfixNode {
+    int kind;
+    int line;
+    Type *type;
+    bool is_lvalue;
+    ExprNode *operand;
+    int operator_;
 };
 
 struct CallNode {
@@ -481,6 +496,8 @@ ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value);
 ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
                            const char *string, int length);
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t);
+ExprNode *sema_postfix_expr(ParserContext *ctx, ExprNode *operand,
+                            const Token *t);
 ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
                          const Token *close);

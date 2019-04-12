@@ -368,6 +368,58 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     return (ExprNode *)p;
 }
 
+ExprNode *sema_postfix_expr(ParserContext *ctx, ExprNode *operand,
+                            const Token *t) {
+    PostfixNode *p;
+
+    assert(ctx);
+    assert(operand);
+    assert(t);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_postfix;
+    p->line = t->line;
+    p->type = NULL;
+    p->is_lvalue = false;
+    p->operand = operand;
+    p->operator_ = t->kind;
+
+    switch (p->operator_) {
+    case token_increment:
+    case token_decrement:
+        if (!operand->is_lvalue) {
+            fprintf(stderr, "operand of postfix operator %s must be a lvalue\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (is_incomplete_pointer_type(p->operand->type)) {
+            fprintf(stderr,
+                    "operand of postfix operator %s cannot be a pointer "
+                    "of incomplete type\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (!is_scalar_type(p->operand->type)) {
+            fprintf(stderr, "invalid operand type of postfix operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = p->operand->type;
+        p->is_lvalue = false;
+        break;
+
+    default:
+        fprintf(stderr, "unknown postfix operator %s\n", t->text);
+        exit(1);
+    }
+
+    return (ExprNode *)p;
+}
+
 ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
                          const Token *close) {
@@ -483,39 +535,65 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     switch (t->kind) {
     case '+':
     case '-':
-        if (!is_int32_type(operand->type)) {
+        if (!is_int32_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
             exit(1);
         }
 
-        p->type = operand->type;
+        p->type = p->operand->type;
         break;
 
     case '*':
-        if (!is_pointer_type(operand->type)) {
+        if (!is_pointer_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
             exit(1);
         }
 
-        if (is_incomplete_pointer_type(operand->type)) {
+        if (is_incomplete_pointer_type(p->operand->type)) {
             fprintf(stderr, "cannot dereference pointer of incomplete type\n");
             exit(1);
         }
 
-        p->type = pointer_element_type(operand->type);
+        p->type = pointer_element_type(p->operand->type);
         p->is_lvalue = true;
         break;
 
     case '&':
-        if (!operand->is_lvalue) {
+        if (!p->operand->is_lvalue) {
             fprintf(stderr, "operand of unary operator %s must be a lvalue\n",
                     t->text);
             exit(1);
         }
 
-        p->type = pointer_type_new(operand->type);
+        p->type = pointer_type_new(p->operand->type);
+        break;
+
+    case token_increment:
+    case token_decrement:
+        if (!operand->is_lvalue) {
+            fprintf(stderr, "operand of prefix operator %s must be a lvalue\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (is_incomplete_pointer_type(p->operand->type)) {
+            fprintf(stderr,
+                    "operand of prefix operator %s cannot be a pointer "
+                    "of incomplete type\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (!is_scalar_type(p->operand->type)) {
+            fprintf(stderr, "invalid operand type of prefix operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = p->operand->type;
+        p->is_lvalue = false; /* ++x is rvalue in C */
         break;
 
     default:

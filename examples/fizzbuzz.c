@@ -11,7 +11,7 @@ void print_int(int n) {
 
 void fizzbuzz(int n) {
     int i;
-    for (i = 1; i <= n; i = i + 1) {
+    for (i = 1; i <= n; i++) {
         if (i % 15 == 0) {
             puts("Fizz Buzz");
         } else if (i % 3 == 0) {

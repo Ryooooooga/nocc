@@ -142,6 +142,45 @@ LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
                          "load");
 }
 
+LLVMValueRef generate_postfix_expr(GeneratorContext *ctx, PostfixNode *p) {
+    LLVMValueRef operand;
+    LLVMValueRef value;
+    LLVMValueRef result;
+    LLVMValueRef one;
+    LLVMTypeRef type;
+
+    switch (p->operator_) {
+    case token_increment:
+    case token_decrement:
+        operand = generate_expr_addr(ctx, p->operand);
+        value = LLVMBuildLoad(ctx->builder, operand, "load");
+        type = LLVMTypeOf(value);
+        one = LLVMConstInt(type, 1, false);
+
+        if (is_integer_type(p->operand->type)) {
+            if (p->operator_ == token_increment) {
+                result = LLVMBuildAdd(ctx->builder, value, one, "inc");
+            } else {
+                result = LLVMBuildSub(ctx->builder, value, one, "dec");
+            }
+        } else if (is_pointer_type(p->operand->type)) {
+            fprintf(stderr, "TODO: ptr++ not implemented\n");
+            exit(1);
+        } else {
+            fprintf(stderr,
+                    "unknown postfix operand type of prefix operator ++\n");
+            exit(1);
+        }
+
+        LLVMBuildStore(ctx->builder, result, operand);
+        return value;
+
+    default:
+        fprintf(stderr, "unknown unary operator %d\n", p->operator_);
+        exit(1);
+    }
+}
+
 LLVMValueRef generate_call_expr(GeneratorContext *ctx, CallNode *p) {
     LLVMValueRef callee;
     LLVMValueRef *args;
@@ -165,8 +204,15 @@ LLVMValueRef generate_call_expr(GeneratorContext *ctx, CallNode *p) {
 
 LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
     LLVMValueRef operand;
+    LLVMValueRef value;
+    LLVMValueRef one;
+    LLVMTypeRef type;
 
     switch (p->operator_) {
+    case '+':
+        operand = generate_expr(ctx, p->operand);
+        return operand;
+
     case '-':
         operand = generate_expr(ctx, p->operand);
         return LLVMBuildNeg(ctx->builder, operand, "neg");
@@ -177,6 +223,31 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
 
     case '&':
         return generate_expr_addr(ctx, p->operand);
+
+    case token_increment:
+    case token_decrement:
+        operand = generate_expr_addr(ctx, p->operand);
+        value = LLVMBuildLoad(ctx->builder, operand, "load");
+        type = LLVMTypeOf(value);
+        one = LLVMConstInt(type, 1, false);
+
+        if (is_integer_type(p->operand->type)) {
+            if (p->operator_ == token_increment) {
+                value = LLVMBuildAdd(ctx->builder, value, one, "inc");
+            } else {
+                value = LLVMBuildSub(ctx->builder, value, one, "dec");
+            }
+        } else if (is_pointer_type(p->operand->type)) {
+            fprintf(stderr, "TODO: ++ptr not implemented\n");
+            exit(1);
+        } else {
+            fprintf(stderr,
+                    "unknown unary operand type of prefix operator ++\n");
+            exit(1);
+        }
+
+        LLVMBuildStore(ctx->builder, value, operand);
+        return value;
 
     default:
         fprintf(stderr, "unknown unary operator %d\n", p->operator_);
@@ -428,6 +499,9 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
     case node_identifier:
         return generate_identifier_expr(ctx, (IdentifierNode *)p);
+
+    case node_postfix:
+        return generate_postfix_expr(ctx, (PostfixNode *)p);
 
     case node_call:
         return generate_call_expr(ctx, (CallNode *)p);
