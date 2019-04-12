@@ -822,6 +822,19 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         p->type = p->right->type;
         break;
 
+    case '[':
+        /* index operator */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_pointer_type(p->left->type) && is_integer_type(p->right->type)) {
+            p->type = pointer_element_type(p->left->type);
+            p->is_lvalue = true;
+        } else {
+            fprintf(stderr, "invalid operand type of operator []\n");
+            exit(1);
+        }
+        break;
+
     default:
         fprintf(stderr, "unknown binary operator %s\n", t->text);
         exit(1);

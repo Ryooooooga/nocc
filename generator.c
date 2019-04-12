@@ -377,6 +377,10 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
         LLVMBuildStore(ctx->builder, right, left);
         return right;
 
+    case '[':
+        left = generate_expr_addr(ctx, (ExprNode *)p);
+        return LLVMBuildLoad(ctx->builder, left, "index");
+
     default:
         break;
     }
@@ -425,76 +429,58 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
         return LLVMBuildSRem(ctx->builder, left, right, "rem");
 
     case '<':
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLT, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLT, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case '>':
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGT, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGT, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_lesser_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLE, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLE, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_greater_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGE, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGE, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_not_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntNE, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntNE, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     default:
         fprintf(stderr, "unknown binary operator %d\n", p->operator_);
@@ -580,6 +566,22 @@ LLVMValueRef generate_dot_expr_addr(GeneratorContext *ctx, DotNode *p) {
     return LLVMBuildStructGEP(ctx->builder, parent, p->index, "memaddr");
 }
 
+LLVMValueRef generate_binary_expr_addr(GeneratorContext *ctx, BinaryNode *p) {
+    LLVMValueRef addr;
+    LLVMValueRef index;
+
+    switch (p->operator_) {
+    case '[':
+        addr = generate_expr(ctx, p->left);
+        index = generate_expr(ctx, p->right);
+        return LLVMBuildInBoundsGEP(ctx->builder, addr, &index, 1, "idxaddr");
+
+    default:
+        fprintf(stderr, "unknown binary expression address %d\n", p->operator_);
+        exit(1);
+    }
+}
+
 LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     assert(p);
     assert(ctx);
@@ -598,6 +600,9 @@ LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
 
     case node_dot:
         return generate_dot_expr_addr(ctx, (DotNode *)p);
+
+    case node_binary:
+        return generate_binary_expr_addr(ctx, (BinaryNode *)p);
 
     default:
         fprintf(stderr, "unknown expression address %d\n", p->kind);

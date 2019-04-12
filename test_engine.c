@@ -469,9 +469,18 @@ void test_engine(void) {
                              "}\n",
                              "ptrdiff2", 0, 2);
 
-    test_engine_run_function("ptrref2",
-                             "int ptrref2(int n) {\n"
+    test_engine_run_function("index",
+                             "int index(int n) {\n"
                              "  return \"test\"[n];\n"
                              "}\n",
-                             "ptrref2", 3, "test"[3]);
+                             "index", 3, "test"[3]);
+
+    test_engine_run_function("index2",
+                             "int index2(int n) {\n"
+                             "  int *a;\n"
+                             "  a = &n;\n"
+                             "  a[0] = n + 1;\n"
+                             "  return n;\n"
+                             "}\n",
+                             "index2", 5, 6);
 }
