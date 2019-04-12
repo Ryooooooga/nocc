@@ -365,4 +365,24 @@ void test_engine(void) {
                              "  return (a == n - 1) * (b == n - 1);\n"
                              "}\n",
                              "predec", 8, 1);
+
+    test_engine_run_function("postinc",
+                             "int postinc(int n) {\n"
+                             "  int a;\n"
+                             "  int b;\n"
+                             "  a = n;\n"
+                             "  b = a++;\n"
+                             "  return (a == n + 1) * (b == n);\n"
+                             "}\n",
+                             "postinc", 8, 1);
+
+    test_engine_run_function("postdec",
+                             "int postdec(int n) {\n"
+                             "  int a;\n"
+                             "  int b;\n"
+                             "  a = n;\n"
+                             "  b = a--;\n"
+                             "  return (a == n - 1) * (b == n);\n"
+                             "}\n",
+                             "postdec", 8, 1);
 }

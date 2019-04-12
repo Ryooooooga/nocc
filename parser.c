@@ -380,12 +380,19 @@ ExprNode *parse_dot_expr(ParserContext *ctx, ExprNode *parent) {
 }
 
 ExprNode *parse_postfix_expr(ParserContext *ctx) {
+    const Token *t;
     ExprNode *operand;
 
     operand = parse_primary_expr(ctx);
 
     while (1) {
         switch (current_token(ctx)->kind) {
+        case token_increment:
+        case token_decrement:
+            t = consume_token(ctx); /* eat postfix operator */
+            operand = sema_postfix_expr(ctx, operand, t);
+            break;
+
         case '(':
             operand = parse_call_expr(ctx, operand);
             break;

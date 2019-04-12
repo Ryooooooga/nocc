@@ -368,6 +368,58 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     return (ExprNode *)p;
 }
 
+ExprNode *sema_postfix_expr(ParserContext *ctx, ExprNode *operand,
+                            const Token *t) {
+    PostfixNode *p;
+
+    assert(ctx);
+    assert(operand);
+    assert(t);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_postfix;
+    p->line = t->line;
+    p->type = NULL;
+    p->is_lvalue = false;
+    p->operand = operand;
+    p->operator_ = t->kind;
+
+    switch (p->operator_) {
+    case token_increment:
+    case token_decrement:
+        if (!operand->is_lvalue) {
+            fprintf(stderr, "operand of postfix operator %s must be a lvalue\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (is_incomplete_pointer_type(p->operand->type)) {
+            fprintf(stderr,
+                    "operand of postfix operator %s cannot be a pointer "
+                    "of incomplete type\n",
+                    t->text);
+            exit(1);
+        }
+
+        if (!is_scalar_type(p->operand->type)) {
+            fprintf(stderr, "invalid operand type of postfix operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = p->operand->type;
+        p->is_lvalue = false;
+        break;
+
+    default:
+        fprintf(stderr, "unknown postfix operator %s\n", t->text);
+        exit(1);
+    }
+
+    return (ExprNode *)p;
+}
+
 ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *open, ExprNode **args, int num_args,
                          const Token *close) {
