@@ -1122,7 +1122,8 @@ DeclNode *parse_function(ParserContext *ctx) {
     /* parameters */
     params = vec_new();
 
-    if (current_token(ctx)->kind == token_void) {
+    if (current_token(ctx)->kind == token_void &&
+        peek_token(ctx)->kind == ')') {
         /* void */
         consume_token(ctx);
     } else {
