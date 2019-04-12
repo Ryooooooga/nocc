@@ -103,7 +103,7 @@ bool can_cast_into(Type *src_type, Type *dest_type) {
     }
 }
 
-ExprNode *decay_type_convert(ExprNode *expr) {
+ExprNode *decay_type_conversion(ExprNode *expr) {
     assert(expr);
 
     if (is_array_type(expr->type)) {
@@ -121,7 +121,7 @@ ExprNode *decay_type_convert(ExprNode *expr) {
 ExprNode *integer_promotion(ExprNode *expr) {
     assert(expr);
 
-    expr = decay_type_convert(expr);
+    expr = decay_type_conversion(expr);
 
     if (is_int8_type(expr->type)) {
         return implicit_cast_node_new(expr, type_get_int32());
@@ -130,12 +130,12 @@ ExprNode *integer_promotion(ExprNode *expr) {
     return expr;
 }
 
-bool assign_type_convert(ExprNode **expr, Type *dest_type) {
+bool assign_type_conversion(ExprNode **expr, Type *dest_type) {
     assert(expr);
     assert(*expr);
     assert(dest_type);
 
-    *expr = decay_type_convert(*expr);
+    *expr = decay_type_conversion(*expr);
 
     if (is_incomplete_type((*expr)->type) || is_incomplete_type(dest_type)) {
         return false;
@@ -472,7 +472,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     p->line = open->line;
     p->type = NULL;
     p->is_lvalue = false;
-    p->callee = decay_type_convert(callee);
+    p->callee = decay_type_conversion(callee);
     p->args = malloc(sizeof(ExprNode *) * num_args);
     p->num_args = num_args;
 
@@ -497,8 +497,8 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     }
 
     for (i = 0; i < num_params; i++) {
-        if (!assign_type_convert(&p->args[i],
-                                 function_param_type(func_type, i))) {
+        if (!assign_type_conversion(&p->args[i],
+                                    function_param_type(func_type, i))) {
             fprintf(stderr, "invalid type of argument\n");
             exit(1);
         }
@@ -590,7 +590,7 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         break;
 
     case '*':
-        p->operand = decay_type_convert(p->operand);
+        p->operand = decay_type_conversion(p->operand);
 
         if (!is_pointer_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
@@ -746,7 +746,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         }
 
         /* assignment type conversion */
-        if (!assign_type_convert(&p->right, p->left->type)) {
+        if (!assign_type_conversion(&p->right, p->left->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
@@ -823,7 +823,7 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
         }
     } else {
         if (p->return_value == NULL ||
-            !assign_type_convert(&p->return_value, return_type)) {
+            !assign_type_conversion(&p->return_value, return_type)) {
             fprintf(stderr, "invalid return type\n");
             exit(1);
         }
