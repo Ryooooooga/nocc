@@ -333,4 +333,16 @@ void test_engine(void) {
                              "  return strlen(\"Hello, world!\\n\");\n"
                              "}\n",
                              "string", 0, 14);
+
+    test_engine_run_function("positive",
+                             "int positive(int n) {\n"
+                             "  return +n;\n"
+                             "}\n",
+                             "positive", 8, 8);
+
+    test_engine_run_function("negative",
+                             "int negative(int n) {\n"
+                             "  return -n;\n"
+                             "}\n",
+                             "negative", 8, -8);
 }

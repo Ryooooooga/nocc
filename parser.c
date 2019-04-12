@@ -441,6 +441,7 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
     t = current_token(ctx);
 
     switch (t->kind) {
+    case '+':
     case '-':
     case '*':
     case '&':

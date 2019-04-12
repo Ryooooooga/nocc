@@ -167,6 +167,10 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
     LLVMValueRef operand;
 
     switch (p->operator_) {
+    case '+':
+        operand = generate_expr(ctx, p->operand);
+        return operand;
+
     case '-':
         operand = generate_expr(ctx, p->operand);
         return LLVMBuildNeg(ctx->builder, operand, "neg");
