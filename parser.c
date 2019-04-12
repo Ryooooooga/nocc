@@ -1040,14 +1040,15 @@ void parse_array_declarator(ParserContext *ctx, Type **type, const Token **t) {
     }
     consume_token(ctx);
 
+    /* postfix declarator */
+    parse_postfix_declarator(ctx, type, t);
+
     /* make array type */
     *type = sema_array_declarator(ctx, *type, size);
 }
 
 void parse_postfix_declarator(ParserContext *ctx, Type **type,
                               const Token **t) {
-    parse_direct_declarator(ctx, type, t);
-
     switch (current_token(ctx)->kind) {
     case '[':
         parse_array_declarator(ctx, type, t);
@@ -1064,6 +1065,7 @@ void parse_declarator(ParserContext *ctx, Type **type, const Token **t) {
     assert(*type);
     assert(t);
 
+    parse_direct_declarator(ctx, type, t);
     parse_postfix_declarator(ctx, type, t);
 }
 
