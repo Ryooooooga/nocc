@@ -905,7 +905,7 @@ void generate_global_variable(GeneratorContext *ctx, VariableNode *p) {
 }
 
 LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
-    LLVMTypeRef function_type;
+    LLVMTypeRef func_type;
     LLVMTypeRef return_type;
     LLVMTypeRef *param_types;
     LLVMValueRef function;
@@ -919,14 +919,23 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     assert(is_function_type(p->type));
 
     /* build LLVM function type */
-    function_type = generate_type(ctx, p->type);
-    return_type = LLVMGetReturnType(function_type);
-    param_types =
-        malloc(sizeof(LLVMTypeRef) * LLVMCountParamTypes(function_type));
-    LLVMGetParamTypes(function_type, param_types);
+    func_type = generate_type(ctx, p->type);
+    return_type = LLVMGetReturnType(func_type);
+    param_types = malloc(sizeof(LLVMTypeRef) * LLVMCountParamTypes(func_type));
+    LLVMGetParamTypes(func_type, param_types);
 
-    /* create function */
-    function = LLVMAddFunction(ctx->module, p->identifier, function_type);
+    /* find function */
+    function = LLVMGetNamedFunction(ctx->module, p->identifier);
+
+    if (function == NULL) {
+        /* create function if not found */
+        function = LLVMAddFunction(ctx->module, p->identifier, func_type);
+    }
+
+    if (LLVMGetElementType(LLVMTypeOf(function)) != func_type) {
+        fprintf(stderr, "type mismatch of function %s\n", p->identifier);
+        exit(1);
+    }
 
     p->generated_location = function;
 

@@ -1171,7 +1171,8 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
                                          const Token *t, ParamNode **params,
                                          int num_params, bool var_args) {
     Type **param_types;
-    Type *function_type;
+    Type *func_type;
+    DeclNode *symbol;
     FunctionNode *p;
     int i;
 
@@ -1191,15 +1192,36 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
         param_types[i] = params[i]->type;
     }
 
-    function_type =
+    func_type =
         function_type_new(return_type, param_types, num_params, var_args);
+
+    /* redeclaration check */
+    symbol = scope_stack_find(ctx->env, t->text, false);
+
+    if (symbol != NULL) {
+        if (symbol->kind != node_function) {
+            fprintf(stderr, "redeclaration of symbol %s\n", symbol->identifier);
+            exit(1);
+        }
+
+        if (!type_equals(symbol->type, func_type)) {
+            fprintf(stderr, "conflicting type for %s\n", symbol->identifier);
+            exit(1);
+        }
+
+        if (((FunctionNode *)symbol)->body != NULL) {
+            fprintf(stderr, "redefinition of function %s\n",
+                    symbol->identifier);
+            exit(1);
+        }
+    }
 
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_function;
     p->line = t->line;
     p->identifier = t->text;
-    p->type = function_type;
+    p->type = func_type;
     p->generated_location = NULL;
     p->params = malloc(sizeof(ParamNode *) * num_params);
     p->num_params = num_params;
@@ -1210,13 +1232,6 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
 
     for (i = 0; i < num_params; i++) {
         p->params[i] = params[i];
-    }
-
-    /* redeclaration check */
-    if (scope_stack_find(ctx->env, p->identifier, false)) {
-        fprintf(stderr, "symbol %s has already been declared in this scope\n",
-                p->identifier);
-        exit(1);
     }
 
     /* register symbol */

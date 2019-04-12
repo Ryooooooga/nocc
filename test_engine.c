@@ -402,4 +402,14 @@ void test_engine(void) {
                              "return n;"
                              "}\n",
                              "var_args", 50, 0);
+
+    test_engine_run_function("forward",
+                             "int f(void);\n"
+                             "int forward(int n) {\n"
+                             "  return f();"
+                             "}\n"
+                             "int f(void) {\n"
+                             "  return 42;"
+                             "}\n",
+                             "forward", 0, 42);
 }
