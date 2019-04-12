@@ -66,13 +66,8 @@ MemberNode *parse_struct_member(ParserContext *ctx) {
     /* type */
     type = parse_type(ctx);
 
-    /* identifier */
-    t = consume_token(ctx);
-
-    if (t->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", t->text);
-        exit(1);
-    }
+    /* declarator */
+    parse_declarator(ctx, &type, &t);
 
     /* ; */
     if (current_token(ctx)->kind != ';') {
@@ -1085,13 +1080,8 @@ DeclNode *parse_typedef(ParserContext *ctx) {
     /* type */
     type = parse_type(ctx);
 
-    /* identifier */
-    identifier = consume_token(ctx);
-
-    if (identifier->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
-        exit(1);
-    }
+    /* declarator */
+    parse_declarator(ctx, &type, &identifier);
 
     /* register type symbol and make node */
     return sema_typedef(ctx, t, type, identifier);
@@ -1109,7 +1099,7 @@ DeclNode *parse_var_decl(ParserContext *ctx) {
         return NULL;
     }
 
-    /* identifier */
+    /* declarator */
     parse_declarator(ctx, &type, &t);
 
     /* register symbol and make node */
@@ -1137,7 +1127,7 @@ ParamNode *parse_param(ParserContext *ctx) {
     /* type */
     type = parse_type(ctx);
 
-    /* identifier */
+    /* declarator */
     parse_declarator(ctx, &type, &t);
 
     if (is_array_type(type)) {

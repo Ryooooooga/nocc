@@ -480,6 +480,7 @@ ExprNode *parse_expr(ParserContext *ctx);
 StmtNode *parse_stmt(ParserContext *ctx);
 
 void parse_postfix_declarator(ParserContext *ctx, Type **type, const Token **t);
+void parse_declarator(ParserContext *ctx, Type **type, const Token **t);
 DeclNode *parse_decl(ParserContext *ctx);
 ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
