@@ -103,7 +103,7 @@ bool can_cast_into(Type *src_type, Type *dest_type) {
     }
 }
 
-ExprNode *decay_type_convert(ExprNode *expr) {
+ExprNode *decay_type_conversion(ExprNode *expr) {
     assert(expr);
 
     if (is_array_type(expr->type)) {
@@ -118,12 +118,34 @@ ExprNode *decay_type_convert(ExprNode *expr) {
     return expr;
 }
 
-bool assign_type_convert(ExprNode **expr, Type *dest_type) {
+ExprNode *integer_promotion(ExprNode *expr) {
+    assert(expr);
+
+    expr = decay_type_conversion(expr);
+
+    if (is_int8_type(expr->type)) {
+        return implicit_cast_node_new(expr, type_get_int32());
+    }
+
+    return expr;
+}
+
+void usual_arithmetic_conversion(ExprNode **left, ExprNode **right) {
+    assert(left);
+    assert(*left);
+    assert(right);
+    assert(*right);
+
+    *left = integer_promotion(*left);
+    *right = integer_promotion(*right);
+}
+
+bool assign_type_conversion(ExprNode **expr, Type *dest_type) {
     assert(expr);
     assert(*expr);
     assert(dest_type);
 
-    *expr = decay_type_convert(*expr);
+    *expr = decay_type_conversion(*expr);
 
     if (is_incomplete_type((*expr)->type) || is_incomplete_type(dest_type)) {
         return false;
@@ -145,13 +167,10 @@ bool default_argument_promotion(ExprNode **expr) {
     assert(expr);
     assert(*expr);
 
-    *expr = decay_type_convert(*expr);
+    *expr = integer_promotion(*expr);
 
     switch ((*expr)->type->kind) {
     case type_int8:
-        *expr = implicit_cast_node_new(*expr, type_get_int32());
-        return true;
-
     case type_int32:
     case type_pointer:
     case type_struct:
@@ -345,6 +364,7 @@ ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
     p->kind = node_string;
     p->line = t->line;
     p->type = array_type_new(type_get_int8(), length + 1);
+    p->is_lvalue = false;
     p->string = malloc(sizeof(char) * (length + 1));
     p->len_string = length;
 
@@ -463,12 +483,12 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     p->line = open->line;
     p->type = NULL;
     p->is_lvalue = false;
-    p->callee = decay_type_convert(callee);
+    p->callee = decay_type_conversion(callee);
     p->args = malloc(sizeof(ExprNode *) * num_args);
     p->num_args = num_args;
 
     for (i = 0; i < num_args; i++) {
-        p->args[i] = decay_type_convert(args[i]);
+        p->args[i] = args[i];
     }
 
     /* callee type */
@@ -488,8 +508,8 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     }
 
     for (i = 0; i < num_params; i++) {
-        if (!assign_type_convert(&p->args[i],
-                                 function_param_type(func_type, i))) {
+        if (!assign_type_conversion(&p->args[i],
+                                    function_param_type(func_type, i))) {
             fprintf(stderr, "invalid type of argument\n");
             exit(1);
         }
@@ -569,6 +589,8 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     switch (t->kind) {
     case '+':
     case '-':
+        p->operand = integer_promotion(p->operand);
+
         if (!is_int32_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
@@ -579,6 +601,8 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         break;
 
     case '*':
+        p->operand = decay_type_conversion(p->operand);
+
         if (!is_pointer_type(p->operand->type)) {
             fprintf(stderr, "invalid operand type of unary operator %s\n",
                     t->text);
@@ -689,18 +713,75 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 
     switch (t->kind) {
     case '+':
-    case '-':
-    case '*':
-    case '/':
-    case '%':
-        /* arithmetic operator */
-        if (!is_int32_type(left->type) || !is_int32_type(right->type)) {
+        /* a + b */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+            /* int + int -> int */
+            p->type = p->left->type;
+        } else if (is_pointer_type(p->left->type) &&
+                   is_integer_type(p->right->type)) {
+            /* T* + int -> T* */
+            if (is_incomplete_pointer_type(p->left->type)) {
+                fprintf(stderr,
+                        "arithmetic on a pointer to an incomplete type\n");
+                exit(1);
+            }
+
+            p->type = p->left->type;
+        } else if (is_integer_type(p->left->type) &&
+                   is_pointer_type(p->right->type)) {
+            /* int + T* -> T* */
+            if (is_incomplete_pointer_type(p->right->type)) {
+                fprintf(stderr,
+                        "arithmetic on a pointer to an incomplete type\n");
+                exit(1);
+            }
+
+            p->type = p->right->type;
+        } else {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
         }
+        break;
 
-        p->type = left->type;
+    case '-':
+        /* a - b */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+            /* int - int -> int */
+            p->type = p->left->type;
+        } else if (is_pointer_type(p->left->type) &&
+                   is_integer_type(p->right->type)) {
+            /* T* - int -> T* */
+            p->type = p->left->type;
+        } else if (is_pointer_type(p->left->type) &&
+                   is_pointer_type(p->right->type)) {
+            /* T* - T* -> ptrdiff_t */
+            p->type = type_get_int32();
+        } else {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+        break;
+
+    case '*':
+    case '/':
+    case '%':
+        /* other arithmetic operator */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+            /* int * int -> int */
+            p->type = p->left->type;
+        } else {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
         break;
 
     case '<':
@@ -733,13 +814,26 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         }
 
         /* assignment type conversion */
-        if (!assign_type_convert(&p->right, p->left->type)) {
+        if (!assign_type_conversion(&p->right, p->left->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);
         }
 
         p->type = p->right->type;
+        break;
+
+    case '[':
+        /* index operator */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (is_pointer_type(p->left->type) && is_integer_type(p->right->type)) {
+            p->type = pointer_element_type(p->left->type);
+            p->is_lvalue = true;
+        } else {
+            fprintf(stderr, "invalid operand type of operator []\n");
+            exit(1);
+        }
         break;
 
     default:
@@ -810,7 +904,7 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
         }
     } else {
         if (p->return_value == NULL ||
-            !assign_type_convert(&p->return_value, return_type)) {
+            !assign_type_conversion(&p->return_value, return_type)) {
             fprintf(stderr, "invalid return type\n");
             exit(1);
         }
@@ -1057,6 +1151,26 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     p->expr = expr;
 
     return (StmtNode *)p;
+}
+
+Type *sema_array_declarator(ParserContext *ctx, Type *type, ExprNode *size) {
+    int array_size;
+
+    assert(ctx);
+    assert(type);
+    assert(size);
+
+    /* TODO: more complex constant expression */
+    assert(size->kind == node_integer);
+    array_size = ((IntegerNode *)size)->value;
+
+    /* size check */
+    if (array_size <= 0) {
+        fprintf(stderr, "invalid array size %d\n", array_size);
+        exit(1);
+    }
+
+    return array_type_new(type, array_size);
 }
 
 DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,

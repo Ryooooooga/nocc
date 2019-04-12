@@ -9,6 +9,8 @@ void test_engine_run_function(const char *filename, const char *src,
     assert(src);
     assert(func);
 
+    fprintf(stderr, "test_engine:%s --- ", filename);
+
     TranslationUnitNode *node = parse(filename, src);
     LLVMModuleRef module = generate(node);
 
@@ -35,6 +37,8 @@ void test_engine_run_function(const char *filename, const char *src,
 
     LLVMDisposeMessage(error);
     LLVMDisposeExecutionEngine(engine);
+
+    fprintf(stderr, "done!!\n");
 }
 
 void test_engine(void) {
@@ -412,4 +416,131 @@ void test_engine(void) {
                              "  return 42;"
                              "}\n",
                              "forward", 0, 42);
+
+    test_engine_run_function("ptrref",
+                             "int ptrref(int n) {\n"
+                             "  return *\"test\";\n"
+                             "}\n",
+                             "ptrref", 0, *"test");
+
+    test_engine_run_function("ptradd",
+                             "int ptradd(int n) {\n"
+                             "  return *(\"test\" + n);\n"
+                             "}\n",
+                             "ptradd", 2, *("test" + 2));
+
+    test_engine_run_function("ptradd2",
+                             "int ptradd2(int n) {\n"
+                             "  return *(n + \"test\");\n"
+                             "}\n",
+                             "ptradd2", 2, *(2 + "test"));
+
+    test_engine_run_function("ptradd3",
+                             "int ptradd3(int n) {\n"
+                             "  int *a;\n"
+                             "  a = 0;\n"
+                             "  return a + n;\n"
+                             "}\n",
+                             "ptradd3", 2, 2 * 4);
+
+    test_engine_run_function("ptrsub",
+                             "int ptrsub(int n) {\n"
+                             "  return *((\"test\" + n) - 2);\n"
+                             "}\n",
+                             "ptrsub", 4, *("test" + 4 - 2));
+
+    test_engine_run_function("ptrdiff",
+                             "int ptrdiff(int n) {\n"
+                             "  const char* p;\n"
+                             "  const char* q;\n"
+                             "  p = \"test\";\n"
+                             "  q = p + n;"
+                             "  return q - p;\n"
+                             "}\n",
+                             "ptrdiff", 3, 3);
+
+    test_engine_run_function("ptrdiff2",
+                             "int ptrdiff2(int n) {\n"
+                             "  int* p;\n"
+                             "  int* q;\n"
+                             "  p = (int *)0;\n"
+                             "  q = (int *)8;"
+                             "  return q - p;\n"
+                             "}\n",
+                             "ptrdiff2", 0, 2);
+
+    test_engine_run_function("index",
+                             "int index(int n) {\n"
+                             "  return \"test\"[n];\n"
+                             "}\n",
+                             "index", 3, "test"[3]);
+
+    test_engine_run_function("index2",
+                             "int index2(int n) {\n"
+                             "  int *a;\n"
+                             "  a = &n;\n"
+                             "  a[0] = n + 1;\n"
+                             "  return n == a[0];\n"
+                             "}\n",
+                             "index2", 5, 1);
+
+    test_engine_run_function("array",
+                             "int array(int n) {\n"
+                             "  int a[3];\n"
+                             "\"a\"[0] = 0;"
+                             "  a[0] = 2;\n"
+                             "  a[1] = 3;\n"
+                             "  a[2] = 5;\n"
+                             "  return a[0] * a[1] * a[2];\n"
+                             "}\n",
+                             "array", 0, 30);
+
+    test_engine_run_function("param_array",
+                             "int param_array(int n[1]) {\n"
+                             "  return (int)n;\n"
+                             "}\n",
+                             "param_array", 30, 30);
+
+    test_engine_run_function("global_array",
+                             "int a[3];\n"
+                             "int global_array(int n) {\n"
+                             "  a[0] = 2;\n"
+                             "  a[1] = 3;\n"
+                             "  a[2] = 5;\n"
+                             "  return a[0] * a[1] * a[2];\n"
+                             "}\n",
+                             "global_array", 0, 30);
+
+    test_engine_run_function("multi_array",
+                             "int multi_array(int n) {\n"
+                             "  int a[2][2];\n"
+                             "  a[0][0] = 2;\n"
+                             "  a[0][1] = 3;\n"
+                             "  a[1][0] = 5;\n"
+                             "  a[1][1] = 7;\n"
+                             "  return a[0][0] * a[0][1] * a[1][0] * a[1][1];\n"
+                             "}\n",
+                             "multi_array", 0, 210);
+
+    test_engine_run_function("struct_array",
+                             "int struct_array(int n) {\n"
+                             "  struct t {int x[2];} a[2];\n"
+                             "  a[0].x[0] = 2;\n"
+                             "  a[0].x[1] = 3;\n"
+                             "  a[1].x[0] = 5;\n"
+                             "  a[1].x[1] = 7;\n"
+                             "  return a[0].x[0] * a[0].x[1]\n"
+                             "       * a[1].x[0] * a[1].x[1];\n"
+                             "}\n",
+                             "struct_array", 0, 210);
+
+    test_engine_run_function("typedef_array",
+                             "int typedef_array(int n) {\n"
+                             "  typedef int t[2];\n"
+                             "  t a;\n"
+                             "  a[0] = 3;\n"
+                             "  a[1] = 5;\n"
+                             "  return a[0] * a[1];\n"
+                             "}\n",
+                             "typedef_array", 0, 15);
 }

@@ -50,6 +50,14 @@ LLVMTypeRef generate_pointer_type(GeneratorContext *ctx, PointerType *p) {
     return LLVMPointerType(element_type, 0);
 }
 
+LLVMTypeRef generate_array_type(GeneratorContext *ctx, ArrayType *p) {
+    LLVMTypeRef element_type;
+
+    element_type = generate_type(ctx, p->element_type);
+
+    return LLVMArrayType(element_type, p->length);
+}
+
 LLVMTypeRef generate_function_type(GeneratorContext *ctx, FunctionType *p) {
     LLVMTypeRef return_type;
     LLVMTypeRef *param_types;
@@ -109,6 +117,9 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     case type_pointer:
         return generate_pointer_type(ctx, (PointerType *)p);
 
+    case type_array:
+        return generate_array_type(ctx, (ArrayType *)p);
+
     case type_function:
         return generate_function_type(ctx, (FunctionType *)p);
 
@@ -131,7 +142,7 @@ LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
     (void)ctx;
 
     /* TODO: '\0' in string */
-    return LLVMBuildGlobalStringPtr(ctx->builder, p->string, "str");
+    return LLVMBuildGlobalStringPtr(ctx->builder, p->string, ".str");
 }
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
@@ -331,8 +342,20 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
 
         case type_array:
             /* [N x T] -> T* */
-            src = generate_expr(ctx, p->operand);
-            return LLVMBuildInBoundsGEP(ctx->builder, src, NULL, 0, "arrtoptr");
+            if (p->operand->kind == node_string) {
+                src = generate_expr(ctx, p->operand);
+                return LLVMBuildInBoundsGEP(ctx->builder, src, NULL, 0,
+                                            "strtoptr");
+            } else {
+                LLVMValueRef indices[2];
+
+                indices[0] = indices[1] =
+                    LLVMConstInt(LLVMInt32Type(), 0, true);
+
+                src = generate_expr_addr(ctx, p->operand);
+                return LLVMBuildInBoundsGEP(ctx->builder, src, indices, 2,
+                                            "arrtoptr");
+            }
 
         case type_function:
             /* F -> T* */
@@ -377,6 +400,10 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
         LLVMBuildStore(ctx->builder, right, left);
         return right;
 
+    case '[':
+        left = generate_expr_addr(ctx, (ExprNode *)p);
+        return LLVMBuildLoad(ctx->builder, left, "index");
+
     default:
         break;
     }
@@ -386,9 +413,33 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
     switch (p->operator_) {
     case '+':
+        if (is_pointer_type(p->left->type)) {
+            /* T* + int -> T* */
+            return LLVMBuildInBoundsGEP(ctx->builder, left, &right, 1,
+                                        "ptradd");
+        } else if (is_pointer_type(p->right->type)) {
+            /* int + T* -> T* */
+            return LLVMBuildInBoundsGEP(ctx->builder, right, &left, 1,
+                                        "ptradd");
+        }
+
+        /* int + int -> int */
         return LLVMBuildAdd(ctx->builder, left, right, "add");
 
     case '-':
+        if (is_pointer_type(p->left->type) && is_pointer_type(p->right->type)) {
+            /* T* - T* -> ptrdiff_t */
+            left = LLVMBuildPtrDiff(ctx->builder, left, right, "ptrdiff");
+            return LLVMBuildTrunc(ctx->builder, left, LLVMInt32Type(),
+                                  "ptrdiff_i32");
+        } else if (is_pointer_type(p->left->type)) {
+            /* T* - int -> T* */
+            right = LLVMBuildNeg(ctx->builder, right, "negidx");
+            return LLVMBuildInBoundsGEP(ctx->builder, left, &right, 1,
+                                        "ptrsub");
+        }
+
+        /* int - int -> int */
         return LLVMBuildSub(ctx->builder, left, right, "sub");
 
     case '*':
@@ -401,76 +452,58 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
         return LLVMBuildSRem(ctx->builder, left, right, "rem");
 
     case '<':
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLT, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLT, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case '>':
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGT, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGT, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_lesser_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLE, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSLE, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_greater_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGE, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntSGE, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     case token_not_equal:
-        switch (p->left->type->kind) {
-        case type_int32:
-        case type_pointer:
-            cmp = LLVMBuildICmp(ctx->builder, LLVMIntNE, left, right, "cmp");
-            return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
-
-        default:
+        if (!is_scalar_type(p->left->type)) {
             fprintf(stderr, "unknown type\n");
             exit(1);
         }
+
+        cmp = LLVMBuildICmp(ctx->builder, LLVMIntNE, left, right, "cmp");
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
     default:
         fprintf(stderr, "unknown binary operator %d\n", p->operator_);
@@ -556,6 +589,22 @@ LLVMValueRef generate_dot_expr_addr(GeneratorContext *ctx, DotNode *p) {
     return LLVMBuildStructGEP(ctx->builder, parent, p->index, "memaddr");
 }
 
+LLVMValueRef generate_binary_expr_addr(GeneratorContext *ctx, BinaryNode *p) {
+    LLVMValueRef addr;
+    LLVMValueRef index;
+
+    switch (p->operator_) {
+    case '[':
+        addr = generate_expr(ctx, p->left);
+        index = generate_expr(ctx, p->right);
+        return LLVMBuildInBoundsGEP(ctx->builder, addr, &index, 1, "idxaddr");
+
+    default:
+        fprintf(stderr, "unknown binary expression address %d\n", p->operator_);
+        exit(1);
+    }
+}
+
 LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
     assert(p);
     assert(ctx);
@@ -574,6 +623,9 @@ LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
 
     case node_dot:
         return generate_dot_expr_addr(ctx, (DotNode *)p);
+
+    case node_binary:
+        return generate_binary_expr_addr(ctx, (BinaryNode *)p);
 
     default:
         fprintf(stderr, "unknown expression address %d\n", p->kind);
@@ -887,21 +939,7 @@ void generate_global_variable(GeneratorContext *ctx, VariableNode *p) {
     type = generate_type(ctx, p->type);
 
     p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
-
-    switch (p->type->kind) {
-    case type_int8:
-    case type_int32:
-        LLVMSetInitializer(p->generated_location, LLVMConstInt(type, 0, true));
-        break;
-
-    case type_pointer:
-        LLVMSetInitializer(p->generated_location, LLVMConstPointerNull(type));
-        break;
-
-    default:
-        fprintf(stderr, "unknown type of global variable %s\n", p->identifier);
-        exit(1);
-    }
+    LLVMSetInitializer(p->generated_location, LLVMConstNull(type));
 }
 
 LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
@@ -1009,6 +1047,7 @@ void generate_decl(GeneratorContext *ctx, DeclNode *p) {
 LLVMModuleRef generate(TranslationUnitNode *p) {
     GeneratorContext ctx;
     int i;
+    char *error;
 
     assert(p);
 
@@ -1022,7 +1061,12 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     }
 
     LLVMDisposeBuilder(ctx.builder);
-    LLVMVerifyModule(ctx.module, LLVMAbortProcessAction, NULL);
+
+    if (LLVMVerifyModule(ctx.module, LLVMReturnStatusAction, &error)) {
+        LLVMDumpModule(ctx.module);
+        fprintf(stderr, "\n%s", error);
+        exit(1);
+    }
 
     return ctx.module;
 }

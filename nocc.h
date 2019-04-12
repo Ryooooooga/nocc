@@ -478,6 +478,9 @@ ExprNode *parse_unary_expr(ParserContext *ctx);
 ExprNode *parse_assign_expr(ParserContext *ctx);
 ExprNode *parse_expr(ParserContext *ctx);
 StmtNode *parse_stmt(ParserContext *ctx);
+
+void parse_postfix_declarator(ParserContext *ctx, Type **type, const Token **t);
+void parse_declarator(ParserContext *ctx, Type **type, const Token **t);
 DeclNode *parse_decl(ParserContext *ctx);
 ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
@@ -538,6 +541,8 @@ StmtNode *sema_break_stmt(ParserContext *ctx, const Token *t);
 StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t);
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t);
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t);
+
+Type *sema_array_declarator(ParserContext *ctx, Type *type, ExprNode *size);
 
 DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
                        const Token *identifier);
