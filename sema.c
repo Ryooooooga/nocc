@@ -750,7 +750,16 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         usual_arithmetic_conversion(&p->left, &p->right);
 
         if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+            /* int - int -> int */
             p->type = p->left->type;
+        } else if (is_pointer_type(p->left->type) &&
+                   is_integer_type(p->right->type)) {
+            /* T* - int -> T* */
+            p->type = p->left->type;
+        } else if (is_pointer_type(p->left->type) &&
+                   is_pointer_type(p->right->type)) {
+            /* T* - T* -> ptrdiff_t */
+            p->type = type_get_int32();
         } else {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);

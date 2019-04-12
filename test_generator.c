@@ -33,6 +33,8 @@ void test_generating_integer(void) {
     IntegerNode *p = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 42,
     };
 
@@ -61,6 +63,8 @@ void test_generating_identifier(void) {
     IdentifierNode *p = &(IdentifierNode){
         .kind = node_identifier,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = true,
         .identifier = "a",
         .declaration = (DeclNode *)decl,
     };
@@ -91,12 +95,16 @@ void test_generating_negative(void) {
     IntegerNode *q = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 42,
     };
 
     UnaryNode *p = &(UnaryNode){
         .kind = node_unary,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .operator_ = '-',
         .operand = (ExprNode *)q,
     };
@@ -119,18 +127,24 @@ void test_generating_addition(void) {
     IntegerNode *l = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 15,
     };
 
     IntegerNode *r = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 8,
     };
 
     BinaryNode *p = &(BinaryNode){
         .kind = node_binary,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .operator_ = '+',
         .left = (ExprNode *)l,
         .right = (ExprNode *)r,
@@ -154,18 +168,24 @@ void test_generating_subtraction(void) {
     IntegerNode *l = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 15,
     };
 
     IntegerNode *r = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 8,
     };
 
     BinaryNode *p = &(BinaryNode){
         .kind = node_binary,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .operator_ = '-',
         .left = (ExprNode *)l,
         .right = (ExprNode *)r,
@@ -189,18 +209,24 @@ void test_generating_multiplication(void) {
     IntegerNode *l = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 15,
     };
 
     IntegerNode *r = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 8,
     };
 
     BinaryNode *p = &(BinaryNode){
         .kind = node_binary,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .operator_ = '*',
         .left = (ExprNode *)l,
         .right = (ExprNode *)r,
@@ -224,18 +250,24 @@ void test_generating_division(void) {
     IntegerNode *l = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 15,
     };
 
     IntegerNode *r = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 8,
     };
 
     BinaryNode *p = &(BinaryNode){
         .kind = node_binary,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .operator_ = '/',
         .left = (ExprNode *)l,
         .right = (ExprNode *)r,
@@ -259,18 +291,24 @@ void test_generating_modulo(void) {
     IntegerNode *l = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 15,
     };
 
     IntegerNode *r = &(IntegerNode){
         .kind = node_integer,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .value = 8,
     };
 
     BinaryNode *p = &(BinaryNode){
         .kind = node_binary,
         .line = 1,
+        .type = type_get_int32(),
+        .is_lvalue = false,
         .operator_ = '%',
         .left = (ExprNode *)l,
         .right = (ExprNode *)r,

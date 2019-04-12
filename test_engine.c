@@ -435,19 +435,39 @@ void test_engine(void) {
                              "}\n",
                              "ptradd2", 2, *(2 + "test"));
 
+    test_engine_run_function("ptradd3",
+                             "int ptradd3(int n) {\n"
+                             "  int *a;\n"
+                             "  a = 0;\n"
+                             "  return a + n;\n"
+                             "}\n",
+                             "ptradd3", 2, 2 * 4);
+
     test_engine_run_function("ptrsub",
                              "int ptrsub(int n) {\n"
                              "  return *((\"test\" + n) - 2);\n"
                              "}\n",
                              "ptrsub", 4, *("test" + 4 - 2));
 
-    test_engine_run_function("ptrsub2",
-                             "int ptrsub2(int n) {\n"
-                             "  const char* p = \"test\";\n"
-                             "  const char* q = p + n;"
+    test_engine_run_function("ptrdiff",
+                             "int ptrdiff(int n) {\n"
+                             "  const char* p;\n"
+                             "  const char* q;\n"
+                             "  p = \"test\";\n"
+                             "  q = p + n;"
                              "  return q - p;\n"
                              "}\n",
-                             "ptrsub2", 3, 3);
+                             "ptrdiff", 3, 3);
+
+    test_engine_run_function("ptrdiff2",
+                             "int ptrdiff2(int n) {\n"
+                             "  int* p;\n"
+                             "  int* q;\n"
+                             "  p = (int *)0;\n"
+                             "  q = (int *)8;"
+                             "  return q - p;\n"
+                             "}\n",
+                             "ptrdiff2", 0, 2);
 
     test_engine_run_function("ptrref2",
                              "int ptrref2(int n) {\n"

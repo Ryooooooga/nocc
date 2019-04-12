@@ -131,7 +131,7 @@ LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
     (void)ctx;
 
     /* TODO: '\0' in string */
-    return LLVMBuildGlobalStringPtr(ctx->builder, p->string, "str");
+    return LLVMBuildGlobalStringPtr(ctx->builder, p->string, ".str");
 }
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
@@ -386,9 +386,33 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
     switch (p->operator_) {
     case '+':
+        if (is_pointer_type(p->left->type)) {
+            /* T* + int -> T* */
+            return LLVMBuildInBoundsGEP(ctx->builder, left, &right, 1,
+                                        "ptradd");
+        } else if (is_pointer_type(p->right->type)) {
+            /* int + T* -> T* */
+            return LLVMBuildInBoundsGEP(ctx->builder, right, &left, 1,
+                                        "ptradd");
+        }
+
+        /* int + int -> int */
         return LLVMBuildAdd(ctx->builder, left, right, "add");
 
     case '-':
+        if (is_pointer_type(p->left->type) && is_pointer_type(p->right->type)) {
+            /* T* - T* -> ptrdiff_t */
+            left = LLVMBuildPtrDiff(ctx->builder, left, right, "ptrdiff");
+            return LLVMBuildTrunc(ctx->builder, left, LLVMInt32Type(),
+                                  "ptrdiff_i32");
+        } else if (is_pointer_type(p->left->type)) {
+            /* T* - int -> T* */
+            right = LLVMBuildNeg(ctx->builder, right, "negidx");
+            return LLVMBuildInBoundsGEP(ctx->builder, left, &right, 1,
+                                        "ptrsub");
+        }
+
+        /* int - int -> int */
         return LLVMBuildSub(ctx->builder, left, right, "sub");
 
     case '*':
