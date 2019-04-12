@@ -396,10 +396,10 @@ void test_engine(void) {
                              "  int res;\n"
                              "  p = malloc(100);\n"
                              "  sprintf(p, \"%d\", n);\n"
-                             "  res = strcmp(p, \"100\");\n"
+                             "  res = strcmp(p, \"50\");\n"
                              "  free(0);\n"
                              "  return res;\n"
                              "return n;"
                              "}\n",
-                             "var_args", 100, 0);
+                             "var_args", 50, 0);
 }

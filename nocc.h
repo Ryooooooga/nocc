@@ -161,6 +161,7 @@ int array_type_count_elements(Type *t);
 Type *function_return_type(Type *t);
 int function_count_param_types(Type *t);
 Type *function_param_type(Type *t, int index);
+bool function_type_is_var_args(Type *t);
 int struct_type_count_members(Type *t);
 struct MemberNode *struct_type_member(Type *t, int index);
 struct MemberNode *struct_type_find_member(Type *t, const char *member_name,

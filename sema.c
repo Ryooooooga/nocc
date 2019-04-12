@@ -120,6 +120,7 @@ ExprNode *decay_type_convert(ExprNode *expr) {
 
 bool assign_type_convert(ExprNode **expr, Type *dest_type) {
     assert(expr);
+    assert(*expr);
     assert(dest_type);
 
     *expr = decay_type_convert(*expr);
@@ -138,6 +139,27 @@ bool assign_type_convert(ExprNode **expr, Type *dest_type) {
 
     *expr = implicit_cast_node_new(*expr, dest_type);
     return true;
+}
+
+bool default_argument_promotion(ExprNode **expr) {
+    assert(expr);
+    assert(*expr);
+
+    *expr = decay_type_convert(*expr);
+
+    switch ((*expr)->type->kind) {
+    case type_int8:
+        *expr = implicit_cast_node_new(*expr, type_get_int32());
+        return true;
+
+    case type_int32:
+    case type_pointer:
+    case type_struct:
+        return true;
+
+    default:
+        return false;
+    }
 }
 
 Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
@@ -425,6 +447,8 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *close) {
     CallNode *p;
     Type *func_type;
+    int num_params;
+    bool is_var_args;
     int i;
 
     assert(ctx);
@@ -454,17 +478,27 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     }
 
     func_type = pointer_element_type(p->callee->type);
+    num_params = function_count_param_types(func_type);
+    is_var_args = function_type_is_var_args(func_type);
 
     /* check argument types */
-    if (num_args != function_count_param_types(func_type)) {
+    if (num_args != num_params && !(is_var_args && num_args >= num_params)) {
         fprintf(stderr, "invalid number of arguments\n");
         exit(1);
     }
 
-    for (i = 0; i < num_args; i++) {
+    for (i = 0; i < num_params; i++) {
         if (!assign_type_convert(&p->args[i],
                                  function_param_type(func_type, i))) {
             fprintf(stderr, "invalid type of argument\n");
+            exit(1);
+        }
+    }
+
+    /* variadic arguments part */
+    for (i = num_params; i < num_args; i++) {
+        if (!default_argument_promotion(&p->args[i])) {
+            fprintf(stderr, "invalid type of varidic argument");
             exit(1);
         }
     }

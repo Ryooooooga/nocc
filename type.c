@@ -252,6 +252,16 @@ Type *function_param_type(Type *t, int index) {
     return ((FunctionType *)t)->param_types[index];
 }
 
+bool function_type_is_var_args(Type *t) {
+    assert(t);
+
+    if (!is_function_type(t)) {
+        return false;
+    }
+
+    return ((FunctionType *)t)->var_args;
+}
+
 int struct_type_count_members(Type *t) {
     assert(t);
 
