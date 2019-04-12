@@ -9,6 +9,8 @@ void test_engine_run_function(const char *filename, const char *src,
     assert(src);
     assert(func);
 
+    fprintf(stderr, "test_engine:%s --- ", filename);
+
     TranslationUnitNode *node = parse(filename, src);
     LLVMModuleRef module = generate(node);
 
@@ -35,6 +37,8 @@ void test_engine_run_function(const char *filename, const char *src,
 
     LLVMDisposeMessage(error);
     LLVMDisposeExecutionEngine(engine);
+
+    fprintf(stderr, "done!!\n");
 }
 
 void test_engine(void) {
@@ -412,4 +416,22 @@ void test_engine(void) {
                              "  return 42;"
                              "}\n",
                              "forward", 0, 42);
+
+    test_engine_run_function("ptrref",
+                             "int ptrref(int n) {\n"
+                             "  return *\"test\";\n"
+                             "}\n",
+                             "ptrref", 0, *"test");
+
+    test_engine_run_function("ptradd",
+                             "int ptradd(int n) {\n"
+                             "  return *(\"test\" + n);\n"
+                             "}\n",
+                             "ptradd", 2, *("test" + 2));
+
+    test_engine_run_function("ptrref2",
+                             "int ptrref2(int n) {\n"
+                             "  return \"test\"[n];\n"
+                             "}\n",
+                             "ptrref2", 3, "test"[3]);
 }
