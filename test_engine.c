@@ -345,4 +345,24 @@ void test_engine(void) {
                              "  return -n;\n"
                              "}\n",
                              "negative", 8, -8);
+
+    test_engine_run_function("preinc",
+                             "int preinc(int n) {\n"
+                             "  int a;\n"
+                             "  int b;\n"
+                             "  a = n;\n"
+                             "  b = ++a;\n"
+                             "  return (a == n + 1) * (b == n + 1);\n"
+                             "}\n",
+                             "preinc", 8, 1);
+
+    test_engine_run_function("predec",
+                             "int predec(int n) {\n"
+                             "  int a;\n"
+                             "  int b;\n"
+                             "  a = n;\n"
+                             "  b = --a;\n"
+                             "  return (a == n - 1) * (b == n - 1);\n"
+                             "}\n",
+                             "predec", 8, 1);
 }

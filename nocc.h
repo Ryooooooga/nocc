@@ -66,6 +66,8 @@ enum {
     token_greater_equal,
     token_equal,
     token_not_equal,
+    token_increment,
+    token_decrement,
 };
 
 struct Token {

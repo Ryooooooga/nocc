@@ -445,6 +445,8 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
     case '-':
     case '*':
     case '&':
+    case token_increment:
+    case token_decrement:
         /* unary operator */
         consume_token(ctx);
 
