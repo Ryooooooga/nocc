@@ -47,21 +47,38 @@ void test_pp(const char *filename, const char *src, const TestSuite *suites) {
 }
 
 void test_preprocessor(void) {
+    test_pp("separator", "pp removes spaces \n and new line\n",
+            (TestSuite[]){
+                {token_identifier, "pp", NULL},
+                {token_identifier, "removes", NULL},
+                {token_identifier, "spaces", NULL},
+                {token_identifier, "and", NULL},
+                {token_identifier, "new", NULL},
+                {token_identifier, "line", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("string", "\"hell\" \"o, \"\n\"world\"\n",
+            (TestSuite[]){
+                {token_string, "\"hello, world\"", "hello, world"},
+                {'\0', "", NULL},
+            });
+
     test_pp("define",
             "# define N 0\n"
             "N\n",
             (TestSuite[]){
-                {.kind = token_number, .text = "0", .string = NULL},
-                {.kind = '\0', .text = "", .string = NULL},
+                {token_number, "0", NULL},
+                {'\0', "", NULL},
             });
 
     test_pp("define2",
             "# define M a b c\n"
             "M\n",
             (TestSuite[]){
-                {.kind = token_identifier, .text = "a", .string = NULL},
-                {.kind = token_identifier, .text = "b", .string = NULL},
-                {.kind = token_identifier, .text = "c", .string = NULL},
-                {.kind = '\0', .text = "", .string = NULL},
+                {token_identifier, "a", NULL},
+                {token_identifier, "b", NULL},
+                {token_identifier, "c", NULL},
+                {'\0', "", NULL},
             });
 }
