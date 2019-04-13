@@ -184,4 +184,131 @@ void test_preprocessor(Vec *include_directories) {
                 {';', ";", NULL},
                 {'\0', "", NULL},
             });
+
+    test_pp("ifndef",
+            "#ifndef not_defined\n"
+            "here\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "here", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("ifndef2",
+            "#define A\n"
+            "#ifndef A\n"
+            "here\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {'\0', "", NULL},
+            });
+
+    test_pp("ifndef_else",
+            "#ifndef not_defined\n"
+            "here\n"
+            "#else\n"
+            "there\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "here", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("ifndef_else2",
+            "#define A\n"
+            "#ifndef A\n"
+            "here\n"
+            "#else\n"
+            "there\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "there", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("nested_ifndef",
+            "#ifndef not_defined\n"
+            "#ifndef A\n"
+            "here\n"
+            "#endif\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "here", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("nested_ifndef2",
+            "#ifndef not_defined\n"
+            "#define A\n"
+            "#ifndef A\n"
+            "here\n"
+            "#endif\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {'\0', "", NULL},
+            });
+
+    test_pp("nested_ifndef_else",
+            "#ifndef not_defined\n"
+            "#ifndef A\n"
+            "here\n"
+            "#else\n"
+            "there\n"
+            "#endif\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "here", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("nested_ifndef_else2",
+            "#ifndef not_defined\n"
+            "#define A\n"
+            "#ifndef A\n"
+            "here\n"
+            "#else\n"
+            "there\n"
+            "#endif\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "there", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("nested_ifndef_else3",
+            "#define A\n"
+            "#ifndef A\n"
+            "#ifndef not_defined\n"
+            "here\n"
+            "#else\n"
+            "there\n"
+            "#endif\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {'\0', "", NULL},
+            });
+
+    test_pp("nested_ifdef_ifndef",
+            "#define A\n"
+            "#ifdef A\n"
+            "#ifndef not_defined\n"
+            "here\n"
+            "#else\n"
+            "there\n"
+            "#endif\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "here", NULL},
+                {'\0', "", NULL},
+            });
 }
