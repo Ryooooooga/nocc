@@ -10,8 +10,7 @@ char *read_file(const char *filename) {
     fp = fopen(filename, "r");
 
     if (fp == NULL) {
-        fprintf(stderr, "cannot open file %s\n", filename);
-        exit(1);
+        return NULL;
     }
 
     fseek(fp, 0, SEEK_END);

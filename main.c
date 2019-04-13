@@ -8,11 +8,16 @@ int main(int argc, char **argv) {
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
-        return 1;
+        exit(1);
     }
 
     filename = argv[1];
     src = read_file(filename);
+
+    if (src == NULL) {
+        fprintf(stderr, "cannot open file %s\n", filename);
+        exit(1);
+    }
 
     node = parse(filename, src, vec_new());
     module = generate(node);
