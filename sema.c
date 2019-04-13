@@ -571,6 +571,42 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
     return (ExprNode *)p;
 }
 
+ExprNode *sema_arrow_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
+                          const Token *identifier) {
+    UnaryNode *p;
+
+    assert(ctx);
+    assert(parent);
+    assert(t);
+    assert(identifier);
+
+    /* T[] -> T* */
+    parent = decay_type_conversion(parent);
+
+    /* type check */
+    if (!is_pointer_type(parent->type)) {
+        fprintf(stderr, "invalid operand type of opeartor ->\n");
+        exit(1);
+    }
+
+    if (is_incomplete_pointer_type(parent->type)) {
+        fprintf(stderr, "cannot access member of incomplete pointer type\n");
+        exit(1);
+    }
+
+    /* make *parent node */
+    p = malloc(sizeof(*p));
+    p->kind = node_unary;
+    p->line = t->line;
+    p->type = pointer_element_type(parent->type);
+    p->is_lvalue = true;
+    p->operator_ = '*';
+    p->operand = parent;
+
+    /* make (*parent).member node */
+    return sema_dot_expr(ctx, (ExprNode *)p, t, identifier);
+}
+
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand) {
     UnaryNode *p;

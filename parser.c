@@ -400,6 +400,30 @@ ExprNode *parse_dot_expr(ParserContext *ctx, ExprNode *parent) {
     return sema_dot_expr(ctx, parent, t, identifier);
 }
 
+ExprNode *parse_arrow_expr(ParserContext *ctx, ExprNode *parent) {
+    const Token *t;
+    const Token *identifier;
+
+    /* -> */
+    t = consume_token(ctx);
+
+    if (t->kind != token_arrow) {
+        fprintf(stderr, "expected ->, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* identifier */
+    identifier = consume_token(ctx);
+
+    if (identifier->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
+        exit(1);
+    }
+
+    /* make node */
+    return sema_arrow_expr(ctx, parent, t, identifier);
+}
+
 ExprNode *parse_postfix_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *operand;
@@ -424,6 +448,10 @@ ExprNode *parse_postfix_expr(ParserContext *ctx) {
 
         case '.':
             operand = parse_dot_expr(ctx, operand);
+            break;
+
+        case token_arrow:
+            operand = parse_arrow_expr(ctx, operand);
             break;
 
         default:
