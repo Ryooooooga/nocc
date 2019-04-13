@@ -14,6 +14,11 @@ void test_engine_run_function(const char *filename, const char *src,
     TranslationUnitNode *node = parse(filename, src);
     LLVMModuleRef module = generate(node);
 
+    if (LLVMGetNamedFunction(module, func) == NULL) {
+        fprintf(stderr, "%s: function %s not found\n", filename, func);
+        exit(1);
+    }
+
     LLVMExecutionEngineRef engine = NULL;
     char *error = NULL;
 
@@ -551,4 +556,50 @@ void test_engine(void) {
                              "  return a->x;\n"
                              "}\n",
                              "arrow", 42, 42);
+
+    extern int test_extern;
+    test_extern = 42;
+    test_engine_run_function("extern",
+                             "extern int test_extern;\n"
+                             "int extern_(int n) {\n"
+                             "  if (test_extern != 42) return 0;\n"
+                             "  test_extern = 33;\n"
+                             "  return test_extern;\n"
+                             "}\n",
+                             "extern_", 0, 33);
+    assert(test_extern == 33);
+
+    test_extern = 42;
+    test_engine_run_function("extern2",
+                             "extern int test_extern;\n"
+                             "extern int test_extern;\n"
+                             "int extern2(int n) {\n"
+                             "  if (test_extern != 42) return 0;\n"
+                             "  test_extern = 33;\n"
+                             "  return test_extern;\n"
+                             "}\n",
+                             "extern2", 0, 33);
+    assert(test_extern == 33);
+
+    test_engine_run_function("extern3",
+                             "extern int test_extern3;\n"
+                             "extern int test_extern3;\n"
+                             "int extern3(int n) {\n"
+                             "  test_extern3 = 33;\n"
+                             "  return test_extern3;\n"
+                             "}\n"
+                             "int test_extern3;\n",
+                             "extern3", 0, 33);
+
+    test_engine_run_function("extern4",
+                             "extern int test_extern4;\n"
+                             "int test_extern4;\n"
+                             "extern int test_extern4;\n"
+                             "int extern4(int n) {\n"
+                             "  test_extern4 = 33;\n"
+                             "  return test_extern4;\n"
+                             "}\n",
+                             "extern4", 0, 33);
 }
+
+int test_extern = 24;

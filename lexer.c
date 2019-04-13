@@ -173,6 +173,8 @@ Token *lex_token(const char *src, int *index, int *line) {
                 t->kind = token_struct;
             } else if (strcmp(t->text, "typedef") == 0) {
                 t->kind = token_typedef;
+            } else if (strcmp(t->text, "extern") == 0) {
+                t->kind = token_extern;
             }
 
             return t;

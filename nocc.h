@@ -64,6 +64,7 @@ enum {
     token_const,
     token_struct,
     token_typedef,
+    token_extern,
     token_lesser_equal,
     token_greater_equal,
     token_equal,
@@ -193,6 +194,7 @@ enum {
     node_expr,
 
     node_typedef,
+    node_extern,
     node_member,
     node_variable,
     node_param,
@@ -224,6 +226,7 @@ typedef struct ExprStmtNode ExprStmtNode;
 
 typedef struct DeclNode DeclNode;
 typedef struct TypedefNode TypedefNode;
+typedef struct ExternNode ExternNode;
 typedef struct MemberNode MemberNode;
 typedef struct VariableNode VariableNode;
 typedef struct ParamNode ParamNode;
@@ -407,6 +410,14 @@ struct TypedefNode {
     LLVMValueRef generated_location; /* unused */
 };
 
+struct ExternNode {
+    int kind;
+    int line;
+    char *identifier;
+    Type *type;
+    LLVMValueRef generated_location;
+};
+
 struct MemberNode {
     int kind;
     int line;
@@ -551,6 +562,8 @@ Type *sema_array_declarator(ParserContext *ctx, Type *type, ExprNode *size);
 
 DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
                        const Token *identifier);
+DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
+                      const Token *identifier);
 DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t);
 ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
 
