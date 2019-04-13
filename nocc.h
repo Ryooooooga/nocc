@@ -265,8 +265,10 @@ char *read_file(const char *filename);
 #define token_not_equal 281
 #define token_increment 282
 #define token_decrement 283
-#define token_arrow 284
-#define token_var_args 285
+#define token_and 284
+#define token_or 285
+#define token_arrow 286
+#define token_var_args 287
 
 struct Token {
     int kind;

@@ -647,6 +647,56 @@ void test_engine(void) {
                              "  return '\\n';\n"
                              "}\n",
                              "character", 0, '\n');
+
+    test_engine_run_function("logical_and",
+                             "int logical_and(int n) {\n"
+                             "  return ((0 && 0) == 0) * ((1 && 0) == 0) *"
+                             "         ((0 && 1) == 0) * ((1 && 1) == 1);\n"
+                             "}\n",
+                             "logical_and", 0, 1);
+
+    test_engine_run_function("logical_or",
+                             "int logical_or(int n) {\n"
+                             "  return ((0 && 0) == 0) * ((1 && 0) == 1) *"
+                             "         ((0 && 1) == 1) * ((1 && 1) == 1);\n"
+                             "}\n",
+                             "logical_or", 0, 1);
+
+    test_engine_run_function("shortcircuit1",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit1(int n) {\n"
+                             "  0 && f();\n"
+                             "  return a == 0;\n"
+                             "}\n",
+                             "shortcircuit1", 0, 1);
+
+    test_engine_run_function("shortcircuit2",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit2(int n) {\n"
+                             "  1 && f();\n"
+                             "  return a == 1;\n"
+                             "}\n",
+                             "shortcircuit2", 0, 1);
+
+    test_engine_run_function("shortcircuit3",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit3(int n) {\n"
+                             "  0 || f();\n"
+                             "  return a == 1;\n"
+                             "}\n",
+                             "shortcircuit3", 0, 1);
+
+    test_engine_run_function("shortcircuit4",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit4(int n) {\n"
+                             "  1 || f();\n"
+                             "  return a == 0;\n"
+                             "}\n",
+                             "shortcircuit4", 0, 1);
 }
 
 int test_extern = 24;

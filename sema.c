@@ -880,7 +880,21 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             exit(1);
         }
 
-        if (!is_int32_type(p->left->type) && !is_pointer_type(p->left->type)) {
+        if (!is_scalar_type(p->left->type)) {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = type_get_int32();
+        break;
+
+    case token_and:
+    case token_or:
+        /* logical operator */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (!is_scalar_type(p->left->type) || !is_scalar_type(p->right->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
             exit(1);

@@ -691,6 +691,50 @@ ExprNode *parse_equality_expr(ParserContext *ctx) {
     return left;
 }
 
+ExprNode *parse_logical_and_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    /* equality expression */
+    left = parse_equality_expr(ctx);
+
+    while (current_token(ctx)->kind == token_and) {
+        /* && */
+        t = consume_token(ctx);
+
+        /* equality expression */
+        right = parse_equality_expr(ctx);
+
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
+    }
+
+    return left;
+}
+
+ExprNode *parse_logical_or_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    /* logical and expression */
+    left = parse_logical_and_expr(ctx);
+
+    while (current_token(ctx)->kind == token_or) {
+        /* || */
+        t = consume_token(ctx);
+
+        /* logical and expression */
+        right = parse_logical_and_expr(ctx);
+
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
+    }
+
+    return left;
+}
+
 ExprNode *parse_assign_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *left;
@@ -698,8 +742,8 @@ ExprNode *parse_assign_expr(ParserContext *ctx) {
 
     assert(ctx != NULL);
 
-    /* equality expression */
-    left = parse_equality_expr(ctx);
+    /* logical or expression */
+    left = parse_logical_or_expr(ctx);
 
     /* assignment operator */
     if (current_token(ctx)->kind != '=') {

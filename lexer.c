@@ -285,6 +285,17 @@ Token *lex_token(const char *src, int *index, int *line) {
                              line_start);
         }
 
+        if (src[*index + 0] == '&' && src[*index + 1] == '&') {
+            *index += 2;
+            return token_new(token_and, src + start, *index - start,
+                             line_start);
+        }
+
+        if (src[*index + 0] == '|' && src[*index + 1] == '|') {
+            *index += 2;
+            return token_new(token_or, src + start, *index - start, line_start);
+        }
+
         if (src[*index + 0] == '-' && src[*index + 1] == '>') {
             *index += 2;
             return token_new(token_arrow, src + start, *index - start,
