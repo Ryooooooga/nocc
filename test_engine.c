@@ -543,4 +543,12 @@ void test_engine(void) {
                              "  return a[0] * a[1];\n"
                              "}\n",
                              "typedef_array", 0, 15);
+
+    test_engine_run_function("arrow",
+                             "int arrow(int n) {\n"
+                             "  struct t {int x;} a[1];\n"
+                             "  a->x = n;\n"
+                             "  return a->x;\n"
+                             "}\n",
+                             "arrow", 42, 42);
 }

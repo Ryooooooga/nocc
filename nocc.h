@@ -68,6 +68,7 @@ enum {
     token_not_equal,
     token_increment,
     token_decrement,
+    token_arrow,
     token_var_args,
 };
 
@@ -508,6 +509,8 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
                          const Token *close);
 ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
                         const Token *identifier);
+ExprNode *sema_arrow_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
+                          const Token *identifier);
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand);
 ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,

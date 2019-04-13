@@ -208,6 +208,11 @@ Token *lex_token(const char *src, int *index, int *line) {
             return token_new(token_decrement, src + start, 2, line_start);
         }
 
+        if (src[*index + 0] == '-' && src[*index + 1] == '>') {
+            *index += 2;
+            return token_new(token_arrow, src + start, 2, line_start);
+        }
+
         if (src[*index + 0] == '.' && src[*index + 1] == '.' &&
             src[*index + 2] == '.') {
             *index += 3;
