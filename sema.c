@@ -395,6 +395,7 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     }
 
     switch (p->declaration->kind) {
+    case node_extern:
     case node_variable:
     case node_param:
     case node_function:
@@ -1238,8 +1239,49 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
 
     return (DeclNode *)p;
 }
+
+DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
+                      const Token *identifier) {
+    ExternNode *p;
+    DeclNode *decl;
+
+    assert(ctx);
+    assert(t);
+    assert(type);
+    assert(identifier);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_extern;
+    p->line = t->line;
+    p->identifier = str_dup(identifier->text);
+    p->type = type;
+    p->generated_location = NULL;
+
+    /* redeclaration check */
+    decl = scope_stack_find(ctx->env, p->identifier, false);
+
+    if (decl != NULL) {
+        if (decl->kind != node_extern && decl->kind != node_variable) {
+            fprintf(stderr, "redeclaration of symbol %s\n", p->identifier);
+            exit(1);
+        }
+
+        if (!type_equals(decl->type, p->type)) {
+            fprintf(stderr, "conflicting type for %s\n", p->identifier);
+            exit(1);
+        }
+    }
+
+    /* register symbol */
+    scope_stack_register(ctx->env, p->identifier, p);
+
+    return (DeclNode *)p;
+}
+
 DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     VariableNode *p;
+    DeclNode *decl;
 
     assert(ctx);
     assert(type);
@@ -1259,10 +1301,15 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     }
 
     /* redeclaration check */
-    if (scope_stack_find(ctx->env, p->identifier, false)) {
-        fprintf(stderr, "symbol %s has already been declared in this scope\n",
-                p->identifier);
-        exit(1);
+    decl = scope_stack_find(ctx->env, p->identifier, false);
+
+    if (decl != NULL) {
+        if (ctx->current_function != NULL || decl->kind != node_extern) {
+            fprintf(stderr,
+                    "symbol %s has already been declared in this scope\n",
+                    p->identifier);
+            exit(1);
+        }
     }
 
     /* register symbol */

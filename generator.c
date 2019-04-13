@@ -933,12 +933,33 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
     }
 }
 
+void generate_extern_variable(GeneratorContext *ctx, ExternNode *p) {
+    LLVMTypeRef type;
+
+    type = generate_type(ctx, p->type);
+
+    /* find global variable */
+    p->generated_location = LLVMGetNamedGlobal(ctx->module, p->identifier);
+
+    if (p->generated_location == NULL) {
+        /* create global variable */
+        p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
+    }
+}
+
 void generate_global_variable(GeneratorContext *ctx, VariableNode *p) {
     LLVMTypeRef type;
 
     type = generate_type(ctx, p->type);
 
-    p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
+    /* find global variable */
+    p->generated_location = LLVMGetNamedGlobal(ctx->module, p->identifier);
+
+    if (p->generated_location == NULL) {
+        /* create global variable */
+        p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
+    }
+
     LLVMSetInitializer(p->generated_location, LLVMConstNull(type));
 }
 
@@ -1028,6 +1049,10 @@ void generate_decl(GeneratorContext *ctx, DeclNode *p) {
 
     switch (p->kind) {
     case node_typedef:
+        return;
+
+    case node_extern:
+        generate_extern_variable(ctx, (ExternNode *)p);
         return;
 
     case node_variable:

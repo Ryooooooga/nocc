@@ -52,6 +52,7 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
 bool is_declaration_specifier_token(ParserContext *ctx, const Token *t) {
     switch (t->kind) {
     case token_typedef:
+    case token_extern:
         return true;
 
     default:
@@ -1186,6 +1187,36 @@ DeclNode *parse_top_level_typedef(ParserContext *ctx) {
     return decl;
 }
 
+DeclNode *parse_extern(ParserContext *ctx) {
+    const Token *t;
+    const Token *identifier;
+    Type *type;
+
+    /* extern */
+    t = consume_token(ctx);
+
+    if (t->kind != token_extern) {
+        fprintf(stderr, "expected extern, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* type */
+    type = parse_type(ctx);
+
+    /* declarator */
+    parse_declarator(ctx, &type, &identifier);
+
+    /* ; */
+    if (current_token(ctx)->kind != ';') {
+        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* make node and register symbol */
+    return sema_extern(ctx, t, type, identifier);
+}
+
 DeclNode *parse_function(ParserContext *ctx) {
     const Token *t;
     Type *return_type;
@@ -1303,6 +1334,9 @@ DeclNode *parse_top_level(ParserContext *ctx) {
     switch (current_token(ctx)->kind) {
     case token_typedef:
         return parse_top_level_typedef(ctx);
+
+    case token_extern:
+        return parse_extern(ctx);
 
     default:
         return parse_function(ctx);
