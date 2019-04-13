@@ -38,8 +38,7 @@ Token *pp_consume_token(Preprocessor *pp) {
 Token *pp_skip_separator(Preprocessor *pp) {
     assert(pp);
 
-    while (pp_current_token(pp)->kind == ' ' ||
-           pp_current_token(pp)->kind == '\n') {
+    while (pp_current_token(pp)->kind == ' ') {
         pp_consume_token(pp);
     }
 
@@ -113,6 +112,10 @@ void pp_string(Preprocessor *pp) {
 void preprocess_line(Preprocessor *pp) {
     switch (pp_skip_separator(pp)->kind) {
     case '\0':
+        break;
+
+    case '\n':
+        pp_consume_token(pp);
         break;
 
     case '#':
