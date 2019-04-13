@@ -362,8 +362,7 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
             } else {
                 LLVMValueRef indices[2];
 
-                indices[0] = indices[1] =
-                    LLVMConstInt(LLVMInt32Type(), 0, true);
+                indices[0] = indices[1] = LLVMConstNull(LLVMInt32Type());
 
                 src = generate_expr_addr(ctx, p->operand);
                 return LLVMBuildInBoundsGEP(ctx->builder, src, indices, 2,
@@ -694,9 +693,7 @@ bool generate_if_stmt(GeneratorContext *ctx, IfNode *p) {
 
     /* condition */
     condition = generate_expr(ctx, p->condition);
-    bool_condition =
-        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstNull(LLVMTypeOf(condition)), "cond");
+    bool_condition = LLVMBuildIsNotNull(ctx->builder, condition, "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, then_basic_block,
                     else_basic_block);
@@ -741,9 +738,7 @@ bool generate_while_stmt(GeneratorContext *ctx, WhileNode *p) {
     LLVMPositionBuilderAtEnd(ctx->builder, condition_basic_block);
 
     condition = generate_expr(ctx, p->condition);
-    bool_condition =
-        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstNull(LLVMTypeOf(condition)), "cond");
+    bool_condition = LLVMBuildIsNotNull(ctx->builder, condition, "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                     endwhile_basic_block);
@@ -800,9 +795,7 @@ bool generate_do_stmt(GeneratorContext *ctx, DoNode *p) {
     LLVMPositionBuilderAtEnd(ctx->builder, condition_basic_block);
 
     condition = generate_expr(ctx, p->condition);
-    bool_condition =
-        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstNull(LLVMTypeOf(condition)), "cond");
+    bool_condition = LLVMBuildIsNotNull(ctx->builder, condition, "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                     enddo_basic_block);
