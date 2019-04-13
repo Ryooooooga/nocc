@@ -87,7 +87,8 @@ struct Token {
 typedef struct Token Token;
 
 Vec *lex(const char *src);
-Vec *preprocess(const char *filename, const char *src);
+Vec *preprocess(const char *filename, const char *src,
+                Vec *include_directories);
 
 enum {
     type_void,
@@ -500,7 +501,8 @@ void parse_declarator(ParserContext *ctx, Type **type, const Token **t);
 DeclNode *parse_decl(ParserContext *ctx);
 ParamNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
-TranslationUnitNode *parse(const char *filename, const char *src);
+TranslationUnitNode *parse(const char *filename, const char *src,
+                           Vec *include_directories);
 
 Type *sema_identifier_type(ParserContext *ctx, const Token *t);
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t);

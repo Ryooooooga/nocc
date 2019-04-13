@@ -4,6 +4,7 @@ struct Preprocessor {
     Vec *result;
     Token **tokens;
     int index;
+    Vec *include_directories;
     Map *macros;
 };
 
@@ -219,15 +220,19 @@ void preprocess_lines(Preprocessor *pp) {
     }
 }
 
-Vec *preprocess(const char *filename, const char *src) {
+Vec *preprocess(const char *filename, const char *src,
+                Vec *include_directories) {
     Preprocessor pp;
 
-    (void)filename;
+    assert(filename);
+    assert(src);
+    assert(include_directories);
 
     /* make preprocessor context */
     pp.result = vec_new();
     pp.tokens = (Token **)lex(src)->data;
     pp.index = 0;
+    pp.include_directories = include_directories;
     pp.macros = map_new();
 
     preprocess_lines(&pp);

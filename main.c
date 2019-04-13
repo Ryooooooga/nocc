@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
     filename = argv[1];
     src = read_file(filename);
 
-    node = parse(filename, src);
+    node = parse(filename, src, vec_new());
     module = generate(node);
 
     LLVMDumpModule(module);
