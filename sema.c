@@ -289,7 +289,8 @@ StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
     }
 
     /* enter struct member scope */
-    sema_push_scope(ctx);
+    /* but do not push struct scope */
+    scope_stack_push(ctx->env);
 
     return p;
 }
@@ -305,7 +306,7 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
     assert(num_members >= 0);
 
     /* leave struct member scope */
-    sema_pop_scope(ctx);
+    scope_stack_pop(ctx->env);
 
     /* check the number of members */
     if (num_members == 0) {
