@@ -1,4 +1,7 @@
+#ifndef USE_STANDARD_HEADERS
 #define USE_STANDARD_HEADERS
+#endif
+
 #include "nocc.h"
 
 void test_generating_type_void(void) {

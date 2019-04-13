@@ -696,7 +696,7 @@ bool generate_if_stmt(GeneratorContext *ctx, IfNode *p) {
     condition = generate_expr(ctx, p->condition);
     bool_condition =
         LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+                      LLVMConstNull(LLVMTypeOf(condition)), "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, then_basic_block,
                     else_basic_block);
@@ -743,7 +743,7 @@ bool generate_while_stmt(GeneratorContext *ctx, WhileNode *p) {
     condition = generate_expr(ctx, p->condition);
     bool_condition =
         LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+                      LLVMConstNull(LLVMTypeOf(condition)), "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                     endwhile_basic_block);
@@ -802,7 +802,7 @@ bool generate_do_stmt(GeneratorContext *ctx, DoNode *p) {
     condition = generate_expr(ctx, p->condition);
     bool_condition =
         LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+                      LLVMConstNull(LLVMTypeOf(condition)), "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                     enddo_basic_block);
@@ -843,7 +843,7 @@ bool generate_for_stmt(GeneratorContext *ctx, ForNode *p) {
         condition = generate_expr(ctx, p->condition);
         bool_condition =
             LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                          LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+                          LLVMConstNull(LLVMTypeOf(condition)), "cond");
 
         LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                         endfor_basic_block);

@@ -1,4 +1,7 @@
+#ifndef USE_STANDARD_HEADERS
 #define USE_STANDARD_HEADERS
+#endif
+
 #include "nocc.h"
 
 #include <llvm-c/ExecutionEngine.h>

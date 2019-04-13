@@ -1027,7 +1027,9 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
     p->else_ = else_;
 
     /* type check */
-    if (!is_int32_type(condition->type)) {
+    p->condition = integer_promotion(p->condition);
+
+    if (!is_scalar_type(condition->type)) {
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
@@ -1069,7 +1071,9 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     p->body = body;
 
     /* type check */
-    if (!is_int32_type(condition->type)) {
+    p->condition = integer_promotion(p->condition);
+
+    if (!is_scalar_type(condition->type)) {
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
@@ -1114,7 +1118,9 @@ StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
     p->condition = condition;
 
     /* type check */
-    if (!is_int32_type(condition->type)) {
+    p->condition = integer_promotion(p->condition);
+
+    if (!is_scalar_type(condition->type)) {
         fprintf(stderr, "invalid condition type\n");
         exit(1);
     }
@@ -1159,9 +1165,13 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
     p->body = body;
 
     /* type check */
-    if (condition && !is_int32_type(condition->type)) {
-        fprintf(stderr, "invalid condition type\n");
-        exit(1);
+    if (p->condition) {
+        p->condition = integer_promotion(p->condition);
+
+        if (!is_scalar_type(p->condition->type)) {
+            fprintf(stderr, "invalid condition type\n");
+            exit(1);
+        }
     }
 
     return (StmtNode *)p;
