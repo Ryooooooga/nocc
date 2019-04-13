@@ -1,12 +1,12 @@
 #include "nocc.h"
 
 const Token *current_token(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     return ctx->tokens[ctx->index];
 }
 
 const Token *peek_token(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     if (current_token(ctx)->kind == '\0') {
         return current_token(ctx);
@@ -16,7 +16,7 @@ const Token *peek_token(ParserContext *ctx) {
 }
 
 const Token *consume_token(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     if (current_token(ctx)->kind == '\0') {
         return current_token(ctx);
@@ -28,13 +28,15 @@ const Token *consume_token(ParserContext *ctx) {
 bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     DeclNode *symbol;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     switch (t->kind) {
     case token_void:
     case token_char:
     case token_int:
+    case token_long:
+    case token_unsigned:
     case token_struct:
     case token_const:
         return true;
@@ -156,7 +158,12 @@ Type *parse_primary_type(ParserContext *ctx) {
         consume_token(ctx); /* eat char */
         return type_get_int8();
 
+    case token_unsigned:
+        consume_token(ctx);             /* eat long */
+        return parse_primary_type(ctx); /* TODO: unsigned type */
+
     case token_int:
+    case token_long:        /* TODO: long type */
         consume_token(ctx); /* eat int */
         return type_get_int32();
 
@@ -177,7 +184,7 @@ Type *parse_type(ParserContext *ctx) {
     bool is_const;
     Type *type;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* const? */
     is_const = false;
@@ -258,6 +265,21 @@ ExprNode *parse_number_expr(ParserContext *ctx) {
     return sema_integer_expr(ctx, t, (int)value);
 }
 
+ExprNode *parse_character_expr(ParserContext *ctx) {
+    const Token *t;
+
+    /* character */
+    t = consume_token(ctx);
+
+    if (t->kind != token_character) {
+        fprintf(stderr, "expected character, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* make node */
+    return sema_integer_expr(ctx, t, t->string[0]);
+}
+
 ExprNode *parse_string_expr(ParserContext *ctx) {
     const Token *t;
 
@@ -295,6 +317,9 @@ ExprNode *parse_primary_expr(ParserContext *ctx) {
 
     case token_number:
         return parse_number_expr(ctx);
+
+    case token_character:
+        return parse_character_expr(ctx);
 
     case token_string:
         return parse_string_expr(ctx);
@@ -493,11 +518,52 @@ ExprNode *parse_cast_expr(ParserContext *ctx) {
     return sema_cast_expr(ctx, open, type, close, operand);
 }
 
+ExprNode *parse_sizeof_expr(ParserContext *ctx) {
+    const Token *t;
+    Type *type;
+
+    /* sizeof */
+    t = consume_token(ctx);
+
+    if (t->kind != token_sizeof) {
+        fprintf(stderr, "expected sizeof, but got %s\n", t->text);
+        exit(1);
+    }
+
+    if (current_token(ctx)->kind == '(' &&
+        is_type_specifier_token(ctx, peek_token(ctx))) {
+        /* sizeof ( type ) */
+        /* ( */
+        consume_token(ctx);
+
+        /* type */
+        type = parse_type(ctx);
+
+        /* ) */
+        if (current_token(ctx)->kind != ')') {
+            fprintf(stderr, "expected ), but got %s\n",
+                    current_token(ctx)->text);
+            exit(1);
+        }
+        consume_token(ctx);
+
+        /* make node */
+        return sema_sizeof_expr(ctx, t, type);
+    }
+
+    /* sizeof unary_expr */
+    /* unary expression */
+    type = parse_unary_expr(ctx)->type;
+
+    /* make node */
+    return sema_sizeof_expr(ctx, t, type);
+}
+
 ExprNode *parse_unary_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *operand;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
     t = current_token(ctx);
 
@@ -516,6 +582,9 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
 
         /* make node */
         return sema_unary_expr(ctx, t, operand);
+
+    case token_sizeof:
+        return parse_sizeof_expr(ctx);
 
     case '(':
         if (is_type_specifier_token(ctx, peek_token(ctx))) {
@@ -622,15 +691,59 @@ ExprNode *parse_equality_expr(ParserContext *ctx) {
     return left;
 }
 
+ExprNode *parse_logical_and_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    /* equality expression */
+    left = parse_equality_expr(ctx);
+
+    while (current_token(ctx)->kind == token_and) {
+        /* && */
+        t = consume_token(ctx);
+
+        /* equality expression */
+        right = parse_equality_expr(ctx);
+
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
+    }
+
+    return left;
+}
+
+ExprNode *parse_logical_or_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    /* logical and expression */
+    left = parse_logical_and_expr(ctx);
+
+    while (current_token(ctx)->kind == token_or) {
+        /* || */
+        t = consume_token(ctx);
+
+        /* logical and expression */
+        right = parse_logical_and_expr(ctx);
+
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
+    }
+
+    return left;
+}
+
 ExprNode *parse_assign_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *left;
     ExprNode *right;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
-    /* equality expression */
-    left = parse_equality_expr(ctx);
+    /* logical or expression */
+    left = parse_logical_or_expr(ctx);
 
     /* assignment operator */
     if (current_token(ctx)->kind != '=') {
@@ -647,7 +760,7 @@ ExprNode *parse_assign_expr(ParserContext *ctx) {
 }
 
 ExprNode *parse_expr(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     return parse_assign_expr(ctx);
 }
@@ -992,7 +1105,7 @@ StmtNode *parse_expr_stmt(ParserContext *ctx) {
 }
 
 StmtNode *parse_stmt(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     switch (current_token(ctx)->kind) {
     case '{':
@@ -1084,10 +1197,10 @@ void parse_postfix_declarator(ParserContext *ctx, Type **type,
 }
 
 void parse_declarator(ParserContext *ctx, Type **type, const Token **t) {
-    assert(ctx);
-    assert(type);
-    assert(*type);
-    assert(t);
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(*type != NULL);
+    assert(t != NULL);
 
     parse_direct_declarator(ctx, type, t);
     parse_postfix_declarator(ctx, type, t);
@@ -1136,7 +1249,7 @@ DeclNode *parse_var_decl(ParserContext *ctx) {
 }
 
 DeclNode *parse_decl(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     switch (current_token(ctx)->kind) {
     case token_typedef:
@@ -1151,7 +1264,7 @@ ParamNode *parse_param(ParserContext *ctx) {
     Type *type;
     const Token *t;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* type */
     type = parse_type(ctx);
@@ -1329,7 +1442,7 @@ DeclNode *parse_function(ParserContext *ctx) {
 }
 
 DeclNode *parse_top_level(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     switch (current_token(ctx)->kind) {
     case token_typedef:
@@ -1350,9 +1463,9 @@ TranslationUnitNode *parse(const char *filename, const char *src,
     DeclNode *decl;
     Vec *decls;
 
-    assert(filename);
-    assert(src);
-    assert(include_directories);
+    assert(filename != NULL);
+    assert(src != NULL);
+    assert(include_directories != NULL);
 
     /* get tokens */
     tokens =

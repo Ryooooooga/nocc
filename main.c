@@ -5,6 +5,7 @@ int main(int argc, char **argv) {
     char *src;
     TranslationUnitNode *node;
     LLVMModuleRef module;
+    char *text;
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
@@ -22,8 +23,11 @@ int main(int argc, char **argv) {
     node = parse(filename, src, vec_new());
     module = generate(node);
 
-    LLVMDumpModule(module);
+    text = LLVMPrintModuleToString(module);
 
+    printf("%s\n", text);
+
+    LLVMDisposeMessage(text);
     LLVMDisposeModule(module);
 
     return 0;

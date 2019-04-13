@@ -3,7 +3,7 @@
 Token *token_new(int kind, const char *text, int length, int line) {
     Token *t;
 
-    assert(text);
+    assert(text != NULL);
     assert(0 <= length);
 
     t = malloc(sizeof(*t));
@@ -16,11 +16,21 @@ Token *token_new(int kind, const char *text, int length, int line) {
     return t;
 }
 
+Token *character_token_new(char c, const char *text, int length, int line) {
+    Token *t;
+
+    t = token_new(token_character, text, length, line);
+    t->string = str_dup_n(&c, 1);
+    t->len_string = 1;
+
+    return t;
+}
+
 Token *string_token_new(Vec *chars, const char *text, int length, int line) {
     Token *t;
     int i;
 
-    assert(chars);
+    assert(chars != NULL);
 
     t = token_new(token_string, text, length, line);
     t->string = malloc(sizeof(char) * (chars->size + 1));
@@ -38,9 +48,9 @@ Token *string_token_new(Vec *chars, const char *text, int length, int line) {
 char parse_literal_char(const char *src, int *index, int *line) {
     char c;
 
-    assert(src);
-    assert(index);
-    assert(line);
+    assert(src != NULL);
+    assert(index != NULL);
+    assert(line != NULL);
 
     switch (src[*index]) {
     case '\0':
@@ -71,6 +81,10 @@ char parse_literal_char(const char *src, int *index, int *line) {
             *index += 1; /* eat n */
             return '\n';
 
+        case '\\':
+            *index += 1; /* eat \ */
+            return '\\';
+
         default:
             fprintf(stderr, "unknown escape sequence '\\%c'\n", src[*index]);
             exit(1);
@@ -84,9 +98,9 @@ char parse_literal_char(const char *src, int *index, int *line) {
 }
 
 Token *lex_token(const char *src, int *index, int *line) {
-    assert(src);
-    assert(index);
-    assert(line);
+    assert(src != NULL);
+    assert(index != NULL);
+    assert(line != NULL);
 
     while (src[*index]) {
         int kind;
@@ -139,6 +153,27 @@ Token *lex_token(const char *src, int *index, int *line) {
 
             return token_new(token_number, src + start, *index - start,
                              line_start);
+        }
+
+        /* character */
+        if (src[*index] == '\'') {
+            char c;
+
+            *index += 1; /* eat ' */
+
+            /* character literal contents */
+            c = parse_literal_char(src, index, line);
+
+            /* ' */
+            if (src[*index] != '\'') {
+                fprintf(stderr, "unterminated character literal\n");
+                exit(1);
+            }
+
+            *index += 1; /* eat ' */
+
+            return character_token_new(c, src + start, *index - start,
+                                       line_start);
         }
 
         /* string */
@@ -195,6 +230,10 @@ Token *lex_token(const char *src, int *index, int *line) {
                 t->kind = token_char;
             } else if (strcmp(t->text, "int") == 0) {
                 t->kind = token_int;
+            } else if (strcmp(t->text, "long") == 0) {
+                t->kind = token_long;
+            } else if (strcmp(t->text, "unsigned") == 0) {
+                t->kind = token_unsigned;
             } else if (strcmp(t->text, "const") == 0) {
                 t->kind = token_const;
             } else if (strcmp(t->text, "struct") == 0) {
@@ -203,6 +242,8 @@ Token *lex_token(const char *src, int *index, int *line) {
                 t->kind = token_typedef;
             } else if (strcmp(t->text, "extern") == 0) {
                 t->kind = token_extern;
+            } else if (strcmp(t->text, "sizeof") == 0) {
+                t->kind = token_sizeof;
             }
 
             return t;
@@ -244,6 +285,17 @@ Token *lex_token(const char *src, int *index, int *line) {
                              line_start);
         }
 
+        if (src[*index + 0] == '&' && src[*index + 1] == '&') {
+            *index += 2;
+            return token_new(token_and, src + start, *index - start,
+                             line_start);
+        }
+
+        if (src[*index + 0] == '|' && src[*index + 1] == '|') {
+            *index += 2;
+            return token_new(token_or, src + start, *index - start, line_start);
+        }
+
         if (src[*index + 0] == '-' && src[*index + 1] == '>') {
             *index += 2;
             return token_new(token_arrow, src + start, *index - start,
@@ -274,7 +326,7 @@ Vec *lex(const char *src) {
     Token *t;
     Vec *tokens;
 
-    assert(src);
+    assert(src != NULL);
 
     index = 0;
     line = 1;

@@ -1,3 +1,7 @@
+#ifndef USE_STANDARD_HEADERS
+#define USE_STANDARD_HEADERS
+#endif
+
 #include "nocc.h"
 
 #include <llvm-c/ExecutionEngine.h>
@@ -5,9 +9,9 @@
 
 void test_engine_run_function(const char *filename, const char *src,
                               const char *func, int param, int result) {
-    assert(filename);
-    assert(src);
-    assert(func);
+    assert(filename != NULL);
+    assert(src != NULL);
+    assert(func != NULL);
 
     fprintf(stderr, "test_engine:%s --- ", filename);
 
@@ -600,6 +604,99 @@ void test_engine(void) {
                              "  return test_extern4;\n"
                              "}\n",
                              "extern4", 0, 33);
+
+    test_engine_run_function("sizeof1",
+                             "int sizeof1(int n) {\n"
+                             "  return sizeof((char)0);\n"
+                             "}\n",
+                             "sizeof1", 0, 1);
+
+    test_engine_run_function("sizeof2",
+                             "int sizeof2(int n) {\n"
+                             "  return sizeof((int)0);\n"
+                             "}\n",
+                             "sizeof2", 0, 4);
+
+    test_engine_run_function("sizeof3",
+                             "int sizeof3(int n) {\n"
+                             "  return sizeof((int *)0);\n"
+                             "}\n",
+                             "sizeof3", 0, 8);
+
+    test_engine_run_function("sizeof4",
+                             "int sizeof4(int n) {\n"
+                             "  return sizeof((void *)0);\n"
+                             "}\n",
+                             "sizeof4", 0, 8);
+
+    test_engine_run_function("sizeof5",
+                             "int sizeof5(int n) {\n"
+                             "  struct t {int a; char b; int *c;} a;\n"
+                             "  return sizeof(a);\n"
+                             "}\n",
+                             "sizeof5", 0, 16);
+
+    test_engine_run_function("character",
+                             "int character(int n) {\n"
+                             "  return 'a';\n"
+                             "}\n",
+                             "character", 0, 'a');
+
+    test_engine_run_function("character",
+                             "int character(int n) {\n"
+                             "  return '\\n';\n"
+                             "}\n",
+                             "character", 0, '\n');
+
+    test_engine_run_function("logical_and",
+                             "int logical_and(int n) {\n"
+                             "  return ((0 && 0) == 0) * ((1 && 0) == 0) *"
+                             "         ((0 && 1) == 0) * ((1 && 1) == 1);\n"
+                             "}\n",
+                             "logical_and", 0, 1);
+
+    test_engine_run_function("logical_or",
+                             "int logical_or(int n) {\n"
+                             "  return ((0 || 0) == 0) * ((1 || 0) == 1) *"
+                             "         ((0 || 1) == 1) * ((1 || 1) == 1);\n"
+                             "}\n",
+                             "logical_or", 0, 1);
+
+    test_engine_run_function("shortcircuit1",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit1(int n) {\n"
+                             "  0 && f();\n"
+                             "  return a == 0;\n"
+                             "}\n",
+                             "shortcircuit1", 0, 1);
+
+    test_engine_run_function("shortcircuit2",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit2(int n) {\n"
+                             "  1 && f();\n"
+                             "  return a == 1;\n"
+                             "}\n",
+                             "shortcircuit2", 0, 1);
+
+    test_engine_run_function("shortcircuit3",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit3(int n) {\n"
+                             "  0 || f();\n"
+                             "  return a == 1;\n"
+                             "}\n",
+                             "shortcircuit3", 0, 1);
+
+    test_engine_run_function("shortcircuit4",
+                             "int a;\n"
+                             "int f(void) {return ++a;}\n"
+                             "int shortcircuit4(int n) {\n"
+                             "  1 || f();\n"
+                             "  return a == 0;\n"
+                             "}\n",
+                             "shortcircuit4", 0, 1);
 }
 
 int test_extern = 24;

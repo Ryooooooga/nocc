@@ -1,42 +1,42 @@
 #include "nocc.h"
 
 LLVMBasicBlockRef nearest_break_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->break_targets->size > 0);
 
     return vec_back(ctx->break_targets);
 }
 
 LLVMBasicBlockRef nearest_continue_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->continue_targets->size > 0);
 
     return vec_back(ctx->continue_targets);
 }
 
 void push_break_target(GeneratorContext *ctx, LLVMBasicBlockRef target) {
-    assert(ctx);
-    assert(target);
+    assert(ctx != NULL);
+    assert(target != NULL);
 
     vec_push(ctx->break_targets, target);
 }
 
 void push_continue_target(GeneratorContext *ctx, LLVMBasicBlockRef target) {
-    assert(ctx);
-    assert(target);
+    assert(ctx != NULL);
+    assert(target != NULL);
 
     vec_push(ctx->continue_targets, target);
 }
 
 void pop_break_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->break_targets->size > 0);
 
     vec_pop(ctx->break_targets);
 }
 
 void pop_continue_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->continue_targets->size > 0);
 
     vec_pop(ctx->continue_targets);
@@ -101,8 +101,8 @@ LLVMTypeRef generate_struct_type(GeneratorContext *ctx, StructType *p) {
 }
 
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
-    assert(ctx);
-    assert(p);
+    assert(ctx != NULL);
+    assert(p != NULL);
 
     switch (p->kind) {
     case type_void:
@@ -132,6 +132,19 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     }
 }
 
+/* TODO: sizeof is a constant expression */
+LLVMValueRef generate_type_size(GeneratorContext *ctx, Type *p) {
+    LLVMTypeRef type;
+    LLVMValueRef one;
+    LLVMValueRef value;
+
+    type = LLVMPointerType(generate_type(ctx, p), 0);
+    one = LLVMConstInt(LLVMInt32Type(), 1, false);
+    value = LLVMBuildInBoundsGEP(ctx->builder, LLVMConstNull(type), &one, 1,
+                                 "sizeptr");
+    return LLVMBuildPtrToInt(ctx->builder, value, LLVMInt32Type(), "sizeof");
+}
+
 LLVMValueRef generate_integer_expr(GeneratorContext *ctx, IntegerNode *p) {
     (void)ctx;
 
@@ -147,7 +160,7 @@ LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
                                       IdentifierNode *p) {
-    assert(p->declaration->generated_location);
+    assert(p->declaration->generated_location != NULL);
 
     return LLVMBuildLoad(ctx->builder, p->declaration->generated_location,
                          "load");
@@ -349,8 +362,7 @@ LLVMValueRef generate_cast_expr(GeneratorContext *ctx, CastNode *p) {
             } else {
                 LLVMValueRef indices[2];
 
-                indices[0] = indices[1] =
-                    LLVMConstInt(LLVMInt32Type(), 0, true);
+                indices[0] = indices[1] = LLVMConstNull(LLVMInt32Type());
 
                 src = generate_expr_addr(ctx, p->operand);
                 return LLVMBuildInBoundsGEP(ctx->builder, src, indices, 2,
@@ -391,8 +403,70 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
     LLVMValueRef right;
 
     LLVMValueRef cmp;
+    LLVMValueRef function;
+    LLVMBasicBlockRef current_basic_block;
+    LLVMBasicBlockRef rhs_basic_block;
+    LLVMBasicBlockRef merge_basic_block;
 
     switch (p->operator_) {
+    case token_and:
+        current_basic_block = LLVMGetInsertBlock(ctx->builder);
+        function = LLVMGetBasicBlockParent(current_basic_block);
+
+        rhs_basic_block = LLVMAppendBasicBlock(function, "andrhs");
+        merge_basic_block = LLVMAppendBasicBlock(function, "andmerge");
+
+        /* left hand side */
+        left = generate_expr(ctx, p->left);
+        left = LLVMBuildIsNotNull(ctx->builder, left, "andleft");
+
+        LLVMBuildCondBr(ctx->builder, left, rhs_basic_block, merge_basic_block);
+
+        /* right hand side */
+        LLVMPositionBuilderAtEnd(ctx->builder, rhs_basic_block);
+        right = generate_expr(ctx, p->right);
+        right = LLVMBuildIsNotNull(ctx->builder, right, "andright");
+
+        LLVMBuildBr(ctx->builder, merge_basic_block);
+
+        /* merge */
+        LLVMPositionBuilderAtEnd(ctx->builder, merge_basic_block);
+
+        cmp = LLVMBuildPhi(ctx->builder, LLVMInt1Type(), "andphi");
+        LLVMAddIncoming(cmp, &left, &current_basic_block, 1);
+        LLVMAddIncoming(cmp, &right, &rhs_basic_block, 1);
+
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "and");
+
+    case token_or:
+        current_basic_block = LLVMGetInsertBlock(ctx->builder);
+        function = LLVMGetBasicBlockParent(current_basic_block);
+
+        rhs_basic_block = LLVMAppendBasicBlock(function, "orrhs");
+        merge_basic_block = LLVMAppendBasicBlock(function, "ormerge");
+
+        /* left hand side */
+        left = generate_expr(ctx, p->left);
+        left = LLVMBuildIsNotNull(ctx->builder, left, "orleft");
+
+        LLVMBuildCondBr(ctx->builder, left, merge_basic_block, rhs_basic_block);
+
+        /* right hand side */
+        LLVMPositionBuilderAtEnd(ctx->builder, rhs_basic_block);
+        right = generate_expr(ctx, p->right);
+        right = LLVMBuildIsNotNull(ctx->builder, right, "orright");
+
+        LLVMBuildBr(ctx->builder, merge_basic_block);
+
+        /* merge */
+        LLVMPositionBuilderAtEnd(ctx->builder, merge_basic_block);
+
+        cmp = LLVMBuildPhi(ctx->builder, LLVMInt1Type(), "orphi");
+        LLVMAddIncoming(cmp, &left, &current_basic_block, 1);
+        LLVMAddIncoming(cmp, &right, &rhs_basic_block, 1);
+
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "or");
+
     case '=':
         right = generate_expr(ctx, p->right);
         left = generate_expr_addr(ctx, p->left);
@@ -520,8 +594,8 @@ LLVMValueRef generate_dot_expr(GeneratorContext *ctx, DotNode *p) {
 }
 
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
-    assert(p);
-    assert(ctx);
+    assert(p != NULL);
+    assert(ctx != NULL);
 
     switch (p->kind) {
     case node_integer:
@@ -542,6 +616,9 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
     case node_unary:
         return generate_unary_expr(ctx, (UnaryNode *)p);
 
+    case node_sizeof:
+        return generate_type_size(ctx, ((SizeofNode *)p)->operand);
+
     case node_cast:
         return generate_cast_expr(ctx, (CastNode *)p);
 
@@ -559,7 +636,7 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
 LLVMValueRef generate_identifier_expr_addr(GeneratorContext *ctx,
                                            IdentifierNode *p) {
-    assert(p->declaration->generated_location);
+    assert(p->declaration->generated_location != NULL);
 
     (void)ctx;
 
@@ -606,8 +683,8 @@ LLVMValueRef generate_binary_expr_addr(GeneratorContext *ctx, BinaryNode *p) {
 }
 
 LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
-    assert(p);
-    assert(ctx);
+    assert(p != NULL);
+    assert(ctx != NULL);
 
     if (!p->is_lvalue) {
         fprintf(stderr, "expression must be a lvalue %d\n", p->kind);
@@ -678,9 +755,7 @@ bool generate_if_stmt(GeneratorContext *ctx, IfNode *p) {
 
     /* condition */
     condition = generate_expr(ctx, p->condition);
-    bool_condition =
-        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+    bool_condition = LLVMBuildIsNotNull(ctx->builder, condition, "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, then_basic_block,
                     else_basic_block);
@@ -725,9 +800,7 @@ bool generate_while_stmt(GeneratorContext *ctx, WhileNode *p) {
     LLVMPositionBuilderAtEnd(ctx->builder, condition_basic_block);
 
     condition = generate_expr(ctx, p->condition);
-    bool_condition =
-        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+    bool_condition = LLVMBuildIsNotNull(ctx->builder, condition, "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                     endwhile_basic_block);
@@ -784,9 +857,7 @@ bool generate_do_stmt(GeneratorContext *ctx, DoNode *p) {
     LLVMPositionBuilderAtEnd(ctx->builder, condition_basic_block);
 
     condition = generate_expr(ctx, p->condition);
-    bool_condition =
-        LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                      LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+    bool_condition = LLVMBuildIsNotNull(ctx->builder, condition, "cond");
 
     LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                     enddo_basic_block);
@@ -827,7 +898,7 @@ bool generate_for_stmt(GeneratorContext *ctx, ForNode *p) {
         condition = generate_expr(ctx, p->condition);
         bool_condition =
             LLVMBuildICmp(ctx->builder, LLVMIntNE, condition,
-                          LLVMConstInt(LLVMTypeOf(condition), 0, true), "cond");
+                          LLVMConstNull(LLVMTypeOf(condition)), "cond");
 
         LLVMBuildCondBr(ctx->builder, bool_condition, body_basic_block,
                         endfor_basic_block);
@@ -893,8 +964,8 @@ bool generate_expr_stmt(GeneratorContext *ctx, ExprStmtNode *p) {
 }
 
 bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
-    assert(ctx);
-    assert(p);
+    assert(ctx != NULL);
+    assert(p != NULL);
 
     switch (p->kind) {
     case node_compound:
@@ -973,8 +1044,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     bool is_terminated;
     int i;
 
-    assert(ctx);
-    assert(p);
+    assert(ctx != NULL);
+    assert(p != NULL);
     assert(is_function_type(p->type));
 
     /* build LLVM function type */
@@ -1044,8 +1115,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
 }
 
 void generate_decl(GeneratorContext *ctx, DeclNode *p) {
-    assert(p);
-    assert(ctx);
+    assert(p != NULL);
+    assert(ctx != NULL);
 
     switch (p->kind) {
     case node_typedef:
@@ -1074,7 +1145,7 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     int i;
     char *error;
 
-    assert(p);
+    assert(p != NULL);
 
     ctx.module = LLVMModuleCreateWithName(p->filename);
     ctx.builder = LLVMCreateBuilder();
@@ -1088,7 +1159,6 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     LLVMDisposeBuilder(ctx.builder);
 
     if (LLVMVerifyModule(ctx.module, LLVMReturnStatusAction, &error)) {
-        LLVMDumpModule(ctx.module);
         fprintf(stderr, "\n%s", error);
         exit(1);
     }

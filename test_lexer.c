@@ -112,4 +112,14 @@ void test_lexer(void) {
                     {'/', "/", 2, NULL},
                     {'\0', "", 2, NULL},
                 });
+
+    test_tokens("'a''b''\\\\''\\'''\\n'",
+                (TokenTestSuite[]){
+                    {token_character, "'a'", 1, "a"},
+                    {token_character, "'b'", 1, "b"},
+                    {token_character, "'\\\\'", 1, "\\"},
+                    {token_character, "'\\''", 1, "\'"},
+                    {token_character, "'\\n'", 1, "\n"},
+                    {'\0', "", 1, NULL},
+                });
 }

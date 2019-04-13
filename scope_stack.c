@@ -12,19 +12,19 @@ ScopeStack *scope_stack_new(void) {
 }
 
 int scope_stack_depth(ScopeStack *s) {
-    assert(s);
+    assert(s != NULL);
 
     return s->scopes->size;
 }
 
 void scope_stack_push(ScopeStack *s) {
-    assert(s);
+    assert(s != NULL);
 
     vec_push(s->scopes, map_new());
 }
 
 void scope_stack_pop(ScopeStack *s) {
-    assert(s);
+    assert(s != NULL);
     assert(s->scopes->size > 1);
 
     vec_pop(s->scopes);
@@ -34,9 +34,9 @@ void *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
     void *value;
     int i;
 
-    assert(s);
+    assert(s != NULL);
     assert(s->scopes->size > 0);
-    assert(name);
+    assert(name != NULL);
 
     i = s->scopes->size - 1;
 
@@ -52,9 +52,10 @@ void *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
 }
 
 void scope_stack_register(ScopeStack *s, const char *name, void *value) {
-    assert(s);
+    assert(s != NULL);
     assert(s->scopes->size > 0);
-    assert(value);
+    assert(name != NULL);
+    assert(value != NULL);
 
     map_add(vec_back(s->scopes), name, value);
 }

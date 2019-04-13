@@ -11,7 +11,7 @@ Map *map_new(void) {
 }
 
 int map_size(Map *m) {
-    assert(m);
+    assert(m != NULL);
     assert(m->keys->size == m->values->size);
 
     return m->keys->size;
@@ -20,8 +20,8 @@ int map_size(Map *m) {
 bool map_contains(Map *m, const char *k) {
     int i;
 
-    assert(m);
-    assert(k);
+    assert(m != NULL);
+    assert(k != NULL);
 
     for (i = map_size(m) - 1; i >= 0; i--) {
         if (strcmp(m->keys->data[i], k) == 0) {
@@ -35,8 +35,8 @@ bool map_contains(Map *m, const char *k) {
 void *map_get(Map *m, const char *k) {
     int i;
 
-    assert(m);
-    assert(k);
+    assert(m != NULL);
+    assert(k != NULL);
 
     for (i = map_size(m) - 1; i >= 0; i--) {
         if (strcmp(m->keys->data[i], k) == 0) {
@@ -48,8 +48,8 @@ void *map_get(Map *m, const char *k) {
 }
 
 void map_add(Map *m, const char *k, void *v) {
-    assert(m);
-    assert(k);
+    assert(m != NULL);
+    assert(k != NULL);
     assert(m->keys->size == m->values->size);
 
     vec_push(m->keys, str_dup(k));

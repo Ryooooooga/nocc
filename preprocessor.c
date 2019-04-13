@@ -17,13 +17,13 @@ void pp_endif(Preprocessor *pp, bool accept_endif);
 void preprocess_lines(Preprocessor *pp, bool accept_else, bool accept_endif);
 
 Token *pp_current_token(Preprocessor *pp) {
-    assert(pp);
+    assert(pp != NULL);
 
     return pp->tokens[pp->index];
 }
 
 Token *pp_last_token(Preprocessor *pp) {
-    assert(pp);
+    assert(pp != NULL);
     assert(pp->result->size > 0);
 
     return vec_back(pp->result);
@@ -32,7 +32,7 @@ Token *pp_last_token(Preprocessor *pp) {
 Token *pp_consume_token(Preprocessor *pp) {
     Token *t;
 
-    assert(pp);
+    assert(pp != NULL);
 
     t = pp_current_token(pp);
 
@@ -44,7 +44,7 @@ Token *pp_consume_token(Preprocessor *pp) {
 }
 
 Token *pp_skip_separator(Preprocessor *pp) {
-    assert(pp);
+    assert(pp != NULL);
 
     while (pp_current_token(pp)->kind == ' ') {
         pp_consume_token(pp);
@@ -54,7 +54,7 @@ Token *pp_skip_separator(Preprocessor *pp) {
 }
 
 const char *pp_current_file_path(Preprocessor *pp) {
-    assert(pp);
+    assert(pp != NULL);
     assert(pp->include_stack->size > 0);
 
     return vec_back(pp->include_stack);
@@ -64,10 +64,10 @@ void pp_read_file(Preprocessor *pp, const char *filename, char **path,
                   char **src) {
     int i;
 
-    assert(pp);
-    assert(filename);
-    assert(path);
-    assert(src);
+    assert(pp != NULL);
+    assert(filename != NULL);
+    assert(path != NULL);
+    assert(src != NULL);
 
     /* search current file directory */
     *path = path_join(path_dir(pp_current_file_path(pp)), filename);
@@ -103,12 +103,12 @@ void pp_concat_string(Preprocessor *pp, const Token *str) {
 
     t = pp_last_token(pp);
 
-    assert(t);
+    assert(t != NULL);
     assert(t->kind == token_string);
-    assert(t->string);
-    assert(str);
+    assert(t->string != NULL);
+    assert(str != NULL);
     assert(str->kind == token_string);
-    assert(str->string);
+    assert(str->string != NULL);
 
     text_len1 = strlen(t->text) - 1;   /* without last '\"' */
     text_len2 = strlen(str->text) - 1; /* without first '\"' */
@@ -140,8 +140,8 @@ void pp_expand_macro(Preprocessor *pp, Token *t) {
 }
 
 void pp_push_token(Preprocessor *pp, Token *t) {
-    assert(pp);
-    assert(t);
+    assert(pp != NULL);
+    assert(t != NULL);
 
     if (t->kind == '\0' || t->kind == '\n' || t->kind == ' ') {
         return;
@@ -267,7 +267,7 @@ void pp_include(Preprocessor *pp) {
 }
 
 void pp_skip_line(Preprocessor *pp) {
-    assert(pp);
+    assert(pp != NULL);
 
     while (pp_skip_separator(pp)->kind != '\0' &&
            pp_skip_separator(pp)->kind != '\n') {
@@ -479,9 +479,9 @@ Vec *preprocess(const char *filename, const char *src,
                 Vec *include_directories) {
     Preprocessor pp;
 
-    assert(filename);
-    assert(src);
-    assert(include_directories);
+    assert(filename != NULL);
+    assert(src != NULL);
+    assert(include_directories != NULL);
 
     /* make preprocessor context */
     pp.result = vec_new();

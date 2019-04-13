@@ -5,7 +5,7 @@ char *read_file(const char *filename) {
     int size;
     char *buffer;
 
-    assert(filename);
+    assert(filename != NULL);
 
     fp = fopen(filename, "r");
 

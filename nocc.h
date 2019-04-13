@@ -1,6 +1,8 @@
 #ifndef INCLUDE_nocc_h
 #define INCLUDE_nocc_h
 
+#ifdef USE_STANDARD_HEADERS
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -12,6 +14,196 @@
 
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Core.h>
+
+#else
+
+/* <assert.h> */
+void assert(int cond);
+
+/* <ctype.h> */
+int isspace(int c);
+int isdigit(int c);
+int isalpha(int c);
+int isalnum(int c);
+
+/* <errno.h> */
+#define ERANGE 34
+#define errno (*__error())
+
+int *__error(void);
+
+/* <limits.h> */
+#define INT_MAX 2147483647
+
+/* <stdbool.h> */
+#define true 1
+#define false 0
+
+typedef int bool;
+
+/* <stddef.h> */
+#define NULL ((void *)0)
+
+typedef unsigned long size_t;
+typedef long intptr_t;
+
+/* <stdio.h> */
+#define stderr __stderrp
+#define SEEK_SET 0
+#define SEEK_END 2
+
+typedef struct __sFILE FILE;
+
+extern FILE *__stderrp;
+
+int printf(const char *format, ...);
+FILE *fopen(const char *path, const char *mode);
+int fclose(FILE *fp);
+int fseek(FILE *fp, long offset, int whence);
+long ftell(FILE *fp);
+size_t fread(void *ptr, size_t size, size_t nitems, FILE *fp);
+int fprintf(FILE *fp, const char *format, ...);
+
+/* <stdlib.h> */
+void exit(int code);
+void *malloc(size_t size);
+void *realloc(void *ptr, size_t size);
+long strtol(const char *str, char **end, int base);
+
+/* <string.h> */
+size_t strlen(const char *s);
+int strcmp(const char *a, const char *b);
+char *strncpy(char *dest, const char *src, size_t size);
+
+/* <llvm-c/Core.h> */
+#define LLVMIntEQ 32
+#define LLVMIntNE 33
+#define LLVMIntSGT 38
+#define LLVMIntSGE 39
+#define LLVMIntSLT 40
+#define LLVMIntSLE 41
+
+typedef struct LLVMOpaqueContext *LLVMContextRef;
+typedef struct LLVMOpaqueBuilder *LLVMBuilderRef;
+typedef struct LLVMOpaqueModule *LLVMModuleRef;
+typedef struct LLVMOpaqueBasicBlock *LLVMBasicBlockRef;
+typedef struct LLVMOpaqueValue *LLVMValueRef;
+typedef struct LLVMOpaqueType *LLVMTypeRef;
+
+LLVMModuleRef LLVMModuleCreateWithName(const char *module_id);
+LLVMContextRef LLVMGetModuleContext(LLVMModuleRef module);
+LLVMValueRef LLVMAddGlobal(LLVMModuleRef module, LLVMTypeRef type,
+                           const char *name);
+LLVMValueRef LLVMGetNamedGlobal(LLVMModuleRef module, const char *name);
+LLVMValueRef LLVMAddFunction(LLVMModuleRef module, const char *name,
+                             LLVMTypeRef func_type);
+LLVMValueRef LLVMGetNamedFunction(LLVMModuleRef module, const char *name);
+void LLVMDisposeModule(LLVMModuleRef module);
+
+LLVMBuilderRef LLVMCreateBuilder(void);
+void LLVMPositionBuilderAtEnd(LLVMBuilderRef b, LLVMBasicBlockRef bb);
+LLVMBasicBlockRef LLVMGetInsertBlock(LLVMBuilderRef b);
+void LLVMDisposeBuilder(LLVMBuilderRef b);
+LLVMValueRef LLVMBuildGlobalStringPtr(LLVMBuilderRef b, const char *str,
+                                      const char *name);
+LLVMValueRef LLVMConstInt(LLVMTypeRef type, unsigned long n, int sign_extend);
+LLVMValueRef LLVMConstNull(LLVMTypeRef type);
+LLVMValueRef LLVMBuildICmp(LLVMBuilderRef b, int op, LLVMValueRef left,
+                           LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildIsNotNull(LLVMBuilderRef b, LLVMValueRef val,
+                                const char *name);
+LLVMValueRef LLVMBuildAdd(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildSub(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildMul(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildSDiv(LLVMBuilderRef b, LLVMValueRef left,
+                           LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildSRem(LLVMBuilderRef b, LLVMValueRef left,
+                           LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildPtrDiff(LLVMBuilderRef b, LLVMValueRef left,
+                              LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildNeg(LLVMBuilderRef b, LLVMValueRef val, const char *name);
+LLVMValueRef LLVMBuildTrunc(LLVMBuilderRef b, LLVMValueRef val,
+                            LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildSExt(LLVMBuilderRef b, LLVMValueRef val, LLVMTypeRef type,
+                           const char *name);
+LLVMValueRef LLVMBuildZExt(LLVMBuilderRef b, LLVMValueRef val, LLVMTypeRef type,
+                           const char *name);
+LLVMValueRef LLVMBuildIntToPtr(LLVMBuilderRef b, LLVMValueRef val,
+                               LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildPtrToInt(LLVMBuilderRef b, LLVMValueRef val,
+                               LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildPointerCast(LLVMBuilderRef b, LLVMValueRef val,
+                                  LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildLoad(LLVMBuilderRef b, LLVMValueRef ptr,
+                           const char *name);
+LLVMValueRef LLVMBuildStore(LLVMBuilderRef b, LLVMValueRef val,
+                            LLVMValueRef ptr);
+LLVMValueRef LLVMBuildInBoundsGEP(LLVMBuilderRef b, LLVMValueRef ptr,
+                                  LLVMValueRef *indices,
+                                  unsigned int num_indices, const char *name);
+LLVMValueRef LLVMBuildInBoundsGEP(LLVMBuilderRef b, LLVMValueRef ptr,
+                                  LLVMValueRef *indices,
+                                  unsigned int num_indices, const char *name);
+LLVMValueRef LLVMBuildStructGEP(LLVMBuilderRef b, LLVMValueRef ptr,
+                                unsigned int index, const char *name);
+LLVMValueRef LLVMBuildExtractValue(LLVMBuilderRef b, LLVMValueRef val,
+                                   unsigned int index, const char *name);
+LLVMValueRef LLVMBuildCall(LLVMBuilderRef b, LLVMValueRef func,
+                           LLVMValueRef *args, unsigned int num_args,
+                           const char *name);
+LLVMValueRef LLVMBuildAlloca(LLVMBuilderRef b, LLVMTypeRef type,
+                             const char *name);
+
+LLVMValueRef LLVMBuildRetVoid(LLVMBuilderRef b);
+LLVMValueRef LLVMBuildRet(LLVMBuilderRef b, LLVMValueRef val);
+LLVMValueRef LLVMBuildBr(LLVMBuilderRef b, LLVMBasicBlockRef dest);
+LLVMValueRef LLVMBuildCondBr(LLVMBuilderRef b, LLVMValueRef if_,
+                             LLVMBasicBlockRef then, LLVMBasicBlockRef else_);
+
+LLVMValueRef LLVMBuildPhi(LLVMBuilderRef b, LLVMTypeRef type, const char *name);
+void LLVMAddIncoming(LLVMValueRef phi, LLVMValueRef *incoming_values,
+                     LLVMBasicBlockRef *incoming_blocks, unsigned int count);
+
+LLVMValueRef LLVMGetBasicBlockParent(LLVMBasicBlockRef bb);
+
+LLVMTypeRef LLVMTypeOf(LLVMValueRef val);
+void LLVMSetInitializer(LLVMValueRef global_var, LLVMValueRef constant_val);
+
+LLVMValueRef LLVMGetParam(LLVMValueRef func, unsigned int index);
+LLVMBasicBlockRef LLVMAppendBasicBlock(LLVMValueRef func, const char *name);
+
+LLVMTypeRef LLVMVoidType(void);
+LLVMTypeRef LLVMInt1Type(void);
+LLVMTypeRef LLVMInt8Type(void);
+LLVMTypeRef LLVMInt32Type(void);
+LLVMTypeRef LLVMPointerType(LLVMTypeRef element_type,
+                            unsigned int address_space);
+LLVMTypeRef LLVMArrayType(LLVMTypeRef element_type, unsigned int length);
+LLVMTypeRef LLVMStructCreateNamed(LLVMContextRef context, const char *name);
+LLVMTypeRef LLVMFunctionType(LLVMTypeRef return_type, LLVMTypeRef *param_types,
+                             unsigned int param_count, int is_var_arg);
+LLVMTypeRef LLVMGetElementType(LLVMTypeRef type);
+LLVMTypeRef LLVMGetReturnType(LLVMTypeRef func_type);
+unsigned int LLVMCountParamTypes(LLVMTypeRef func_type);
+void LLVMGetParamTypes(LLVMTypeRef func_type, LLVMTypeRef *dest);
+
+void LLVMStructSetBody(LLVMTypeRef struct_type, LLVMTypeRef *element_types,
+                       unsigned int element_count, int packed);
+
+char *LLVMPrintModuleToString(LLVMModuleRef module);
+char *LLVMPrintTypeToString(LLVMTypeRef type);
+
+void LLVMDisposeMessage(char *message);
+
+/* <llvm-c/Analysis.h> */
+#define LLVMReturnStatusAction 2
+
+int LLVMVerifyModule(LLVMModuleRef module, int action, char **message);
+
+#endif
 
 char *str_dup(const char *s);
 char *str_dup_n(const char *s, int length);
@@ -50,34 +242,38 @@ void map_add(Map *m, const char *k, void *v);
 
 char *read_file(const char *filename);
 
-enum {
-    token_number = 256,
-    token_string,
-    token_identifier,
-    token_if,
-    token_else,
-    token_while,
-    token_do,
-    token_for,
-    token_return,
-    token_break,
-    token_continue,
-    token_void,
-    token_char,
-    token_int,
-    token_const,
-    token_struct,
-    token_typedef,
-    token_extern,
-    token_lesser_equal,
-    token_greater_equal,
-    token_equal,
-    token_not_equal,
-    token_increment,
-    token_decrement,
-    token_arrow,
-    token_var_args,
-};
+#define token_number 256
+#define token_character 257
+#define token_string 258
+#define token_identifier 259
+#define token_if 260
+#define token_else 261
+#define token_while 262
+#define token_do 263
+#define token_for 264
+#define token_return 265
+#define token_break 266
+#define token_continue 267
+#define token_void 268
+#define token_char 269
+#define token_int 270
+#define token_long 271
+#define token_unsigned 272
+#define token_const 273
+#define token_struct 274
+#define token_typedef 275
+#define token_extern 276
+#define token_sizeof 277
+#define token_lesser_equal 278
+#define token_greater_equal 279
+#define token_equal 280
+#define token_not_equal 281
+#define token_increment 282
+#define token_decrement 283
+#define token_and 284
+#define token_or 285
+#define token_arrow 286
+#define token_var_args 287
 
 struct Token {
     int kind;
@@ -93,15 +289,13 @@ Vec *lex(const char *src);
 Vec *preprocess(const char *filename, const char *src,
                 Vec *include_directories);
 
-enum {
-    type_void,
-    type_int8,
-    type_int32,
-    type_pointer,
-    type_array,
-    type_function,
-    type_struct,
-};
+#define type_void 0
+#define type_int8 1
+#define type_int32 2
+#define type_pointer 3
+#define type_array 4
+#define type_function 5
+#define type_struct 6
 
 typedef struct Type Type;
 typedef struct PointerType PointerType;
@@ -177,35 +371,34 @@ struct MemberNode *struct_type_member(Type *t, int index);
 struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
                                            int *index);
 
-enum {
-    node_integer,
-    node_string,
-    node_identifier,
-    node_postfix,
-    node_call,
-    node_unary,
-    node_cast,
-    node_binary,
-    node_dot,
+#define node_integer 0
+#define node_string 1
+#define node_identifier 2
+#define node_postfix 3
+#define node_call 4
+#define node_unary 5
+#define node_sizeof 6
+#define node_cast 7
+#define node_binary 8
+#define node_dot 9
 
-    node_compound,
-    node_return,
-    node_if,
-    node_while,
-    node_do,
-    node_for,
-    node_break,
-    node_continue,
-    node_decl,
-    node_expr,
+#define node_compound 10
+#define node_return 11
+#define node_if 12
+#define node_while 13
+#define node_do 14
+#define node_for 15
+#define node_break 16
+#define node_continue 17
+#define node_decl 18
+#define node_expr 19
 
-    node_typedef,
-    node_extern,
-    node_member,
-    node_variable,
-    node_param,
-    node_function,
-};
+#define node_typedef 20
+#define node_extern 21
+#define node_member 22
+#define node_variable 23
+#define node_param 24
+#define node_function 25
 
 typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
@@ -214,6 +407,7 @@ typedef struct IdentifierNode IdentifierNode;
 typedef struct PostfixNode PostfixNode;
 typedef struct CallNode CallNode;
 typedef struct UnaryNode UnaryNode;
+typedef struct SizeofNode SizeofNode;
 typedef struct CastNode CastNode;
 typedef struct BinaryNode BinaryNode;
 typedef struct DotNode DotNode;
@@ -299,6 +493,14 @@ struct UnaryNode {
     bool is_lvalue;
     int operator_;
     ExprNode *operand;
+};
+
+struct SizeofNode {
+    int kind;
+    int line;
+    Type *type;
+    bool is_lvalue;
+    Type *operand;
 };
 
 struct CastNode {
@@ -533,6 +735,7 @@ ExprNode *sema_arrow_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
                           const Token *identifier);
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand);
+ExprNode *sema_sizeof_expr(ParserContext *ctx, const Token *t, Type *operand);
 ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
                          const Token *close, ExprNode *operand);
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
