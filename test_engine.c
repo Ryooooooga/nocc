@@ -657,8 +657,8 @@ void test_engine(void) {
 
     test_engine_run_function("logical_or",
                              "int logical_or(int n) {\n"
-                             "  return ((0 && 0) == 0) * ((1 && 0) == 1) *"
-                             "         ((0 && 1) == 1) * ((1 && 1) == 1);\n"
+                             "  return ((0 || 0) == 0) * ((1 || 0) == 1) *"
+                             "         ((0 || 1) == 1) * ((1 || 1) == 1);\n"
                              "}\n",
                              "logical_or", 0, 1);
 

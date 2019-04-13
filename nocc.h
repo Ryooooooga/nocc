@@ -163,6 +163,10 @@ LLVMValueRef LLVMBuildBr(LLVMBuilderRef b, LLVMBasicBlockRef dest);
 LLVMValueRef LLVMBuildCondBr(LLVMBuilderRef b, LLVMValueRef if_,
                              LLVMBasicBlockRef then, LLVMBasicBlockRef else_);
 
+LLVMValueRef LLVMBuildPhi(LLVMBuilderRef b, LLVMTypeRef type, const char *name);
+void LLVMAddIncoming(LLVMValueRef phi, LLVMValueRef *incoming_values,
+                     LLVMBasicBlockRef *incoming_blocks, unsigned int count);
+
 LLVMValueRef LLVMGetBasicBlockParent(LLVMBasicBlockRef bb);
 
 LLVMTypeRef LLVMTypeOf(LLVMValueRef val);
@@ -172,6 +176,7 @@ LLVMValueRef LLVMGetParam(LLVMValueRef func, unsigned int index);
 LLVMBasicBlockRef LLVMAppendBasicBlock(LLVMValueRef func, const char *name);
 
 LLVMTypeRef LLVMVoidType(void);
+LLVMTypeRef LLVMInt1Type(void);
 LLVMTypeRef LLVMInt8Type(void);
 LLVMTypeRef LLVMInt32Type(void);
 LLVMTypeRef LLVMPointerType(LLVMTypeRef element_type,

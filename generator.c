@@ -403,8 +403,70 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
     LLVMValueRef right;
 
     LLVMValueRef cmp;
+    LLVMValueRef function;
+    LLVMBasicBlockRef current_basic_block;
+    LLVMBasicBlockRef rhs_basic_block;
+    LLVMBasicBlockRef merge_basic_block;
 
     switch (p->operator_) {
+    case token_and:
+        current_basic_block = LLVMGetInsertBlock(ctx->builder);
+        function = LLVMGetBasicBlockParent(current_basic_block);
+
+        rhs_basic_block = LLVMAppendBasicBlock(function, "andrhs");
+        merge_basic_block = LLVMAppendBasicBlock(function, "andmerge");
+
+        /* left hand side */
+        left = generate_expr(ctx, p->left);
+        left = LLVMBuildIsNotNull(ctx->builder, left, "andleft");
+
+        LLVMBuildCondBr(ctx->builder, left, rhs_basic_block, merge_basic_block);
+
+        /* right hand side */
+        LLVMPositionBuilderAtEnd(ctx->builder, rhs_basic_block);
+        right = generate_expr(ctx, p->right);
+        right = LLVMBuildIsNotNull(ctx->builder, right, "andright");
+
+        LLVMBuildBr(ctx->builder, merge_basic_block);
+
+        /* merge */
+        LLVMPositionBuilderAtEnd(ctx->builder, merge_basic_block);
+
+        cmp = LLVMBuildPhi(ctx->builder, LLVMInt1Type(), "andphi");
+        LLVMAddIncoming(cmp, &left, &current_basic_block, 1);
+        LLVMAddIncoming(cmp, &right, &rhs_basic_block, 1);
+
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "and");
+
+    case token_or:
+        current_basic_block = LLVMGetInsertBlock(ctx->builder);
+        function = LLVMGetBasicBlockParent(current_basic_block);
+
+        rhs_basic_block = LLVMAppendBasicBlock(function, "orrhs");
+        merge_basic_block = LLVMAppendBasicBlock(function, "ormerge");
+
+        /* left hand side */
+        left = generate_expr(ctx, p->left);
+        left = LLVMBuildIsNotNull(ctx->builder, left, "orleft");
+
+        LLVMBuildCondBr(ctx->builder, left, merge_basic_block, rhs_basic_block);
+
+        /* right hand side */
+        LLVMPositionBuilderAtEnd(ctx->builder, rhs_basic_block);
+        right = generate_expr(ctx, p->right);
+        right = LLVMBuildIsNotNull(ctx->builder, right, "orright");
+
+        LLVMBuildBr(ctx->builder, merge_basic_block);
+
+        /* merge */
+        LLVMPositionBuilderAtEnd(ctx->builder, merge_basic_block);
+
+        cmp = LLVMBuildPhi(ctx->builder, LLVMInt1Type(), "orphi");
+        LLVMAddIncoming(cmp, &left, &current_basic_block, 1);
+        LLVMAddIncoming(cmp, &right, &rhs_basic_block, 1);
+
+        return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "or");
+
     case '=':
         right = generate_expr(ctx, p->right);
         left = generate_expr_addr(ctx, p->left);
