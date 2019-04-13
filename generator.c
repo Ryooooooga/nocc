@@ -1088,7 +1088,6 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     LLVMDisposeBuilder(ctx.builder);
 
     if (LLVMVerifyModule(ctx.module, LLVMReturnStatusAction, &error)) {
-        LLVMDumpModule(ctx.module);
         fprintf(stderr, "\n%s", error);
         exit(1);
     }

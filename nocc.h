@@ -55,6 +55,8 @@ typedef long intptr_t;
 typedef struct __sFILE FILE;
 
 extern FILE *__stderrp;
+
+int printf(const char *format, ...);
 FILE *fopen(const char *path, const char *mode);
 int fclose(FILE *fp);
 int fseek(FILE *fp, long offset, int whence);
@@ -184,7 +186,7 @@ void LLVMGetParamTypes(LLVMTypeRef func_type, LLVMTypeRef *dest);
 void LLVMStructSetBody(LLVMTypeRef struct_type, LLVMTypeRef *element_types,
                        unsigned int element_count, int packed);
 
-void LLVMDumpModule(LLVMModuleRef module);
+char *LLVMPrintModuleToString(LLVMModuleRef module);
 char *LLVMPrintTypeToString(LLVMTypeRef type);
 
 void LLVMDisposeMessage(char *message);

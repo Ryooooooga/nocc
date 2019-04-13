@@ -31,7 +31,7 @@ nocc_stage2: file-2.ll generator-2.ll lexer-2.ll map-2.ll parser-2.ll path-2.ll 
 	${CC} ${CFLAGS} -c -o $@ $<
 
 %-2.ll: %.c nocc.h nocc
-	./nocc $< 2> $@
+	./nocc $< > $@
 
 clean:
 	${RM} nocc test_nocc *.a *.o *.ll
