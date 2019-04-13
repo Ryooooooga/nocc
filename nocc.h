@@ -42,7 +42,7 @@ int *__error(void);
 typedef int bool;
 
 /* <stddef.h> */
-#define NULL 0
+#define NULL ((void *)0)
 
 typedef unsigned long size_t;
 typedef long intptr_t;

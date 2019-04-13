@@ -140,6 +140,26 @@ void usual_arithmetic_conversion(ExprNode **left, ExprNode **right) {
     *right = integer_promotion(*right);
 }
 
+void relational_operation_type_conversion(ExprNode **left, ExprNode **right) {
+    assert(left != NULL);
+    assert(*left != NULL);
+    assert(right != NULL);
+    assert(*right != NULL);
+
+    *left = integer_promotion(*left);
+    *right = integer_promotion(*right);
+
+    if (is_pointer_type((*left)->type) && is_pointer_type((*right)->type)) {
+        if (is_void_pointer_type((*left)->type) &&
+            !is_void_pointer_type((*right)->type)) {
+            *right = implicit_cast_node_new(*right, (*left)->type);
+        } else if (!is_void_pointer_type((*left)->type) &&
+                   is_void_pointer_type((*right)->type)) {
+            *left = implicit_cast_node_new(*left, (*right)->type);
+        }
+    }
+}
+
 bool assign_type_conversion(ExprNode **expr, Type *dest_type) {
     assert(expr != NULL);
     assert(*expr != NULL);
@@ -829,6 +849,8 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case token_equal:
     case token_not_equal:
         /* relational operator */
+        relational_operation_type_conversion(&p->left, &p->right);
+
         if (!type_equals(p->left->type, p->right->type)) {
             fprintf(stderr, "invalid operand type of binary operator %s\n",
                     t->text);
