@@ -368,27 +368,28 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
 #define node_postfix 3
 #define node_call 4
 #define node_unary 5
-#define node_cast 6
-#define node_binary 7
-#define node_dot 8
+#define node_sizeof 6
+#define node_cast 7
+#define node_binary 8
+#define node_dot 9
 
-#define node_compound 9
-#define node_return 10
-#define node_if 11
-#define node_while 12
-#define node_do 13
-#define node_for 14
-#define node_break 15
-#define node_continue 16
-#define node_decl 17
-#define node_expr 18
+#define node_compound 10
+#define node_return 11
+#define node_if 12
+#define node_while 13
+#define node_do 14
+#define node_for 15
+#define node_break 16
+#define node_continue 17
+#define node_decl 18
+#define node_expr 19
 
-#define node_typedef 19
-#define node_extern 20
-#define node_member 21
-#define node_variable 22
-#define node_param 23
-#define node_function 24
+#define node_typedef 20
+#define node_extern 21
+#define node_member 22
+#define node_variable 23
+#define node_param 24
+#define node_function 25
 
 typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
@@ -397,6 +398,7 @@ typedef struct IdentifierNode IdentifierNode;
 typedef struct PostfixNode PostfixNode;
 typedef struct CallNode CallNode;
 typedef struct UnaryNode UnaryNode;
+typedef struct SizeofNode SizeofNode;
 typedef struct CastNode CastNode;
 typedef struct BinaryNode BinaryNode;
 typedef struct DotNode DotNode;
@@ -482,6 +484,14 @@ struct UnaryNode {
     bool is_lvalue;
     int operator_;
     ExprNode *operand;
+};
+
+struct SizeofNode {
+    int kind;
+    int line;
+    Type *type;
+    bool is_lvalue;
+    Type *operand;
 };
 
 struct CastNode {
@@ -716,6 +726,7 @@ ExprNode *sema_arrow_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
                           const Token *identifier);
 ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand);
+ExprNode *sema_sizeof_expr(ParserContext *ctx, const Token *t, Type *operand);
 ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
                          const Token *close, ExprNode *operand);
 ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,

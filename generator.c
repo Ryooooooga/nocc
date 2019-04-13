@@ -273,9 +273,6 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
         LLVMBuildStore(ctx->builder, value, operand);
         return value;
 
-    case token_sizeof:
-        return generate_type_size(ctx, p->operand->type);
-
     default:
         fprintf(stderr, "unknown unary operator %d\n", p->operator_);
         exit(1);
@@ -557,6 +554,9 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
     case node_unary:
         return generate_unary_expr(ctx, (UnaryNode *)p);
+
+    case node_sizeof:
+        return generate_type_size(ctx, ((SizeofNode *)p)->operand);
 
     case node_cast:
         return generate_cast_expr(ctx, (CastNode *)p);

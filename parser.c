@@ -500,6 +500,47 @@ ExprNode *parse_cast_expr(ParserContext *ctx) {
     return sema_cast_expr(ctx, open, type, close, operand);
 }
 
+ExprNode *parse_sizeof_expr(ParserContext *ctx) {
+    const Token *t;
+    Type *type;
+
+    /* sizeof */
+    t = consume_token(ctx);
+
+    if (t->kind != token_sizeof) {
+        fprintf(stderr, "expected sizeof, but got %s\n", t->text);
+        exit(1);
+    }
+
+    if (current_token(ctx)->kind == '(' &&
+        is_type_specifier_token(ctx, peek_token(ctx))) {
+        /* sizeof ( type ) */
+        /* ( */
+        consume_token(ctx);
+
+        /* type */
+        type = parse_type(ctx);
+
+        /* ) */
+        if (current_token(ctx)->kind != ')') {
+            fprintf(stderr, "expected ), but got %s\n",
+                    current_token(ctx)->text);
+            exit(1);
+        }
+        consume_token(ctx);
+
+        /* make node */
+        return sema_sizeof_expr(ctx, t, type);
+    }
+
+    /* sizeof unary_expr */
+    /* unary expression */
+    type = parse_unary_expr(ctx)->type;
+
+    /* make node */
+    return sema_sizeof_expr(ctx, t, type);
+}
+
 ExprNode *parse_unary_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *operand;
@@ -515,7 +556,6 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
     case '&':
     case token_increment:
     case token_decrement:
-    case token_sizeof:
         /* unary operator */
         consume_token(ctx);
 
@@ -524,6 +564,9 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
 
         /* make node */
         return sema_unary_expr(ctx, t, operand);
+
+    case token_sizeof:
+        return parse_sizeof_expr(ctx);
 
     case '(':
         if (is_type_specifier_token(ctx, peek_token(ctx))) {

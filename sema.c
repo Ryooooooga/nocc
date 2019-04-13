@@ -712,18 +712,31 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         p->is_lvalue = false; /* ++x is rvalue in C */
         break;
 
-    case token_sizeof:
-        if (is_incomplete_type(p->operand->type)) {
-            fprintf(stderr, "cannot get size of incomplete type\n");
-            exit(1);
-        }
-
-        p->type = type_get_int32(); /* TODO: size_t */
-        p->is_lvalue = false;
-        break;
-
     default:
         fprintf(stderr, "unknown unary operator %s\n", t->text);
+        exit(1);
+    }
+
+    return (ExprNode *)p;
+}
+
+ExprNode *sema_sizeof_expr(ParserContext *ctx, const Token *t, Type *operand) {
+    SizeofNode *p;
+
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(operand != NULL);
+
+    p = malloc(sizeof(*p));
+    p->kind = node_sizeof;
+    p->line = t->line;
+    p->type = type_get_int32(); /* TODO: size_t */
+    p->is_lvalue = false;
+    p->operand = operand;
+
+    /* type check */
+    if (is_incomplete_type(p->operand)) {
+        fprintf(stderr, "cannot get size of incomplete type\n");
         exit(1);
     }
 
