@@ -81,4 +81,13 @@ void test_preprocessor(void) {
                 {token_identifier, "c", NULL},
                 {'\0', "", NULL},
             });
+
+    test_pp("define3",
+            "# define M \"a\" \"b\" c\n"
+            "M\n",
+            (TestSuite[]){
+                {token_string, "\"ab\"", "ab"},
+                {token_identifier, "c", NULL},
+                {'\0', "", NULL},
+            });
 }
