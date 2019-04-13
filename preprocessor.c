@@ -12,6 +12,7 @@ struct Preprocessor {
 typedef struct Preprocessor Preprocessor;
 
 void pp_push_token(Preprocessor *pp, Token *t);
+void pp_else(Preprocessor *pp, bool accept_else, bool skip);
 void pp_endif(Preprocessor *pp, bool accept_endif);
 void preprocess_lines(Preprocessor *pp, bool accept_else, bool accept_endif);
 
@@ -274,7 +275,7 @@ void pp_skip_line(Preprocessor *pp) {
     }
 }
 
-void pp_skip_until_else_or_endif(Preprocessor *pp) {
+void pp_skip_until_else_or_endif(Preprocessor *pp, bool accept_else) {
     Token *t;
 
     while (1) {
@@ -294,12 +295,16 @@ void pp_skip_until_else_or_endif(Preprocessor *pp) {
             /* identifier */
             t = pp_skip_separator(pp);
 
-            if (strcmp(t->text, "endif") == 0) {
+            if (strcmp(t->text, "if") == 0 || strcmp(t->text, "ifdef") == 0 ||
+                strcmp(t->text, "ifndef") == 0) {
+                pp_skip_line(pp);
+                pp_skip_until_else_or_endif(pp, false);
+            } else if (strcmp(t->text, "endif") == 0) {
                 pp_endif(pp, true);
                 return;
-            } else if (strcmp(t->text, "else") == 0) {
-                fprintf(stderr, "#else not implemented 2\n");
-                exit(1);
+            } else if (strcmp(t->text, "else") == 0 && accept_else) {
+                pp_else(pp, true, false);
+                return;
             } else {
                 pp_skip_line(pp);
             }
@@ -345,10 +350,40 @@ void pp_ifndef(Preprocessor *pp) {
     /* check if the macro has been defined */
     if (map_contains(pp->macros, macro_name->text)) {
         /* skip until #else or #endif */
-        pp_skip_until_else_or_endif(pp);
+        pp_skip_until_else_or_endif(pp, true);
     } else {
         /* process until #else or #endif */
         preprocess_lines(pp, true, true);
+    }
+}
+
+void pp_else(Preprocessor *pp, bool accept_else, bool skip) {
+    /* else */
+    if (strcmp(pp_current_token(pp)->text, "else") != 0) {
+        fprintf(stderr, "expected else, but got %s\n",
+                pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* new line */
+    if (pp_skip_separator(pp)->kind != '\0' &&
+        pp_skip_separator(pp)->kind != '\n') {
+        fprintf(stderr, "expected new line after #else, but got %s\n",
+                pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    if (!accept_else) {
+        fprintf(stderr, "#else without #if\n");
+        exit(1);
+    }
+
+    if (skip) {
+        pp_skip_until_else_or_endif(pp, false);
+    } else {
+        preprocess_lines(pp, false, true);
     }
 }
 
@@ -399,12 +434,8 @@ bool pp_directive(Preprocessor *pp, bool accept_else, bool accept_endif) {
         pp_ifndef(pp);
         return true;
     } else if (strcmp(t->text, "else") == 0) {
-        if (!accept_else) {
-            fprintf(stderr, "#else without #if\n");
-            exit(1);
-        }
-        fprintf(stderr, "#else not implemented\n");
-        exit(1);
+        pp_else(pp, accept_else, true);
+        return false;
     } else if (strcmp(t->text, "endif") == 0) {
         pp_endif(pp, accept_endif);
         return false;
