@@ -55,6 +55,10 @@ char parse_literal_char(const char *src, int *index, int *line) {
         *index += 1; /* eat \ */
 
         switch (src[*index]) {
+        case '0':
+            *index += 1; /* eat 0 */
+            return '\0';
+
         case '\'':
             *index += 1; /* eat ' */
             return '\'';
