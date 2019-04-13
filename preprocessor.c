@@ -28,31 +28,41 @@ Token *pp_consume_token(Preprocessor *pp) {
     return t;
 }
 
-void pp_concat_string(Token *t, const Token *u) {
+void pp_concat_string(Preprocessor *pp, const Token *str) {
+    Token *t;
+    int text_len1;
+    int text_len2;
+
+    t = vec_back(pp->result);
+
     assert(t);
     assert(t->kind == token_string);
     assert(t->string);
-    assert(u);
-    assert(u->kind == token_string);
-    assert(u->string);
+    assert(str);
+    assert(str->kind == token_string);
+    assert(str->string);
 
-    t->text = str_cat_n(t->text, strlen(t->text) - 1, u->text + 1,
-                        strlen(t->text) - 1);
-    t->string = str_cat_n(t->string, t->len_string, u->string, u->len_string);
-    t->len_string += u->len_string;
+    text_len1 = strlen(t->text) - 1;   /* without last '\"' */
+    text_len2 = strlen(str->text) - 1; /* without first '\"' */
+
+    t->text = str_cat_n(t->text, text_len1, str->text + 1, text_len2);
+    t->string =
+        str_cat_n(t->string, t->len_string, str->string, str->len_string);
+    t->len_string += str->len_string;
 }
 
 void pp_string(Preprocessor *pp) {
-    Token *token;
     Token *t;
 
     /* string */
-    token = pp_consume_token(pp);
+    t = pp_consume_token(pp);
 
-    if (token->kind != token_string) {
-        fprintf(stderr, "expected string, but got %s\n", token->text);
+    if (t->kind != token_string) {
+        fprintf(stderr, "expected string, but got %s\n", t->text);
         exit(1);
     }
+
+    vec_push(pp->result, t);
 
     while (1) {
         t = pp_current_token(pp);
@@ -66,11 +76,10 @@ void pp_string(Preprocessor *pp) {
 
         case token_string:
             /* concat strings */
-            pp_concat_string(token, pp_consume_token(pp));
+            pp_concat_string(pp, pp_consume_token(pp));
             break;
 
         default:
-            vec_push(pp->result, token);
             return;
         }
     }
