@@ -11,7 +11,9 @@ struct Preprocessor {
 
 typedef struct Preprocessor Preprocessor;
 
-void preprocess_lines(Preprocessor *pp);
+void pp_push_token(Preprocessor *pp, Token *t);
+void pp_endif(Preprocessor *pp, bool accept_endif);
+void preprocess_lines(Preprocessor *pp, bool accept_else, bool accept_endif);
 
 Token *pp_current_token(Preprocessor *pp) {
     assert(pp);
@@ -116,6 +118,26 @@ void pp_concat_string(Preprocessor *pp, const Token *str) {
     t->len_string += str->len_string;
 }
 
+void pp_expand_macro(Preprocessor *pp, Token *t) {
+    Vec *macro_tokens;
+    int i;
+
+    /* check if the identifier is a macro */
+    macro_tokens = map_get(pp->macros, t->text);
+
+    if (macro_tokens == NULL) {
+        /* identifier is not a macro */
+        vec_push(pp->result, t);
+        return;
+    }
+
+    /* expand the macro */
+    for (i = 0; i < macro_tokens->size; i++) {
+        /* TODO: expand macros recursively */
+        pp_push_token(pp, macro_tokens->data[i]);
+    }
+}
+
 void pp_push_token(Preprocessor *pp, Token *t) {
     assert(pp);
     assert(t);
@@ -127,6 +149,11 @@ void pp_push_token(Preprocessor *pp, Token *t) {
     if (pp->result->size > 0 && t->kind == token_string &&
         pp_last_token(pp)->kind == token_string) {
         pp_concat_string(pp, t);
+        return;
+    }
+
+    if (t->kind == token_identifier) {
+        pp_expand_macro(pp, t);
         return;
     }
 
@@ -203,8 +230,8 @@ void pp_include(Preprocessor *pp) {
     /* new line */
     if (pp_skip_separator(pp)->kind != '\0' &&
         pp_skip_separator(pp)->kind != '\n') {
-        fprintf(stderr, "expected new line after #include, but got %s\n",
-                pp_current_token(pp)->text);
+        fprintf(stderr, "expected new line after #include %s, but got %s\n",
+                filename->text, pp_current_token(pp)->text);
         exit(1);
     }
     pp_consume_token(pp);
@@ -229,7 +256,7 @@ void pp_include(Preprocessor *pp) {
     vec_push(pp->include_stack, path);
 
     /* process the file */
-    preprocess_lines(pp);
+    preprocess_lines(pp, false, false);
 
     /* pop include stack */
     vec_pop(pp->include_stack);
@@ -238,7 +265,118 @@ void pp_include(Preprocessor *pp) {
     pp->index = saved_index;
 }
 
-void pp_directive(Preprocessor *pp) {
+void pp_skip_line(Preprocessor *pp) {
+    assert(pp);
+
+    while (pp_skip_separator(pp)->kind != '\0' &&
+           pp_skip_separator(pp)->kind != '\n') {
+        pp_consume_token(pp);
+    }
+}
+
+void pp_skip_until_else_or_endif(Preprocessor *pp) {
+    Token *t;
+
+    while (1) {
+        switch (pp_skip_separator(pp)->kind) {
+        case '\0':
+            fprintf(stderr,
+                    "unexpected end of file, unterminated #if directives\n");
+            exit(1);
+
+        case '\n':
+            pp_consume_token(pp);
+            break;
+
+        case '#':
+            pp_consume_token(pp); /* eat # */
+
+            /* identifier */
+            t = pp_skip_separator(pp);
+
+            if (strcmp(t->text, "endif") == 0) {
+                pp_endif(pp, true);
+                return;
+            } else if (strcmp(t->text, "else") == 0) {
+                fprintf(stderr, "#else not implemented 2\n");
+                exit(1);
+            } else {
+                pp_skip_line(pp);
+            }
+            break;
+
+        default:
+            pp_skip_line(pp);
+            break;
+        }
+    }
+}
+
+void pp_ifndef(Preprocessor *pp) {
+    Token *macro_name;
+
+    /* ifndef */
+    if (strcmp(pp_current_token(pp)->text, "ifndef") != 0) {
+        fprintf(stderr, "expected ifndef, but got %s\n",
+                pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* identifier */
+    macro_name = pp_skip_separator(pp);
+
+    if (macro_name->kind != token_identifier) {
+        fprintf(stderr, "expected identifier after #ifndef, but got %s\n",
+                macro_name->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* new line */
+    if (pp_skip_separator(pp)->kind != '\0' &&
+        pp_skip_separator(pp)->kind != '\n') {
+        fprintf(stderr, "expected new line after #ifndef %s, but got %s\n",
+                macro_name->text, pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* check if the macro has been defined */
+    if (map_contains(pp->macros, macro_name->text)) {
+        /* skip until #else or #endif */
+        pp_skip_until_else_or_endif(pp);
+    } else {
+        /* process until #else or #endif */
+        preprocess_lines(pp, true, true);
+    }
+}
+
+void pp_endif(Preprocessor *pp, bool accept_endif) {
+    /* endif */
+    if (strcmp(pp_current_token(pp)->text, "endif") != 0) {
+        fprintf(stderr, "expected endif, but got %s\n",
+                pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* new line */
+    if (pp_skip_separator(pp)->kind != '\0' &&
+        pp_skip_separator(pp)->kind != '\n') {
+        fprintf(stderr, "expected new line after #endif, but got %s\n",
+                pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    if (!accept_endif) {
+        fprintf(stderr, "#endif without #if\n");
+        exit(1);
+    }
+}
+
+bool pp_directive(Preprocessor *pp, bool accept_else, bool accept_endif) {
     Token *t;
 
     /* # */
@@ -251,69 +389,54 @@ void pp_directive(Preprocessor *pp) {
     /* identifier */
     t = pp_skip_separator(pp);
 
-    if (t->kind != token_identifier) {
-        fprintf(stderr, "expected identifier after #, but got %s\n", t->text);
-        exit(1);
-    }
-
     if (strcmp(t->text, "define") == 0) {
         pp_define(pp);
+        return true;
     } else if (strcmp(t->text, "include") == 0) {
         pp_include(pp);
+        return true;
+    } else if (strcmp(t->text, "ifndef") == 0) {
+        pp_ifndef(pp);
+        return true;
+    } else if (strcmp(t->text, "else") == 0) {
+        if (!accept_else) {
+            fprintf(stderr, "#else without #if\n");
+            exit(1);
+        }
+        fprintf(stderr, "#else not implemented\n");
+        exit(1);
+    } else if (strcmp(t->text, "endif") == 0) {
+        pp_endif(pp, accept_endif);
+        return false;
     } else {
-        fprintf(stderr, "unknown preprocessor directive %s\n", t->text);
+        fprintf(stderr, "unknown preprocessor directive #%s\n", t->text);
         exit(1);
     }
 }
 
-void pp_identifier(Preprocessor *pp) {
-    Token *t;
-    Vec *macro_tokens;
-    int i;
-
-    /* identifier */
-    t = pp_consume_token(pp);
-
-    if (t->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s", t->text);
-        exit(1);
-    }
-
-    /* check if the identifier is a macro */
-    macro_tokens = map_get(pp->macros, t->text);
-
-    if (macro_tokens == NULL) {
-        /* identifier is not a macro */
-        pp_push_token(pp, t);
-        return;
-    }
-
-    /* expand the macro */
-    for (i = 0; i < macro_tokens->size; i++) {
-        /* TODO: expand macros recursively */
-        pp_push_token(pp, macro_tokens->data[i]);
-    }
-}
-
-void preprocess_line(Preprocessor *pp) {
+bool preprocess_line(Preprocessor *pp, bool accept_else, bool accept_endif) {
     switch (pp_skip_separator(pp)->kind) {
-    case '#':
-        pp_directive(pp);
-        break;
+    case '\0':
+        return false;
 
-    case token_identifier:
-        pp_identifier(pp);
-        break;
+    case '\n':
+        pp_consume_token(pp);
+        return true;
+
+    case '#':
+        return pp_directive(pp, accept_else, accept_endif);
 
     default:
-        pp_push_token(pp, pp_consume_token(pp));
-        break;
+        while (pp_skip_separator(pp)->kind != '\0' &&
+               pp_skip_separator(pp)->kind != '\n') {
+            pp_push_token(pp, pp_consume_token(pp));
+        }
+        return true;
     }
 }
 
-void preprocess_lines(Preprocessor *pp) {
-    while (pp_skip_separator(pp)->kind != '\0') {
-        preprocess_line(pp);
+void preprocess_lines(Preprocessor *pp, bool accept_else, bool accept_endif) {
+    while (preprocess_line(pp, accept_else, accept_endif)) {
     }
 }
 
@@ -335,7 +458,7 @@ Vec *preprocess(const char *filename, const char *src,
 
     vec_push(pp.include_stack, (char *)filename);
 
-    preprocess_lines(&pp);
+    preprocess_lines(&pp, false, false);
 
     /* push end of file */
     vec_push(pp.result, pp_current_token(&pp));
