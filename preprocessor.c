@@ -209,14 +209,14 @@ void pp_include(Preprocessor *pp) {
     }
     pp_consume_token(pp);
 
-    /* open file */
-    pp_read_file(pp, filename->string, &path, &src);
-
     /* check the depth of include stack */
     if (pp->include_stack->size >= 256) {
         fprintf(stderr, "#include nested too deeply\n");
         exit(1);
     }
+
+    /* open file */
+    pp_read_file(pp, filename->string, &path, &src);
 
     /* read file */
     saved_tokens = pp->tokens;
@@ -225,7 +225,14 @@ void pp_include(Preprocessor *pp) {
     pp->tokens = (Token **)lex(src)->data;
     pp->index = 0;
 
+    /* push include stack */
+    vec_push(pp->include_stack, path);
+
+    /* process the file */
     preprocess_lines(pp);
+
+    /* pop include stack */
+    vec_pop(pp->include_stack);
 
     pp->tokens = saved_tokens;
     pp->index = saved_index;
