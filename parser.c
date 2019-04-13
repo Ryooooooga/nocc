@@ -1,12 +1,12 @@
 #include "nocc.h"
 
 const Token *current_token(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     return ctx->tokens[ctx->index];
 }
 
 const Token *peek_token(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     if (current_token(ctx)->kind == '\0') {
         return current_token(ctx);
@@ -16,7 +16,7 @@ const Token *peek_token(ParserContext *ctx) {
 }
 
 const Token *consume_token(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     if (current_token(ctx)->kind == '\0') {
         return current_token(ctx);
@@ -28,8 +28,8 @@ const Token *consume_token(ParserContext *ctx) {
 bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     DeclNode *symbol;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     switch (t->kind) {
     case token_void:
@@ -177,7 +177,7 @@ Type *parse_type(ParserContext *ctx) {
     bool is_const;
     Type *type;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* const? */
     is_const = false;
@@ -497,7 +497,7 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *operand;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
     t = current_token(ctx);
 
@@ -627,7 +627,7 @@ ExprNode *parse_assign_expr(ParserContext *ctx) {
     ExprNode *left;
     ExprNode *right;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* equality expression */
     left = parse_equality_expr(ctx);
@@ -647,7 +647,7 @@ ExprNode *parse_assign_expr(ParserContext *ctx) {
 }
 
 ExprNode *parse_expr(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     return parse_assign_expr(ctx);
 }
@@ -992,7 +992,7 @@ StmtNode *parse_expr_stmt(ParserContext *ctx) {
 }
 
 StmtNode *parse_stmt(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     switch (current_token(ctx)->kind) {
     case '{':
@@ -1084,10 +1084,10 @@ void parse_postfix_declarator(ParserContext *ctx, Type **type,
 }
 
 void parse_declarator(ParserContext *ctx, Type **type, const Token **t) {
-    assert(ctx);
-    assert(type);
-    assert(*type);
-    assert(t);
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(*type != NULL);
+    assert(t != NULL);
 
     parse_direct_declarator(ctx, type, t);
     parse_postfix_declarator(ctx, type, t);
@@ -1136,7 +1136,7 @@ DeclNode *parse_var_decl(ParserContext *ctx) {
 }
 
 DeclNode *parse_decl(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     switch (current_token(ctx)->kind) {
     case token_typedef:
@@ -1151,7 +1151,7 @@ ParamNode *parse_param(ParserContext *ctx) {
     Type *type;
     const Token *t;
 
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* type */
     type = parse_type(ctx);
@@ -1329,7 +1329,7 @@ DeclNode *parse_function(ParserContext *ctx) {
 }
 
 DeclNode *parse_top_level(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     switch (current_token(ctx)->kind) {
     case token_typedef:
@@ -1350,9 +1350,9 @@ TranslationUnitNode *parse(const char *filename, const char *src,
     DeclNode *decl;
     Vec *decls;
 
-    assert(filename);
-    assert(src);
-    assert(include_directories);
+    assert(filename != NULL);
+    assert(src != NULL);
+    assert(include_directories != NULL);
 
     /* get tokens */
     tokens =

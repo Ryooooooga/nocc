@@ -1,3 +1,4 @@
+#define USE_STANDARD_HEADERS
 #include "nocc.h"
 
 #include <llvm-c/ExecutionEngine.h>
@@ -5,9 +6,9 @@
 
 void test_engine_run_function(const char *filename, const char *src,
                               const char *func, int param, int result) {
-    assert(filename);
-    assert(src);
-    assert(func);
+    assert(filename != NULL);
+    assert(src != NULL);
+    assert(func != NULL);
 
     fprintf(stderr, "test_engine:%s --- ", filename);
 

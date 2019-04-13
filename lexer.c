@@ -3,7 +3,7 @@
 Token *token_new(int kind, const char *text, int length, int line) {
     Token *t;
 
-    assert(text);
+    assert(text != NULL);
     assert(0 <= length);
 
     t = malloc(sizeof(*t));
@@ -20,7 +20,7 @@ Token *string_token_new(Vec *chars, const char *text, int length, int line) {
     Token *t;
     int i;
 
-    assert(chars);
+    assert(chars != NULL);
 
     t = token_new(token_string, text, length, line);
     t->string = malloc(sizeof(char) * (chars->size + 1));
@@ -38,9 +38,9 @@ Token *string_token_new(Vec *chars, const char *text, int length, int line) {
 char parse_literal_char(const char *src, int *index, int *line) {
     char c;
 
-    assert(src);
-    assert(index);
-    assert(line);
+    assert(src != NULL);
+    assert(index != NULL);
+    assert(line != NULL);
 
     switch (src[*index]) {
     case '\0':
@@ -84,9 +84,9 @@ char parse_literal_char(const char *src, int *index, int *line) {
 }
 
 Token *lex_token(const char *src, int *index, int *line) {
-    assert(src);
-    assert(index);
-    assert(line);
+    assert(src != NULL);
+    assert(index != NULL);
+    assert(line != NULL);
 
     while (src[*index]) {
         int kind;
@@ -274,7 +274,7 @@ Vec *lex(const char *src) {
     Token *t;
     Vec *tokens;
 
-    assert(src);
+    assert(src != NULL);
 
     index = 0;
     line = 1;

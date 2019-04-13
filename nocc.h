@@ -1,6 +1,8 @@
 #ifndef INCLUDE_nocc_h
 #define INCLUDE_nocc_h
 
+#ifdef USE_STANDARD_HEADERS
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -12,6 +14,187 @@
 
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Core.h>
+
+#else
+
+/* <assert.h> */
+void assert(int cond);
+
+/* <ctype.h> */
+int isspace(int c);
+int isdigit(int c);
+int isalpha(int c);
+int isalnum(int c);
+
+/* <errno.h> */
+#define ERANGE 34
+#define errno (*__error())
+
+int *__error(void);
+
+/* <limits.h> */
+#define INT_MAX 2147483647
+
+/* <stdbool.h> */
+#define true 1
+#define false 0
+
+typedef int bool;
+
+/* <stddef.h> */
+#define NULL 0
+
+typedef unsigned long size_t;
+typedef long intptr_t;
+
+/* <stdio.h> */
+#define stderr __stderrp
+#define SEEK_SET 0
+#define SEEK_END 2
+
+typedef struct __sFILE FILE;
+
+extern FILE *__stderrp;
+FILE *fopen(const char *path, const char *mode);
+int fclose(FILE *fp);
+int fseek(FILE *fp, long offset, int whence);
+long ftell(FILE *fp);
+size_t fread(void *ptr, size_t size, size_t nitems, FILE *fp);
+int fprintf(FILE *fp, const char *format, ...);
+
+/* <stdlib.h> */
+void exit(int code);
+void *malloc(size_t size);
+void *realloc(void *ptr, size_t size);
+long strtol(const char *str, char **end, int base);
+
+/* <string.h> */
+size_t strlen(const char *s);
+int strcmp(const char *a, const char *b);
+char *strncpy(char *dest, const char *src, size_t size);
+
+/* <llvm-c/Core.h> */
+#define LLVMIntEQ 32
+#define LLVMIntNE 33
+#define LLVMIntSGT 38
+#define LLVMIntSGE 39
+#define LLVMIntSLT 40
+#define LLVMIntSLE 41
+
+typedef struct LLVMOpaqueContext *LLVMContextRef;
+typedef struct LLVMOpaqueBuilder *LLVMBuilderRef;
+typedef struct LLVMOpaqueModule *LLVMModuleRef;
+typedef struct LLVMOpaqueBasicBlock *LLVMBasicBlockRef;
+typedef struct LLVMOpaqueValue *LLVMValueRef;
+typedef struct LLVMOpaqueType *LLVMTypeRef;
+
+LLVMModuleRef LLVMModuleCreateWithName(const char *module_id);
+LLVMContextRef LLVMGetModuleContext(LLVMModuleRef module);
+LLVMValueRef LLVMAddGlobal(LLVMModuleRef module, LLVMTypeRef type,
+                           const char *name);
+LLVMValueRef LLVMGetNamedGlobal(LLVMModuleRef module, const char *name);
+LLVMValueRef LLVMAddFunction(LLVMModuleRef module, const char *name,
+                             LLVMTypeRef func_type);
+LLVMValueRef LLVMGetNamedFunction(LLVMModuleRef module, const char *name);
+void LLVMDisposeModule(LLVMModuleRef module);
+
+LLVMBuilderRef LLVMCreateBuilder(void);
+void LLVMPositionBuilderAtEnd(LLVMBuilderRef b, LLVMBasicBlockRef bb);
+LLVMBasicBlockRef LLVMGetInsertBlock(LLVMBuilderRef b);
+void LLVMDisposeBuilder(LLVMBuilderRef b);
+LLVMValueRef LLVMBuildGlobalStringPtr(LLVMBuilderRef b, const char *str,
+                                      const char *name);
+LLVMValueRef LLVMConstInt(LLVMTypeRef type, unsigned long n, int sign_extend);
+LLVMValueRef LLVMConstNull(LLVMTypeRef type);
+LLVMValueRef LLVMBuildICmp(LLVMBuilderRef b, int op, LLVMValueRef left,
+                           LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildAdd(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildSub(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildMul(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildSDiv(LLVMBuilderRef b, LLVMValueRef left,
+                           LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildSRem(LLVMBuilderRef b, LLVMValueRef left,
+                           LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildPtrDiff(LLVMBuilderRef b, LLVMValueRef left,
+                              LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildNeg(LLVMBuilderRef b, LLVMValueRef val, const char *name);
+LLVMValueRef LLVMBuildTrunc(LLVMBuilderRef b, LLVMValueRef val,
+                            LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildSExt(LLVMBuilderRef b, LLVMValueRef val, LLVMTypeRef type,
+                           const char *name);
+LLVMValueRef LLVMBuildZExt(LLVMBuilderRef b, LLVMValueRef val, LLVMTypeRef type,
+                           const char *name);
+LLVMValueRef LLVMBuildIntToPtr(LLVMBuilderRef b, LLVMValueRef val,
+                               LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildPtrToInt(LLVMBuilderRef b, LLVMValueRef val,
+                               LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildPointerCast(LLVMBuilderRef b, LLVMValueRef val,
+                                  LLVMTypeRef type, const char *name);
+LLVMValueRef LLVMBuildLoad(LLVMBuilderRef b, LLVMValueRef ptr,
+                           const char *name);
+LLVMValueRef LLVMBuildStore(LLVMBuilderRef b, LLVMValueRef val,
+                            LLVMValueRef ptr);
+LLVMValueRef LLVMBuildInBoundsGEP(LLVMBuilderRef b, LLVMValueRef ptr,
+                                  LLVMValueRef *indices,
+                                  unsigned int num_indices, const char *name);
+LLVMValueRef LLVMBuildInBoundsGEP(LLVMBuilderRef b, LLVMValueRef ptr,
+                                  LLVMValueRef *indices,
+                                  unsigned int num_indices, const char *name);
+LLVMValueRef LLVMBuildStructGEP(LLVMBuilderRef b, LLVMValueRef ptr,
+                                unsigned int index, const char *name);
+LLVMValueRef LLVMBuildExtractValue(LLVMBuilderRef b, LLVMValueRef val,
+                                   unsigned int index, const char *name);
+LLVMValueRef LLVMBuildCall(LLVMBuilderRef b, LLVMValueRef func,
+                           LLVMValueRef *args, unsigned int num_args,
+                           const char *name);
+LLVMValueRef LLVMBuildAlloca(LLVMBuilderRef b, LLVMTypeRef type,
+                             const char *name);
+
+LLVMValueRef LLVMBuildRetVoid(LLVMBuilderRef b);
+LLVMValueRef LLVMBuildRet(LLVMBuilderRef b, LLVMValueRef val);
+LLVMValueRef LLVMBuildBr(LLVMBuilderRef b, LLVMBasicBlockRef dest);
+LLVMValueRef LLVMBuildCondBr(LLVMBuilderRef b, LLVMValueRef if_,
+                             LLVMBasicBlockRef then, LLVMBasicBlockRef else_);
+
+LLVMValueRef LLVMGetBasicBlockParent(LLVMBasicBlockRef bb);
+
+LLVMTypeRef LLVMTypeOf(LLVMValueRef val);
+void LLVMSetInitializer(LLVMValueRef global_var, LLVMValueRef constant_val);
+
+LLVMValueRef LLVMGetParam(LLVMValueRef func, unsigned int index);
+LLVMBasicBlockRef LLVMAppendBasicBlock(LLVMValueRef func, const char *name);
+
+LLVMTypeRef LLVMVoidType(void);
+LLVMTypeRef LLVMInt8Type(void);
+LLVMTypeRef LLVMInt32Type(void);
+LLVMTypeRef LLVMPointerType(LLVMTypeRef element_type,
+                            unsigned int address_space);
+LLVMTypeRef LLVMArrayType(LLVMTypeRef element_type, unsigned int length);
+LLVMTypeRef LLVMStructCreateNamed(LLVMContextRef context, const char *name);
+LLVMTypeRef LLVMFunctionType(LLVMTypeRef return_type, LLVMTypeRef *param_types,
+                             unsigned int param_count, int is_var_arg);
+LLVMTypeRef LLVMGetElementType(LLVMTypeRef type);
+LLVMTypeRef LLVMGetReturnType(LLVMTypeRef func_type);
+unsigned int LLVMCountParamTypes(LLVMTypeRef func_type);
+void LLVMGetParamTypes(LLVMTypeRef func_type, LLVMTypeRef *dest);
+
+void LLVMStructSetBody(LLVMTypeRef struct_type, LLVMTypeRef *element_types,
+                       unsigned int element_count, int packed);
+
+void LLVMDumpModule(LLVMModuleRef module);
+char *LLVMPrintTypeToString(LLVMTypeRef type);
+
+void LLVMDisposeMessage(char *message);
+
+/* <llvm-c/Analysis.h> */
+#define LLVMReturnStatusAction 2
+
+int LLVMVerifyModule(LLVMModuleRef module, int action, char **message);
+
+#endif
 
 char *str_dup(const char *s);
 char *str_dup_n(const char *s, int length);

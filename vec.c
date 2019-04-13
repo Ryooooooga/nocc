@@ -10,7 +10,7 @@ Vec *vec_new(void) {
 }
 
 void vec_reserve(Vec *v, int capacity) {
-    assert(v);
+    assert(v != NULL);
     assert(capacity >= 0);
 
     if (capacity > v->capacity) {
@@ -20,7 +20,7 @@ void vec_reserve(Vec *v, int capacity) {
 }
 
 void vec_resize(Vec *v, int size) {
-    assert(v);
+    assert(v != NULL);
     assert(size >= 0);
 
     vec_reserve(v, size);
@@ -28,14 +28,14 @@ void vec_resize(Vec *v, int size) {
 }
 
 void *vec_back(Vec *v) {
-    assert(v);
+    assert(v != NULL);
     assert(v->size > 0);
 
     return v->data[v->size - 1];
 }
 
 void vec_push(Vec *v, void *value) {
-    assert(v);
+    assert(v != NULL);
 
     if (v->capacity == v->size) {
         vec_reserve(v, v->capacity * 2);
@@ -45,7 +45,7 @@ void vec_push(Vec *v, void *value) {
 }
 
 void *vec_pop(Vec *v) {
-    assert(v);
+    assert(v != NULL);
     assert(v->size > 0);
 
     return v->data[--v->size];

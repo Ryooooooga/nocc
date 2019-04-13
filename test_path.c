@@ -3,9 +3,9 @@
 void test_path_join(const char *dir, const char *name, const char *expected) {
     char *path;
 
-    assert(dir);
-    assert(name);
-    assert(expected);
+    assert(dir != NULL);
+    assert(name != NULL);
+    assert(expected != NULL);
 
     path = path_join(dir, name);
 
@@ -19,8 +19,8 @@ void test_path_join(const char *dir, const char *name, const char *expected) {
 void test_path_dir(const char *path, const char *expected) {
     char *dir;
 
-    assert(path);
-    assert(expected);
+    assert(path != NULL);
+    assert(expected != NULL);
 
     dir = path_dir(path);
 

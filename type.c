@@ -19,7 +19,7 @@ Type *type_get_int32(void) {
 Type *pointer_type_new(Type *element_type) {
     PointerType *t;
 
-    assert(element_type);
+    assert(element_type != NULL);
 
     t = malloc(sizeof(*t));
     t->kind = type_pointer;
@@ -31,7 +31,7 @@ Type *pointer_type_new(Type *element_type) {
 Type *array_type_new(Type *element_type, int length) {
     ArrayType *t;
 
-    assert(element_type);
+    assert(element_type != NULL);
     assert(length >= 1);
 
     t = malloc(sizeof(*t));
@@ -47,9 +47,9 @@ Type *function_type_new(Type *return_type, Type **param_types, int num_params,
     FunctionType *t;
     int i;
 
-    assert(return_type);
+    assert(return_type != NULL);
     assert(num_params >= 0);
-    assert(param_types || num_params == 0);
+    assert(param_types != NULL || num_params == 0);
 
     t = malloc(sizeof(*t));
     t->kind = type_function;
@@ -68,8 +68,8 @@ Type *function_type_new(Type *return_type, Type **param_types, int num_params,
 bool type_equals(Type *a, Type *b) {
     int i;
 
-    assert(a);
-    assert(b);
+    assert(a != NULL);
+    assert(b != NULL);
 
     if (a == b) {
         return true;
@@ -119,42 +119,42 @@ bool type_equals(Type *a, Type *b) {
 }
 
 bool is_void_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return t->kind == type_void;
 }
 
 bool is_int8_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return t->kind == type_int8;
 }
 
 bool is_int32_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return t->kind == type_int32;
 }
 
 bool is_pointer_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return t->kind == type_pointer;
 }
 
 bool is_array_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return t->kind == type_array;
 }
 
 bool is_function_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return t->kind == type_function;
 }
 
 bool is_struct_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return t->kind == type_struct;
 }
 
 bool is_incomplete_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     switch (t->kind) {
     case type_void:
@@ -170,32 +170,32 @@ bool is_incomplete_type(Type *t) {
 }
 
 bool is_void_pointer_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return is_pointer_type(t) && is_void_type(pointer_element_type(t));
 }
 
 bool is_function_pointer_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return is_pointer_type(t) && is_function_type(pointer_element_type(t));
 }
 
 bool is_incomplete_pointer_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return is_pointer_type(t) && is_incomplete_type(pointer_element_type(t));
 }
 
 bool is_integer_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return is_int8_type(t) || is_int32_type(t);
 }
 
 bool is_scalar_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
     return is_integer_type(t) || is_pointer_type(t);
 }
 
 Type *pointer_element_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     if (!is_pointer_type(t)) {
         return NULL;
@@ -205,7 +205,7 @@ Type *pointer_element_type(Type *t) {
 }
 
 Type *array_element_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     if (!is_array_type(t)) {
         return NULL;
@@ -215,7 +215,7 @@ Type *array_element_type(Type *t) {
 }
 
 int array_type_count_elements(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     if (!is_array_type(t)) {
         return -1;
@@ -225,7 +225,7 @@ int array_type_count_elements(Type *t) {
 }
 
 Type *function_return_type(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     if (!is_function_type(t)) {
         return NULL;
@@ -235,7 +235,7 @@ Type *function_return_type(Type *t) {
 }
 
 int function_count_param_types(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     if (!is_function_type(t)) {
         return -1;
@@ -245,7 +245,7 @@ int function_count_param_types(Type *t) {
 }
 
 Type *function_param_type(Type *t, int index) {
-    assert(t);
+    assert(t != NULL);
     assert(index >= 0);
     assert(index < function_count_param_types(t));
 
@@ -253,7 +253,7 @@ Type *function_param_type(Type *t, int index) {
 }
 
 bool function_type_is_var_args(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     if (!is_function_type(t)) {
         return false;
@@ -263,7 +263,7 @@ bool function_type_is_var_args(Type *t) {
 }
 
 int struct_type_count_members(Type *t) {
-    assert(t);
+    assert(t != NULL);
 
     if (!is_struct_type(t)) {
         return -1;
@@ -273,7 +273,7 @@ int struct_type_count_members(Type *t) {
 }
 
 struct MemberNode *struct_type_member(Type *t, int index) {
-    assert(t);
+    assert(t != NULL);
     assert(index >= 0);
     assert(index < struct_type_count_members(t));
 
@@ -284,9 +284,9 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
                                            int *index) {
     MemberNode *member;
 
-    assert(t);
-    assert(member_name);
-    assert(index);
+    assert(t != NULL);
+    assert(member_name != NULL);
+    assert(index != NULL);
 
     if (!is_struct_type(t)) {
         return NULL;

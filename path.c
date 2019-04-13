@@ -5,8 +5,8 @@ char *path_join(const char *dir, const char *filename) {
     int dir_len;
     int name_len;
 
-    assert(dir);
-    assert(filename);
+    assert(dir != NULL);
+    assert(filename != NULL);
 
     dir_len = strlen(dir);
     name_len = strlen(filename);
@@ -31,7 +31,7 @@ char *path_join(const char *dir, const char *filename) {
 char *path_dir(const char *path) {
     int len;
 
-    assert(path);
+    assert(path != NULL);
 
     len = strlen(path);
 

@@ -7,14 +7,14 @@ enum {
 };
 
 void sema_push_scope(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     scope_stack_push(ctx->env);
     scope_stack_push(ctx->struct_env);
 }
 
 void sema_pop_scope(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     scope_stack_pop(ctx->struct_env);
     scope_stack_pop(ctx->env);
@@ -30,41 +30,41 @@ Vec *control_flow_state_new(void) {
 }
 
 int control_flow_current_state(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->flow_state->size > 0);
 
     return (intptr_t)vec_back(ctx->flow_state);
 }
 
 void control_flow_push_state(ParserContext *ctx, int flow_state) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     vec_push(ctx->flow_state,
              (void *)((intptr_t)flow_state | control_flow_current_state(ctx)));
 }
 
 void control_flow_pop_state(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->flow_state->size > 1);
 
     vec_pop(ctx->flow_state);
 }
 
 bool is_break_accepted(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     return control_flow_current_state(ctx) & control_flow_state_break_bit;
 }
 
 bool is_continue_accepted(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     return control_flow_current_state(ctx) & control_flow_state_continue_bit;
 }
 
 ExprNode *implicit_cast_node_new(ExprNode *expr, Type *dest_type) {
     CastNode *p;
 
-    assert(expr);
-    assert(dest_type);
+    assert(expr != NULL);
+    assert(dest_type != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_cast;
@@ -77,8 +77,8 @@ ExprNode *implicit_cast_node_new(ExprNode *expr, Type *dest_type) {
 }
 
 bool can_cast_into(Type *src_type, Type *dest_type) {
-    assert(src_type);
-    assert(dest_type);
+    assert(src_type != NULL);
+    assert(dest_type != NULL);
 
     switch (dest_type->kind) {
     case type_void:
@@ -104,7 +104,7 @@ bool can_cast_into(Type *src_type, Type *dest_type) {
 }
 
 ExprNode *decay_type_conversion(ExprNode *expr) {
-    assert(expr);
+    assert(expr != NULL);
 
     if (is_array_type(expr->type)) {
         return implicit_cast_node_new(
@@ -119,7 +119,7 @@ ExprNode *decay_type_conversion(ExprNode *expr) {
 }
 
 ExprNode *integer_promotion(ExprNode *expr) {
-    assert(expr);
+    assert(expr != NULL);
 
     expr = decay_type_conversion(expr);
 
@@ -131,19 +131,19 @@ ExprNode *integer_promotion(ExprNode *expr) {
 }
 
 void usual_arithmetic_conversion(ExprNode **left, ExprNode **right) {
-    assert(left);
-    assert(*left);
-    assert(right);
-    assert(*right);
+    assert(left != NULL);
+    assert(*left != NULL);
+    assert(right != NULL);
+    assert(*right != NULL);
 
     *left = integer_promotion(*left);
     *right = integer_promotion(*right);
 }
 
 bool assign_type_conversion(ExprNode **expr, Type *dest_type) {
-    assert(expr);
-    assert(*expr);
-    assert(dest_type);
+    assert(expr != NULL);
+    assert(*expr != NULL);
+    assert(dest_type != NULL);
 
     *expr = decay_type_conversion(*expr);
 
@@ -164,8 +164,8 @@ bool assign_type_conversion(ExprNode **expr, Type *dest_type) {
 }
 
 bool default_argument_promotion(ExprNode **expr) {
-    assert(expr);
-    assert(*expr);
+    assert(expr != NULL);
+    assert(*expr != NULL);
 
     *expr = integer_promotion(*expr);
 
@@ -184,8 +184,8 @@ bool default_argument_promotion(ExprNode **expr) {
 Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
     DeclNode *p;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     /* find symbol */
     p = scope_stack_find(ctx->env, t->text, true);
@@ -207,9 +207,9 @@ Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     MemberNode *p;
 
-    assert(ctx);
-    assert(type);
-    assert(t);
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(t != NULL);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -242,14 +242,14 @@ StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
                                              bool search_recursively) {
     StructType *p;
 
-    assert(ctx);
-    assert(t);
-    assert(identifier);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(identifier != NULL);
 
     /* find type from symbol if exists */
     p = scope_stack_find(ctx->struct_env, identifier->text, search_recursively);
 
-    if (p) {
+    if (p != NULL) {
         return p;
     }
 
@@ -299,8 +299,8 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
                              MemberNode **members, int num_members) {
     int i;
 
-    assert(ctx);
-    assert(type);
+    assert(ctx != NULL);
+    assert(type != NULL);
     assert(type->is_incomplete);
     assert(members != NULL || num_members == 0);
     assert(num_members >= 0);
@@ -328,10 +328,10 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
 
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close) {
-    assert(ctx);
-    assert(open);
-    assert(expr);
-    assert(close);
+    assert(ctx != NULL);
+    assert(open != NULL);
+    assert(expr != NULL);
+    assert(close != NULL);
 
     return expr;
 }
@@ -339,8 +339,8 @@ ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
 ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value) {
     IntegerNode *p;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_integer;
@@ -356,8 +356,8 @@ ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
                            const char *string, int length) {
     StringNode *p;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
     assert(string != NULL || length == 0);
     assert(length >= 0);
 
@@ -378,8 +378,8 @@ ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     IdentifierNode *p;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_identifier;
@@ -416,9 +416,9 @@ ExprNode *sema_postfix_expr(ParserContext *ctx, ExprNode *operand,
                             const Token *t) {
     PostfixNode *p;
 
-    assert(ctx);
-    assert(operand);
-    assert(t);
+    assert(ctx != NULL);
+    assert(operand != NULL);
+    assert(t != NULL);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -473,12 +473,12 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     bool is_var_args;
     int i;
 
-    assert(ctx);
-    assert(callee);
-    assert(open);
+    assert(ctx != NULL);
+    assert(callee != NULL);
+    assert(open != NULL);
     assert(args != NULL || num_args == 0);
     assert(num_args >= 0);
-    assert(close);
+    assert(close != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_call;
@@ -536,10 +536,10 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
     DotNode *p;
     MemberNode *member;
 
-    assert(ctx);
-    assert(parent);
-    assert(t);
-    assert(identifier);
+    assert(ctx != NULL);
+    assert(parent != NULL);
+    assert(t != NULL);
+    assert(identifier != NULL);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -576,10 +576,10 @@ ExprNode *sema_arrow_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
                           const Token *identifier) {
     UnaryNode *p;
 
-    assert(ctx);
-    assert(parent);
-    assert(t);
-    assert(identifier);
+    assert(ctx != NULL);
+    assert(parent != NULL);
+    assert(t != NULL);
+    assert(identifier != NULL);
 
     /* T[] -> T* */
     parent = decay_type_conversion(parent);
@@ -612,9 +612,9 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
                           ExprNode *operand) {
     UnaryNode *p;
 
-    assert(ctx);
-    assert(t);
-    assert(operand);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(operand != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_unary;
@@ -704,11 +704,11 @@ ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
                          const Token *close, ExprNode *operand) {
     CastNode *p;
 
-    assert(ctx);
-    assert(open);
-    assert(type);
-    assert(close);
-    assert(operand);
+    assert(ctx != NULL);
+    assert(open != NULL);
+    assert(type != NULL);
+    assert(close != NULL);
+    assert(operand != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_cast;
@@ -735,10 +735,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
                            ExprNode *right) {
     BinaryNode *p;
 
-    assert(ctx);
-    assert(left);
-    assert(t);
-    assert(right);
+    assert(ctx != NULL);
+    assert(left != NULL);
+    assert(t != NULL);
+    assert(right != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_binary;
@@ -883,7 +883,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 }
 
 void sema_compound_stmt_enter(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* enter scope */
     sema_push_scope(ctx);
@@ -895,11 +895,11 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
     CompoundNode *p;
     int i;
 
-    assert(ctx);
-    assert(open);
+    assert(ctx != NULL);
+    assert(open != NULL);
     assert(stmts != NULL || num_stmts == 0);
     assert(num_stmts >= 0);
-    assert(close);
+    assert(close != NULL);
 
     /* leave scope */
     sema_pop_scope(ctx);
@@ -922,10 +922,10 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
     ReturnNode *p;
     Type *return_type;
 
-    assert(ctx);
-    assert(ctx->current_function);
-    assert(t);
-    assert(semi);
+    assert(ctx != NULL);
+    assert(ctx->current_function != NULL);
+    assert(t != NULL);
+    assert(semi != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_return;
@@ -952,14 +952,14 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
 }
 
 void sema_if_stmt_enter_block(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* enter scope */
     sema_push_scope(ctx);
 }
 
 void sema_if_stmt_leave_block(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* leave scope */
     sema_pop_scope(ctx);
@@ -969,10 +969,10 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_) {
     IfNode *p;
 
-    assert(ctx);
-    assert(t);
-    assert(condition);
-    assert(then);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(condition != NULL);
+    assert(then != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_if;
@@ -991,7 +991,7 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
 }
 
 void sema_while_stmt_enter_body(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* enter scope */
     sema_push_scope(ctx);
@@ -1005,10 +1005,10 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
                                      ExprNode *condition, StmtNode *body) {
     WhileNode *p;
 
-    assert(ctx);
-    assert(t);
-    assert(condition);
-    assert(body);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(condition != NULL);
+    assert(body != NULL);
 
     /* pop loop state */
     control_flow_pop_state(ctx);
@@ -1033,7 +1033,7 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
 }
 
 void sema_do_stmt_enter_body(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* enter scope */
     sema_push_scope(ctx);
@@ -1044,7 +1044,7 @@ void sema_do_stmt_enter_body(ParserContext *ctx) {
 }
 
 void sema_do_stmt_leave_body(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* pop loop state */
     control_flow_pop_state(ctx);
@@ -1057,10 +1057,10 @@ StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
                        ExprNode *condition) {
     DoNode *p;
 
-    assert(ctx);
-    assert(t);
-    assert(body);
-    assert(condition);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(body != NULL);
+    assert(condition != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_do;
@@ -1078,7 +1078,7 @@ StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
 }
 
 void sema_for_stmt_enter_body(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* enter scope */
     sema_push_scope(ctx);
@@ -1094,9 +1094,9 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
                                    StmtNode *body) {
     ForNode *p;
 
-    assert(ctx);
-    assert(t);
-    assert(body);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(body != NULL);
 
     /* pop loop state */
     control_flow_pop_state(ctx);
@@ -1125,8 +1125,8 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
 StmtNode *sema_break_stmt(ParserContext *ctx, const Token *t) {
     BreakNode *p;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     /* loop check */
     if (!is_break_accepted(ctx)) {
@@ -1145,8 +1145,8 @@ StmtNode *sema_break_stmt(ParserContext *ctx, const Token *t) {
 StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t) {
     ContinueNode *p;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     /* loop check */
     if (!is_continue_accepted(ctx)) {
@@ -1165,8 +1165,8 @@ StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t) {
 StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t) {
     DeclStmtNode *p;
 
-    assert(ctx);
-    assert(t);
+    assert(ctx != NULL);
+    assert(t != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_decl;
@@ -1179,9 +1179,9 @@ StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t) {
 StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
     ExprStmtNode *p;
 
-    assert(ctx);
-    assert(expr);
-    assert(t);
+    assert(ctx != NULL);
+    assert(expr != NULL);
+    assert(t != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_expr;
@@ -1194,9 +1194,9 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
 Type *sema_array_declarator(ParserContext *ctx, Type *type, ExprNode *size) {
     int array_size;
 
-    assert(ctx);
-    assert(type);
-    assert(size);
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(size != NULL);
 
     /* TODO: more complex constant expression */
     assert(size->kind == node_integer);
@@ -1215,10 +1215,10 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
                        const Token *identifier) {
     TypedefNode *p;
 
-    assert(ctx);
-    assert(t);
-    assert(type);
-    assert(identifier);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(type != NULL);
+    assert(identifier != NULL);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -1245,10 +1245,10 @@ DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
     ExternNode *p;
     DeclNode *decl;
 
-    assert(ctx);
-    assert(t);
-    assert(type);
-    assert(identifier);
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(type != NULL);
+    assert(identifier != NULL);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -1283,9 +1283,9 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     VariableNode *p;
     DeclNode *decl;
 
-    assert(ctx);
-    assert(type);
-    assert(t);
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(t != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_variable;
@@ -1328,9 +1328,9 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
 ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
     ParamNode *p;
 
-    assert(ctx);
-    assert(type);
-    assert(t);
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(t != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_param;
@@ -1359,7 +1359,7 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
 }
 
 void sema_function_enter_params(ParserContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
 
     /* enter parameter scope */
     sema_push_scope(ctx);
@@ -1374,9 +1374,9 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     FunctionNode *p;
     int i;
 
-    assert(ctx);
-    assert(return_type);
-    assert(t);
+    assert(ctx != NULL);
+    assert(return_type != NULL);
+    assert(t != NULL);
     assert(params != NULL || num_params == 0);
     assert(num_params >= 0);
 
@@ -1441,8 +1441,8 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
 void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
     int i;
 
-    assert(ctx);
-    assert(p);
+    assert(ctx != NULL);
+    assert(p != NULL);
 
     ctx->current_function = p;
     ctx->locals = vec_new();
@@ -1460,10 +1460,10 @@ FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
                                        StmtNode *body) {
     int i;
 
-    assert(ctx);
-    assert(ctx->locals);
-    assert(p);
-    assert(body);
+    assert(ctx != NULL);
+    assert(ctx->locals != NULL);
+    assert(p != NULL);
+    assert(body != NULL);
 
     p->body = body;
 
@@ -1486,8 +1486,8 @@ FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
 ParserContext *sema_translation_unit_enter(const Token **tokens) {
     ParserContext *ctx;
 
-    assert(tokens);
-    assert(*tokens);
+    assert(tokens != NULL);
+    assert(*tokens != NULL);
 
     ctx = malloc(sizeof(*ctx));
     ctx->env = scope_stack_new();
@@ -1508,11 +1508,11 @@ TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
     TranslationUnitNode *p;
     int i;
 
-    assert(ctx);
+    assert(ctx != NULL);
     assert(scope_stack_depth(ctx->env) == 1);
     assert(scope_stack_depth(ctx->struct_env) == 1);
     assert(ctx->flow_state->size == 1);
-    assert(filename);
+    assert(filename != NULL);
     assert(decls != NULL || num_decls == 0);
     assert(num_decls >= 0);
 

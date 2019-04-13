@@ -1,42 +1,42 @@
 #include "nocc.h"
 
 LLVMBasicBlockRef nearest_break_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->break_targets->size > 0);
 
     return vec_back(ctx->break_targets);
 }
 
 LLVMBasicBlockRef nearest_continue_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->continue_targets->size > 0);
 
     return vec_back(ctx->continue_targets);
 }
 
 void push_break_target(GeneratorContext *ctx, LLVMBasicBlockRef target) {
-    assert(ctx);
-    assert(target);
+    assert(ctx != NULL);
+    assert(target != NULL);
 
     vec_push(ctx->break_targets, target);
 }
 
 void push_continue_target(GeneratorContext *ctx, LLVMBasicBlockRef target) {
-    assert(ctx);
-    assert(target);
+    assert(ctx != NULL);
+    assert(target != NULL);
 
     vec_push(ctx->continue_targets, target);
 }
 
 void pop_break_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->break_targets->size > 0);
 
     vec_pop(ctx->break_targets);
 }
 
 void pop_continue_target(GeneratorContext *ctx) {
-    assert(ctx);
+    assert(ctx != NULL);
     assert(ctx->continue_targets->size > 0);
 
     vec_pop(ctx->continue_targets);
@@ -101,8 +101,8 @@ LLVMTypeRef generate_struct_type(GeneratorContext *ctx, StructType *p) {
 }
 
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
-    assert(ctx);
-    assert(p);
+    assert(ctx != NULL);
+    assert(p != NULL);
 
     switch (p->kind) {
     case type_void:
@@ -147,7 +147,7 @@ LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
                                       IdentifierNode *p) {
-    assert(p->declaration->generated_location);
+    assert(p->declaration->generated_location != NULL);
 
     return LLVMBuildLoad(ctx->builder, p->declaration->generated_location,
                          "load");
@@ -520,8 +520,8 @@ LLVMValueRef generate_dot_expr(GeneratorContext *ctx, DotNode *p) {
 }
 
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
-    assert(p);
-    assert(ctx);
+    assert(p != NULL);
+    assert(ctx != NULL);
 
     switch (p->kind) {
     case node_integer:
@@ -559,7 +559,7 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
 LLVMValueRef generate_identifier_expr_addr(GeneratorContext *ctx,
                                            IdentifierNode *p) {
-    assert(p->declaration->generated_location);
+    assert(p->declaration->generated_location != NULL);
 
     (void)ctx;
 
@@ -606,8 +606,8 @@ LLVMValueRef generate_binary_expr_addr(GeneratorContext *ctx, BinaryNode *p) {
 }
 
 LLVMValueRef generate_expr_addr(GeneratorContext *ctx, ExprNode *p) {
-    assert(p);
-    assert(ctx);
+    assert(p != NULL);
+    assert(ctx != NULL);
 
     if (!p->is_lvalue) {
         fprintf(stderr, "expression must be a lvalue %d\n", p->kind);
@@ -893,8 +893,8 @@ bool generate_expr_stmt(GeneratorContext *ctx, ExprStmtNode *p) {
 }
 
 bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
-    assert(ctx);
-    assert(p);
+    assert(ctx != NULL);
+    assert(p != NULL);
 
     switch (p->kind) {
     case node_compound:
@@ -973,8 +973,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     bool is_terminated;
     int i;
 
-    assert(ctx);
-    assert(p);
+    assert(ctx != NULL);
+    assert(p != NULL);
     assert(is_function_type(p->type));
 
     /* build LLVM function type */
@@ -1044,8 +1044,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
 }
 
 void generate_decl(GeneratorContext *ctx, DeclNode *p) {
-    assert(p);
-    assert(ctx);
+    assert(p != NULL);
+    assert(ctx != NULL);
 
     switch (p->kind) {
     case node_typedef:
@@ -1074,7 +1074,7 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     int i;
     char *error;
 
-    assert(p);
+    assert(p != NULL);
 
     ctx.module = LLVMModuleCreateWithName(p->filename);
     ctx.builder = LLVMCreateBuilder();
