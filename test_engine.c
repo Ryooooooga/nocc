@@ -601,6 +601,37 @@ void test_engine(void) {
                              "  return test_extern4;\n"
                              "}\n",
                              "extern4", 0, 33);
+
+    test_engine_run_function("sizeof1",
+                             "int sizeof1(int n) {\n"
+                             "  return sizeof((char)0);\n"
+                             "}\n",
+                             "sizeof1", 0, 1);
+
+    test_engine_run_function("sizeof2",
+                             "int sizeof2(int n) {\n"
+                             "  return sizeof((int)0);\n"
+                             "}\n",
+                             "sizeof2", 0, 4);
+
+    test_engine_run_function("sizeof3",
+                             "int sizeof3(int n) {\n"
+                             "  return sizeof((int *)0);\n"
+                             "}\n",
+                             "sizeof3", 0, 8);
+
+    test_engine_run_function("sizeof4",
+                             "int sizeof4(int n) {\n"
+                             "  return sizeof((void *)0);\n"
+                             "}\n",
+                             "sizeof4", 0, 8);
+
+    test_engine_run_function("sizeof5",
+                             "int sizeof5(int n) {\n"
+                             "  struct t {int a; char b; int *c;} a;\n"
+                             "  return sizeof(a);\n"
+                             "}\n",
+                             "sizeof5", 0, 16);
 }
 
 int test_extern = 24;

@@ -132,6 +132,19 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     }
 }
 
+/* TODO: sizeof is a constant expression */
+LLVMValueRef generate_type_size(GeneratorContext *ctx, Type *p) {
+    LLVMTypeRef type;
+    LLVMValueRef one;
+    LLVMValueRef value;
+
+    type = LLVMPointerType(generate_type(ctx, p), 0);
+    one = LLVMConstInt(LLVMInt32Type(), 1, false);
+    value = LLVMBuildInBoundsGEP(ctx->builder, LLVMConstNull(type), &one, 1,
+                                 "sizeptr");
+    return LLVMBuildPtrToInt(ctx->builder, value, LLVMInt32Type(), "sizeof");
+}
+
 LLVMValueRef generate_integer_expr(GeneratorContext *ctx, IntegerNode *p) {
     (void)ctx;
 
@@ -259,6 +272,9 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
 
         LLVMBuildStore(ctx->builder, value, operand);
         return value;
+
+    case token_sizeof:
+        return generate_type_size(ctx, p->operand->type);
 
     default:
         fprintf(stderr, "unknown unary operator %d\n", p->operator_);
