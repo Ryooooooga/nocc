@@ -1,5 +1,6 @@
 #include "nocc.h"
 
+void test_path(void);
 void test_vec(void);
 void test_map(void);
 void test_lexer(void);
@@ -14,12 +15,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    Vec *include_directories = vec_new();
-    vec_push(include_directories, argv[1]);
-
+    test_path();
     test_vec();
     test_map();
     test_lexer();
+
+    Vec *include_directories = vec_new();
+    vec_push(include_directories, argv[1]);
+
     test_preprocessor(include_directories);
     test_parser();
     test_generator();
