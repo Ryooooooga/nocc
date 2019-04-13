@@ -99,4 +99,17 @@ void test_lexer(void) {
                     {token_string, "\"he\\\"lp\"", 2, "he\"lp"},
                     {'\0', "", 2, NULL},
                 });
+
+    test_tokens("/* comment */ /* comment\n */ code */",
+                (TokenTestSuite[]){
+                    {' ', " ", 1, NULL}, /* comment */
+                    {' ', " ", 1, NULL}, /* */
+                    {' ', " ", 1, NULL}, /* comment\n */
+                    {' ', " ", 2, NULL}, /* */
+                    {token_identifier, "code", 2, NULL},
+                    {' ', " ", 2, NULL},
+                    {'*', "*", 2, NULL},
+                    {'/', "/", 2, NULL},
+                    {'\0', "", 2, NULL},
+                });
 }

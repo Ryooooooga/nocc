@@ -113,6 +113,23 @@ Token *lex_token(const char *src, int *index, int *line) {
             return token_new(' ', src + start, *index - start, line_start);
         }
 
+        /* comment */
+        if (src[*index + 0] == '/' && src[*index + 1] == '*') {
+            *index += 2; /* eat '/' '*' */
+
+            while (!(src[*index + 0] == '*' && src[*index + 1] == '/')) {
+                if (src[*index] == '\n') {
+                    *line += 1;
+                }
+
+                *index += 1;
+            }
+
+            *index += 2; /* eat '*' '/' */
+
+            return token_new(' ', " ", 1, line_start);
+        }
+
         /* number */
         if (isdigit(src[*index])) {
             /* [0-9]+ */
