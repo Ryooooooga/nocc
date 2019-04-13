@@ -48,6 +48,49 @@ Token *pp_skip_separator(Preprocessor *pp) {
     return pp_current_token(pp);
 }
 
+const char *pp_current_file_path(Preprocessor *pp) {
+    assert(pp);
+    assert(pp->include_stack->size > 0);
+
+    return vec_back(pp->include_stack);
+}
+
+void pp_read_file(Preprocessor *pp, const char *filename, char **path,
+                  char **src) {
+    int i;
+
+    assert(pp);
+    assert(filename);
+    assert(path);
+    assert(src);
+
+    /* search current file directory */
+    *path = path_join(path_dir(pp_current_file_path(pp)), filename);
+    *src = read_file(*path);
+
+    if (*src != NULL) {
+        return;
+    }
+
+    /* search include directories */
+    for (i = 0; i < pp->include_directories->size; i++) {
+        *path = path_join(pp->include_directories->data[i], filename);
+        *src = read_file(*path);
+
+        if (*src != NULL) {
+            return;
+        }
+    }
+
+    /* file not found */
+    *path = NULL;
+    *src = NULL;
+
+    fprintf(stderr, "cannot include file %s in %s\n", filename,
+            pp_current_file_path(pp));
+    exit(1);
+}
+
 void pp_concat_string(Preprocessor *pp, const Token *str) {
     Token *t;
     int text_len1;
@@ -131,6 +174,8 @@ void pp_define(Preprocessor *pp) {
 
 void pp_include(Preprocessor *pp) {
     const Token *filename;
+    char *path;
+    char *src;
 
     /* include */
     if (strcmp(pp_current_token(pp)->text, "include") != 0) {
@@ -159,7 +204,11 @@ void pp_include(Preprocessor *pp) {
     }
     pp_consume_token(pp);
 
-    fprintf(stderr, "#include not implemented %s\n", filename->string);
+    /* open file */
+    pp_read_file(pp, filename->string, &path, &src);
+
+    fprintf(stderr, "#include not implemented %s, %s\n", filename->string,
+            path);
     exit(1);
 }
 
