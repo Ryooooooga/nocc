@@ -14,6 +14,13 @@ Token *pp_current_token(Preprocessor *pp) {
     return pp->tokens[pp->index];
 }
 
+Token *pp_last_token(Preprocessor *pp) {
+    assert(pp);
+    assert(pp->result->size > 0);
+
+    return vec_back(pp->result);
+}
+
 Token *pp_consume_token(Preprocessor *pp) {
     Token *t;
 
@@ -33,7 +40,7 @@ void pp_concat_string(Preprocessor *pp, const Token *str) {
     int text_len1;
     int text_len2;
 
-    t = vec_back(pp->result);
+    t = pp_last_token(pp);
 
     assert(t);
     assert(t->kind == token_string);
@@ -62,26 +69,10 @@ void pp_string(Preprocessor *pp) {
         exit(1);
     }
 
-    vec_push(pp->result, t);
-
-    while (1) {
-        t = pp_current_token(pp);
-
-        switch (t->kind) {
-        case ' ':
-        case '\n':
-            /* ignore separators */
-            pp_consume_token(pp);
-            break;
-
-        case token_string:
-            /* concat strings */
-            pp_concat_string(pp, pp_consume_token(pp));
-            break;
-
-        default:
-            return;
-        }
+    if (pp->result->size > 0 && pp_last_token(pp)->kind == token_string) {
+        pp_concat_string(pp, t);
+    } else {
+        vec_push(pp->result, t);
     }
 }
 
