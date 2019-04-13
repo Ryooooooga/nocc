@@ -21,5 +21,7 @@ char *read_file(const char *filename) {
     buffer = malloc(size);
     fread(buffer, 1, size, fp);
 
+    fclose(fp);
+
     return buffer;
 }
