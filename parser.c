@@ -35,6 +35,8 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     case token_void:
     case token_char:
     case token_int:
+    case token_long:
+    case token_unsigned:
     case token_struct:
     case token_const:
         return true;
@@ -156,7 +158,12 @@ Type *parse_primary_type(ParserContext *ctx) {
         consume_token(ctx); /* eat char */
         return type_get_int8();
 
+    case token_unsigned:
+        consume_token(ctx);             /* eat long */
+        return parse_primary_type(ctx); /* TODO: unsigned type */
+
     case token_int:
+    case token_long:        /* TODO: long type */
         consume_token(ctx); /* eat int */
         return type_get_int32();
 

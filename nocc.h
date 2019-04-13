@@ -248,6 +248,8 @@ enum {
     token_void,
     token_char,
     token_int,
+    token_long,
+    token_unsigned,
     token_const,
     token_struct,
     token_typedef,

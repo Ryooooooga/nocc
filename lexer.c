@@ -195,6 +195,10 @@ Token *lex_token(const char *src, int *index, int *line) {
                 t->kind = token_char;
             } else if (strcmp(t->text, "int") == 0) {
                 t->kind = token_int;
+            } else if (strcmp(t->text, "long") == 0) {
+                t->kind = token_long;
+            } else if (strcmp(t->text, "unsigned") == 0) {
+                t->kind = token_unsigned;
             } else if (strcmp(t->text, "const") == 0) {
                 t->kind = token_const;
             } else if (strcmp(t->text, "struct") == 0) {
