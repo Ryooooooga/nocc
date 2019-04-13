@@ -44,6 +44,8 @@ bool map_contains(Map *m, const char *k);
 void *map_get(Map *m, const char *k);
 void map_add(Map *m, const char *k, void *v);
 
+char *read_file(const char *filename);
+
 enum {
     token_number = 256,
     token_string,
