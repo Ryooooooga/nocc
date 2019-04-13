@@ -13,7 +13,7 @@ LDFLAGS  += $(shell llvm-config --ldflags --system-libs --libs core support anal
 all: nocc test_nocc
 
 test: nocc test_nocc
-	./test_nocc
+	./test_nocc .
 
 nocc: main.o libnocc.a
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}

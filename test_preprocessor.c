@@ -48,7 +48,7 @@ void test_pp(const char *filename, const char *src, Vec *include_directories,
     } while (toks[i++]->kind != '\0');
 }
 
-void test_preprocessor(void) {
+void test_preprocessor(Vec *include_directories) {
     test_pp("separator", "pp removes spaces \n and new line\n", vec_new(),
             (TestSuite[]){
                 {token_identifier, "pp", NULL},
@@ -104,6 +104,18 @@ void test_preprocessor(void) {
                 {token_string, "\"xab\"", "xab"},
                 {token_identifier, "c", NULL},
                 {token_string, "\"dy\"", "dy"},
+                {'\0', "", NULL},
+            });
+
+    test_pp("include", "# include \"test/test_include.h\"\n",
+            include_directories,
+            (TestSuite[]){
+                {token_int, "int", NULL},
+                {token_identifier, "f", NULL},
+                {'(', "(", NULL},
+                {token_void, "void", NULL},
+                {')', ")", NULL},
+                {';', ";", NULL},
                 {'\0', "", NULL},
             });
 }

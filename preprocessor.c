@@ -130,6 +130,8 @@ void pp_define(Preprocessor *pp) {
 }
 
 void pp_include(Preprocessor *pp) {
+    const Token *filename;
+
     /* include */
     if (strcmp(pp_current_token(pp)->text, "include") != 0) {
         fprintf(stderr, "expected include, but got %s\n",
@@ -138,7 +140,26 @@ void pp_include(Preprocessor *pp) {
     }
     pp_consume_token(pp);
 
-    fprintf(stderr, "#include not implemented\n");
+    /* string */
+    filename = pp_skip_separator(pp);
+
+    if (filename->kind != token_string) {
+        fprintf(stderr, "expected string after #include, but got %s\n",
+                filename->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* new line */
+    if (pp_skip_separator(pp)->kind != '\0' &&
+        pp_skip_separator(pp)->kind != '\n') {
+        fprintf(stderr, "expected new line after #include, but got %s\n",
+                pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    fprintf(stderr, "#include not implemented %s\n", filename->string);
     exit(1);
 }
 
