@@ -635,6 +635,18 @@ void test_engine(void) {
                              "  return sizeof(a);\n"
                              "}\n",
                              "sizeof5", 0, 16);
+
+    test_engine_run_function("character",
+                             "int character(int n) {\n"
+                             "  return 'a';\n"
+                             "}\n",
+                             "character", 0, 'a');
+
+    test_engine_run_function("character",
+                             "int character(int n) {\n"
+                             "  return '\\n';\n"
+                             "}\n",
+                             "character", 0, '\n');
 }
 
 int test_extern = 24;

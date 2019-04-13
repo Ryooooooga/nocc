@@ -265,6 +265,21 @@ ExprNode *parse_number_expr(ParserContext *ctx) {
     return sema_integer_expr(ctx, t, (int)value);
 }
 
+ExprNode *parse_character_expr(ParserContext *ctx) {
+    const Token *t;
+
+    /* character */
+    t = consume_token(ctx);
+
+    if (t->kind != token_character) {
+        fprintf(stderr, "expected character, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* make node */
+    return sema_integer_expr(ctx, t, t->string[0]);
+}
+
 ExprNode *parse_string_expr(ParserContext *ctx) {
     const Token *t;
 
@@ -302,6 +317,9 @@ ExprNode *parse_primary_expr(ParserContext *ctx) {
 
     case token_number:
         return parse_number_expr(ctx);
+
+    case token_character:
+        return parse_character_expr(ctx);
 
     case token_string:
         return parse_string_expr(ctx);

@@ -16,6 +16,16 @@ Token *token_new(int kind, const char *text, int length, int line) {
     return t;
 }
 
+Token *character_token_new(char c, const char *text, int length, int line) {
+    Token *t;
+
+    t = token_new(token_character, text, length, line);
+    t->string = str_dup_n(&c, 1);
+    t->len_string = 1;
+
+    return t;
+}
+
 Token *string_token_new(Vec *chars, const char *text, int length, int line) {
     Token *t;
     int i;
@@ -70,6 +80,10 @@ char parse_literal_char(const char *src, int *index, int *line) {
         case 'n':
             *index += 1; /* eat n */
             return '\n';
+
+        case '\\':
+            *index += 1; /* eat \ */
+            return '\\';
 
         default:
             fprintf(stderr, "unknown escape sequence '\\%c'\n", src[*index]);
@@ -139,6 +153,27 @@ Token *lex_token(const char *src, int *index, int *line) {
 
             return token_new(token_number, src + start, *index - start,
                              line_start);
+        }
+
+        /* character */
+        if (src[*index] == '\'') {
+            char c;
+
+            *index += 1; /* eat ' */
+
+            /* character literal contents */
+            c = parse_literal_char(src, index, line);
+
+            /* ' */
+            if (src[*index] != '\'') {
+                fprintf(stderr, "unterminated character literal\n");
+                exit(1);
+            }
+
+            *index += 1; /* eat ' */
+
+            return character_token_new(c, src + start, *index - start,
+                                       line_start);
         }
 
         /* string */
