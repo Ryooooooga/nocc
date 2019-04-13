@@ -35,6 +35,17 @@ Token *pp_consume_token(Preprocessor *pp) {
     return t;
 }
 
+Token *pp_skip_separator(Preprocessor *pp) {
+    assert(pp);
+
+    while (pp_current_token(pp)->kind == ' ' ||
+           pp_current_token(pp)->kind == '\n') {
+        pp_consume_token(pp);
+    }
+
+    return pp_current_token(pp);
+}
+
 void pp_concat_string(Preprocessor *pp, const Token *str) {
     Token *t;
     int text_len1;
@@ -58,6 +69,28 @@ void pp_concat_string(Preprocessor *pp, const Token *str) {
     t->len_string += str->len_string;
 }
 
+void pp_directive(Preprocessor *pp) {
+    Token *t;
+
+    /* # */
+    if (pp_current_token(pp)->kind != '#') {
+        fprintf(stderr, "expected #, but got %s", pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* identifier */
+    t = pp_skip_separator(pp);
+
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier after #, but got %s\n", t->text);
+        exit(1);
+    }
+
+    fprintf(stderr, "unknown preprocessor directive %s\n", t->text);
+    exit(1);
+}
+
 void pp_string(Preprocessor *pp) {
     Token *t;
 
@@ -70,6 +103,7 @@ void pp_string(Preprocessor *pp) {
     }
 
     if (pp->result->size > 0 && pp_last_token(pp)->kind == token_string) {
+        /* concat literals if the last token is string */
         pp_concat_string(pp, t);
     } else {
         vec_push(pp->result, t);
@@ -77,7 +111,14 @@ void pp_string(Preprocessor *pp) {
 }
 
 void preprocess_line(Preprocessor *pp) {
-    switch (pp_current_token(pp)->kind) {
+    switch (pp_skip_separator(pp)->kind) {
+    case '\0':
+        break;
+
+    case '#':
+        pp_directive(pp);
+        break;
+
     case token_string:
         pp_string(pp);
         break;
@@ -89,22 +130,8 @@ void preprocess_line(Preprocessor *pp) {
 }
 
 void preprocess_lines(Preprocessor *pp) {
-    Token *t;
-
-    while (pp_current_token(pp)->kind != '\0') {
-        t = pp_current_token(pp);
-
-        switch (t->kind) {
-        case ' ':
-        case '\n':
-            /* ignore if separators */
-            pp_consume_token(pp);
-            break;
-
-        default:
-            preprocess_line(pp);
-            break;
-        }
+    while (pp_skip_separator(pp)->kind != '\0') {
+        preprocess_line(pp);
     }
 }
 
