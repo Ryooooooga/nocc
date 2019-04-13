@@ -296,4 +296,19 @@ void test_preprocessor(Vec *include_directories) {
             (TestSuite[]){
                 {'\0', "", NULL},
             });
+
+    test_pp("nested_ifdef_ifndef",
+            "#define A\n"
+            "#ifdef A\n"
+            "#ifndef not_defined\n"
+            "here\n"
+            "#else\n"
+            "there\n"
+            "#endif\n"
+            "#endif\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_identifier, "here", NULL},
+                {'\0', "", NULL},
+            });
 }

@@ -317,12 +317,13 @@ void pp_skip_until_else_or_endif(Preprocessor *pp, bool accept_else) {
     }
 }
 
-void pp_ifndef(Preprocessor *pp) {
+void pp_ifdef(Preprocessor *pp, bool defined) {
     Token *macro_name;
 
     /* ifndef */
-    if (strcmp(pp_current_token(pp)->text, "ifndef") != 0) {
-        fprintf(stderr, "expected ifndef, but got %s\n",
+    if (strcmp(pp_current_token(pp)->text, "ifdef") != 0 &&
+        strcmp(pp_current_token(pp)->text, "ifndef") != 0) {
+        fprintf(stderr, "expected ifdef or ifndef, but got %s\n",
                 pp_current_token(pp)->text);
         exit(1);
     }
@@ -348,12 +349,12 @@ void pp_ifndef(Preprocessor *pp) {
     pp_consume_token(pp);
 
     /* check if the macro has been defined */
-    if (map_contains(pp->macros, macro_name->text)) {
-        /* skip until #else or #endif */
-        pp_skip_until_else_or_endif(pp, true);
-    } else {
+    if (map_contains(pp->macros, macro_name->text) == defined) {
         /* process until #else or #endif */
         preprocess_lines(pp, true, true);
+    } else {
+        /* skip until #else or #endif */
+        pp_skip_until_else_or_endif(pp, true);
     }
 }
 
@@ -430,8 +431,11 @@ bool pp_directive(Preprocessor *pp, bool accept_else, bool accept_endif) {
     } else if (strcmp(t->text, "include") == 0) {
         pp_include(pp);
         return true;
+    } else if (strcmp(t->text, "ifdef") == 0) {
+        pp_ifdef(pp, true);
+        return true;
     } else if (strcmp(t->text, "ifndef") == 0) {
-        pp_ifndef(pp);
+        pp_ifdef(pp, false);
         return true;
     } else if (strcmp(t->text, "else") == 0) {
         pp_else(pp, accept_else, true);
