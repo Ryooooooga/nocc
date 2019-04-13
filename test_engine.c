@@ -11,7 +11,7 @@ void test_engine_run_function(const char *filename, const char *src,
 
     fprintf(stderr, "test_engine:%s --- ", filename);
 
-    TranslationUnitNode *node = parse(filename, src);
+    TranslationUnitNode *node = parse(filename, src, vec_new());
     LLVMModuleRef module = generate(node);
 
     if (LLVMGetNamedFunction(module, func) == NULL) {

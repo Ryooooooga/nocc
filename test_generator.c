@@ -504,7 +504,8 @@ void test_generating_function_with_params(void) {
 void test_generating_translation_unit(void) {
     TranslationUnitNode *p = parse("test_generating_translation_unit",
                                    "int main(void) {return 42;}\n"
-                                   "int add(int x, int y) {return x+y;}");
+                                   "int add(int x, int y) {return x+y;}",
+                                   vec_new());
 
     LLVMModuleRef module = generate(p);
 
@@ -536,9 +537,10 @@ void test_generating_translation_unit(void) {
 }
 
 void test_generating_call(void) {
-    TranslationUnitNode *p =
-        parse("test_generating_call", "int f(int a);\n"
-                                      "int main(void) {return f(42);}\n");
+    TranslationUnitNode *p = parse("test_generating_call",
+                                   "int f(int a);\n"
+                                   "int main(void) {return f(42);}\n",
+                                   vec_new());
 
     LLVMModuleRef module = generate(p);
 
@@ -561,7 +563,7 @@ void test_generating_call(void) {
 
 void test_generating_if(void) {
     TranslationUnitNode *p =
-        parse("test_generating_if", "void f(void) {if (1) {}}\n");
+        parse("test_generating_if", "void f(void) {if (1) {}}\n", vec_new());
 
     LLVMModuleRef module = generate(p);
 
@@ -593,7 +595,8 @@ void test_generating_if(void) {
 
 void test_generating_if_else(void) {
     TranslationUnitNode *p =
-        parse("test_generating_if_else", "void f(void) {if (1) {} else {}}\n");
+        parse("test_generating_if_else", "void f(void) {if (1) {} else {}}\n",
+              vec_new());
 
     LLVMModuleRef module = generate(p);
 

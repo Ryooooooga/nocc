@@ -4,10 +4,14 @@ struct Preprocessor {
     Vec *result;
     Token **tokens;
     int index;
+    Vec *include_directories;
+    Vec *include_stack;
     Map *macros;
 };
 
 typedef struct Preprocessor Preprocessor;
+
+void preprocess_lines(Preprocessor *pp);
 
 Token *pp_current_token(Preprocessor *pp) {
     assert(pp);
@@ -44,6 +48,49 @@ Token *pp_skip_separator(Preprocessor *pp) {
     }
 
     return pp_current_token(pp);
+}
+
+const char *pp_current_file_path(Preprocessor *pp) {
+    assert(pp);
+    assert(pp->include_stack->size > 0);
+
+    return vec_back(pp->include_stack);
+}
+
+void pp_read_file(Preprocessor *pp, const char *filename, char **path,
+                  char **src) {
+    int i;
+
+    assert(pp);
+    assert(filename);
+    assert(path);
+    assert(src);
+
+    /* search current file directory */
+    *path = path_join(path_dir(pp_current_file_path(pp)), filename);
+    *src = read_file(*path);
+
+    if (*src != NULL) {
+        return;
+    }
+
+    /* search include directories */
+    for (i = 0; i < pp->include_directories->size; i++) {
+        *path = path_join(pp->include_directories->data[i], filename);
+        *src = read_file(*path);
+
+        if (*src != NULL) {
+            return;
+        }
+    }
+
+    /* file not found */
+    *path = NULL;
+    *src = NULL;
+
+    fprintf(stderr, "cannot include file %s in %s\n", filename,
+            pp_current_file_path(pp));
+    exit(1);
 }
 
 void pp_concat_string(Preprocessor *pp, const Token *str) {
@@ -128,6 +175,13 @@ void pp_define(Preprocessor *pp) {
 }
 
 void pp_include(Preprocessor *pp) {
+    const Token *filename;
+    char *path;
+    char *src;
+
+    Token **saved_tokens;
+    int saved_index;
+
     /* include */
     if (strcmp(pp_current_token(pp)->text, "include") != 0) {
         fprintf(stderr, "expected include, but got %s\n",
@@ -136,8 +190,45 @@ void pp_include(Preprocessor *pp) {
     }
     pp_consume_token(pp);
 
-    fprintf(stderr, "#include not implemented\n");
-    exit(1);
+    /* string */
+    filename = pp_skip_separator(pp);
+
+    if (filename->kind != token_string) {
+        fprintf(stderr, "expected string after #include, but got %s\n",
+                filename->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* new line */
+    if (pp_skip_separator(pp)->kind != '\0' &&
+        pp_skip_separator(pp)->kind != '\n') {
+        fprintf(stderr, "expected new line after #include, but got %s\n",
+                pp_current_token(pp)->text);
+        exit(1);
+    }
+    pp_consume_token(pp);
+
+    /* open file */
+    pp_read_file(pp, filename->string, &path, &src);
+
+    /* check the depth of include stack */
+    if (pp->include_stack->size >= 256) {
+        fprintf(stderr, "#include nested too deeply\n");
+        exit(1);
+    }
+
+    /* read file */
+    saved_tokens = pp->tokens;
+    saved_index = pp->index;
+
+    pp->tokens = (Token **)lex(src)->data;
+    pp->index = 0;
+
+    preprocess_lines(pp);
+
+    pp->tokens = saved_tokens;
+    pp->index = saved_index;
 }
 
 void pp_directive(Preprocessor *pp) {
@@ -219,16 +310,23 @@ void preprocess_lines(Preprocessor *pp) {
     }
 }
 
-Vec *preprocess(const char *filename, const char *src) {
+Vec *preprocess(const char *filename, const char *src,
+                Vec *include_directories) {
     Preprocessor pp;
 
-    (void)filename;
+    assert(filename);
+    assert(src);
+    assert(include_directories);
 
     /* make preprocessor context */
     pp.result = vec_new();
     pp.tokens = (Token **)lex(src)->data;
     pp.index = 0;
+    pp.include_directories = include_directories;
+    pp.include_stack = vec_new();
     pp.macros = map_new();
+
+    vec_push(pp.include_stack, (char *)filename);
 
     preprocess_lines(&pp);
 
