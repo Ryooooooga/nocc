@@ -86,6 +86,7 @@ struct Token {
 typedef struct Token Token;
 
 Vec *lex(const char *src);
+Vec *preprocess(const char *filename, const char *src);
 
 enum {
     type_void,
