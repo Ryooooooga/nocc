@@ -11,6 +11,8 @@ struct Preprocessor {
 
 typedef struct Preprocessor Preprocessor;
 
+void preprocess_lines(Preprocessor *pp);
+
 Token *pp_current_token(Preprocessor *pp) {
     assert(pp);
 
@@ -177,6 +179,9 @@ void pp_include(Preprocessor *pp) {
     char *path;
     char *src;
 
+    Token **saved_tokens;
+    int saved_index;
+
     /* include */
     if (strcmp(pp_current_token(pp)->text, "include") != 0) {
         fprintf(stderr, "expected include, but got %s\n",
@@ -207,9 +212,23 @@ void pp_include(Preprocessor *pp) {
     /* open file */
     pp_read_file(pp, filename->string, &path, &src);
 
-    fprintf(stderr, "#include not implemented %s, %s\n", filename->string,
-            path);
-    exit(1);
+    /* check the depth of include stack */
+    if (pp->include_stack->size >= 256) {
+        fprintf(stderr, "#include nested too deeply\n");
+        exit(1);
+    }
+
+    /* read file */
+    saved_tokens = pp->tokens;
+    saved_index = pp->index;
+
+    pp->tokens = (Token **)lex(src)->data;
+    pp->index = 0;
+
+    preprocess_lines(pp);
+
+    pp->tokens = saved_tokens;
+    pp->index = saved_index;
 }
 
 void pp_directive(Preprocessor *pp) {

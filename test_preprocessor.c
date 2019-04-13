@@ -118,4 +118,18 @@ void test_preprocessor(Vec *include_directories) {
                 {';', ";", NULL},
                 {'\0', "", NULL},
             });
+
+    test_pp("include",
+            "# define f F\n"
+            "# include \"test/test_include.h\"\n",
+            include_directories,
+            (TestSuite[]){
+                {token_int, "int", NULL},
+                {token_identifier, "F", NULL},
+                {'(', "(", NULL},
+                {token_void, "void", NULL},
+                {')', ")", NULL},
+                {';', ";", NULL},
+                {'\0', "", NULL},
+            });
 }
