@@ -69,6 +69,23 @@ void pp_concat_string(Preprocessor *pp, const Token *str) {
     t->len_string += str->len_string;
 }
 
+void pp_push_token(Preprocessor *pp, Token *t) {
+    assert(pp);
+    assert(t);
+
+    if (t->kind == '\0' || t->kind == '\n' || t->kind == ' ') {
+        return;
+    }
+
+    if (pp->result->size > 0 && t->kind == token_string &&
+        pp_last_token(pp)->kind == token_string) {
+        pp_concat_string(pp, t);
+        return;
+    }
+
+    vec_push(pp->result, t);
+}
+
 void pp_define(Preprocessor *pp) {
     Token *identifier;
     Vec *macro_tokens;
@@ -94,8 +111,8 @@ void pp_define(Preprocessor *pp) {
     /* macro contents */
     macro_tokens = vec_new();
 
-    while (pp_skip_separator(pp)->kind != '\0' &&
-           pp_skip_separator(pp)->kind != '\n') {
+    while (pp_current_token(pp)->kind != '\0' &&
+           pp_current_token(pp)->kind != '\n') {
         vec_push(macro_tokens, pp_consume_token(pp));
     }
 
@@ -151,44 +168,47 @@ void pp_directive(Preprocessor *pp) {
     }
 }
 
-void pp_string(Preprocessor *pp) {
+void pp_identifier(Preprocessor *pp) {
     Token *t;
+    Vec *macro_tokens;
+    int i;
 
-    /* string */
+    /* identifier */
     t = pp_consume_token(pp);
 
-    if (t->kind != token_string) {
-        fprintf(stderr, "expected string, but got %s\n", t->text);
+    if (t->kind != token_identifier) {
+        fprintf(stderr, "expected identifier, but got %s", t->text);
         exit(1);
     }
 
-    if (pp->result->size > 0 && pp_last_token(pp)->kind == token_string) {
-        /* concat literals if the last token is string */
-        pp_concat_string(pp, t);
-    } else {
-        vec_push(pp->result, t);
+    /* check if the identifier is a macro */
+    macro_tokens = map_get(pp->macros, t->text);
+
+    if (macro_tokens == NULL) {
+        /* identifier is not a macro */
+        pp_push_token(pp, t);
+        return;
+    }
+
+    /* expand the macro */
+    for (i = 0; i < macro_tokens->size; i++) {
+        /* TODO: expand macros recursively */
+        pp_push_token(pp, macro_tokens->data[i]);
     }
 }
 
 void preprocess_line(Preprocessor *pp) {
     switch (pp_skip_separator(pp)->kind) {
-    case '\0':
-        break;
-
-    case '\n':
-        pp_consume_token(pp);
-        break;
-
     case '#':
         pp_directive(pp);
         break;
 
-    case token_string:
-        pp_string(pp);
+    case token_identifier:
+        pp_identifier(pp);
         break;
 
     default:
-        vec_push(pp->result, pp_consume_token(pp));
+        pp_push_token(pp, pp_consume_token(pp));
         break;
     }
 }

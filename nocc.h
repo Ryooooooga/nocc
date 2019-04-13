@@ -577,7 +577,7 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p);
 FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
                                        StmtNode *body);
 
-ParserContext *sema_translation_unit_enter(const char *src);
+ParserContext *sema_translation_unit_enter(const Token **tokens);
 TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
                                                  const char *filename,
                                                  DeclNode **decls,
