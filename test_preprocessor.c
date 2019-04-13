@@ -119,11 +119,63 @@ void test_preprocessor(Vec *include_directories) {
                 {'\0', "", NULL},
             });
 
-    test_pp("include",
+    test_pp("include2",
             "# define f F\n"
             "# include \"test/test_include.h\"\n",
             include_directories,
             (TestSuite[]){
+                {token_int, "int", NULL},
+                {token_identifier, "F", NULL},
+                {'(', "(", NULL},
+                {token_void, "void", NULL},
+                {')', ")", NULL},
+                {';', ";", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("include3", "# include \"test/test_include2.h\"\n",
+            include_directories,
+            (TestSuite[]){
+                {token_int, "int", NULL},
+                {token_identifier, "F", NULL},
+                {'(', "(", NULL},
+                {token_void, "void", NULL},
+                {')', ")", NULL},
+                {';', ";", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("include4",
+            "# include \"test/test_include.h\"\n"
+            "# include \"test/test_include2.h\"\n",
+            include_directories,
+            (TestSuite[]){
+                {token_int, "int", NULL},
+                {token_identifier, "f", NULL},
+                {'(', "(", NULL},
+                {token_void, "void", NULL},
+                {')', ")", NULL},
+                {';', ";", NULL},
+                {token_int, "int", NULL},
+                {token_identifier, "F", NULL},
+                {'(', "(", NULL},
+                {token_void, "void", NULL},
+                {')', ")", NULL},
+                {';', ";", NULL},
+                {'\0', "", NULL},
+            });
+
+    test_pp("include5",
+            "# include \"test/test_include.h\"\n"
+            "# include \"test/test_include2.h\"\n",
+            vec_new(),
+            (TestSuite[]){
+                {token_int, "int", NULL},
+                {token_identifier, "f", NULL},
+                {'(', "(", NULL},
+                {token_void, "void", NULL},
+                {')', ")", NULL},
+                {';', ";", NULL},
                 {token_int, "int", NULL},
                 {token_identifier, "F", NULL},
                 {'(', "(", NULL},
