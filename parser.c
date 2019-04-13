@@ -1344,6 +1344,7 @@ DeclNode *parse_top_level(ParserContext *ctx) {
 }
 
 TranslationUnitNode *parse(const char *filename, const char *src) {
+    const Token **tokens;
     ParserContext *ctx;
     DeclNode *decl;
     Vec *decls;
@@ -1351,8 +1352,11 @@ TranslationUnitNode *parse(const char *filename, const char *src) {
     assert(filename);
     assert(src);
 
+    /* get tokens */
+    tokens = (const Token **)preprocess(filename, src)->data;
+
     /* enter translation unit */
-    ctx = sema_translation_unit_enter(src);
+    ctx = sema_translation_unit_enter(tokens);
 
     /* top level declarations */
     decls = vec_new();

@@ -87,7 +87,7 @@ void test_parsing_identifier(void) {
 }
 
 void test_parsing_call(void) {
-    Vec *toks = lex("f()");
+    Vec *toks = preprocess("test_parsing_call", "f()");
 
     ParserContext *ctx = &(ParserContext){
         .env = scope_stack_new(),
@@ -125,7 +125,7 @@ void test_parsing_call(void) {
 }
 
 void test_parsing_call_arg(void) {
-    Vec *toks = lex("f(42)");
+    Vec *toks = preprocess("test_parsing_call_arg", "f(42)");
 
     ParserContext *ctx = &(ParserContext){
         .env = scope_stack_new(),
@@ -167,7 +167,7 @@ void test_parsing_call_arg(void) {
 }
 
 void test_parsing_call_args(void) {
-    Vec *toks = lex("f(1, 2, 3)");
+    Vec *toks = preprocess("test_parsing_call_args", "f(1, 2, 3)");
 
     ParserContext *ctx = &(ParserContext){
         .env = scope_stack_new(),
@@ -490,7 +490,7 @@ void test_parsing_compound_stmt(void) {
 }
 
 void test_parsing_if_stmt(void) {
-    Vec *toks = lex("if (42) {}");
+    Vec *toks = preprocess("test_parsing_if_stmt", "if (42) {}");
 
     IfNode *p = (IfNode *)parse_stmt(&(ParserContext){
         .env = scope_stack_new(),
@@ -507,7 +507,7 @@ void test_parsing_if_stmt(void) {
 }
 
 void test_parsing_if_else_stmt(void) {
-    Vec *toks = lex("if (42) {} else 42;");
+    Vec *toks = preprocess("test_parsing_if_else_stmt", "if (42) {} else 42;");
 
     IfNode *p = (IfNode *)parse_stmt(&(ParserContext){
         .env = scope_stack_new(),
@@ -525,7 +525,7 @@ void test_parsing_if_else_stmt(void) {
 }
 
 void test_parsing_parameter(void) {
-    Vec *toks = lex("int a");
+    Vec *toks = preprocess("test_parsing_parameter", "int a");
 
     ParamNode *p = parse_param(&(ParserContext){
         .env = scope_stack_new(),
@@ -541,7 +541,8 @@ void test_parsing_parameter(void) {
 }
 
 void test_parsing_function(void) {
-    Vec *toks = lex("int main(void) { return 42; }");
+    Vec *toks =
+        preprocess("test_parsing_function", "int main(void) { return 42; }");
 
     DeclNode *p = parse_top_level(&(ParserContext){
         .env = scope_stack_new(),
@@ -566,7 +567,8 @@ void test_parsing_function(void) {
 }
 
 void test_parsing_function_prototype(void) {
-    Vec *toks = lex("int main(void);");
+    Vec *toks =
+        preprocess("test_parsing_function_prototype", "int main(void);");
 
     DeclNode *p = parse_top_level(&(ParserContext){
         .env = scope_stack_new(),
@@ -590,7 +592,7 @@ void test_parsing_function_prototype(void) {
 }
 
 void test_parsing_function_param(void) {
-    Vec *toks = lex("int main(int a);");
+    Vec *toks = preprocess("test_parsing_function_param", "int main(int a);");
 
     DeclNode *p = parse_top_level(&(ParserContext){
         .env = scope_stack_new(),
@@ -622,7 +624,8 @@ void test_parsing_function_param(void) {
 }
 
 void test_parsing_function_params(void) {
-    Vec *toks = lex("int main(int a, int b);");
+    Vec *toks =
+        preprocess("test_parsing_function_params", "int main(int a, int b);");
 
     DeclNode *p = parse_top_level(&(ParserContext){
         .env = scope_stack_new(),

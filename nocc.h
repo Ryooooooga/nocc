@@ -15,6 +15,7 @@
 
 char *str_dup(const char *s);
 char *str_dup_n(const char *s, int length);
+char *str_cat_n(const char *s1, int len1, const char *s2, int len2);
 
 struct Vec {
     int capacity;
@@ -86,6 +87,7 @@ struct Token {
 typedef struct Token Token;
 
 Vec *lex(const char *src);
+Vec *preprocess(const char *filename, const char *src);
 
 enum {
     type_void,
@@ -575,7 +577,7 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p);
 FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
                                        StmtNode *body);
 
-ParserContext *sema_translation_unit_enter(const char *src);
+ParserContext *sema_translation_unit_enter(const Token **tokens);
 TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
                                                  const char *filename,
                                                  DeclNode **decls,

@@ -55,6 +55,10 @@ char parse_literal_char(const char *src, int *index, int *line) {
         *index += 1; /* eat \ */
 
         switch (src[*index]) {
+        case '0':
+            *index += 1; /* eat 0 */
+            return '\0';
+
         case '\'':
             *index += 1; /* eat ' */
             return '\'';
@@ -92,14 +96,21 @@ Token *lex_token(const char *src, int *index, int *line) {
         line_start = *line;
         start = *index;
 
+        /* new line */
+        if (src[*index] == '\n') {
+            *line += 1;
+            *index += 1;
+
+            return token_new('\n', src + start, *index - start, line_start);
+        }
+
         /* separator */
         if (isspace(src[*index])) {
-            if (src[*index] == '\n') {
-                *line += 1;
+            while (isspace(src[*index]) && src[*index] != '\n') {
+                *index += 1;
             }
 
-            *index += 1;
-            continue;
+            return token_new(' ', src + start, *index - start, line_start);
         }
 
         /* number */
@@ -182,43 +193,51 @@ Token *lex_token(const char *src, int *index, int *line) {
 
         if (src[*index + 0] == '<' && src[*index + 1] == '=') {
             *index += 2;
-            return token_new(token_lesser_equal, src + start, 2, line_start);
+            return token_new(token_lesser_equal, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '>' && src[*index + 1] == '=') {
             *index += 2;
-            return token_new(token_greater_equal, src + start, 2, line_start);
+            return token_new(token_greater_equal, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '=' && src[*index + 1] == '=') {
             *index += 2;
-            return token_new(token_equal, src + start, 2, line_start);
+            return token_new(token_equal, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '!' && src[*index + 1] == '=') {
             *index += 2;
-            return token_new(token_not_equal, src + start, 2, line_start);
+            return token_new(token_not_equal, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '+' && src[*index + 1] == '+') {
             *index += 2;
-            return token_new(token_increment, src + start, 2, line_start);
+            return token_new(token_increment, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '-' && src[*index + 1] == '-') {
             *index += 2;
-            return token_new(token_decrement, src + start, 2, line_start);
+            return token_new(token_decrement, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '-' && src[*index + 1] == '>') {
             *index += 2;
-            return token_new(token_arrow, src + start, 2, line_start);
+            return token_new(token_arrow, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '.' && src[*index + 1] == '.' &&
             src[*index + 2] == '.') {
             *index += 3;
-            return token_new(token_var_args, src + start, 3, line_start);
+            return token_new(token_var_args, src + start, *index - start,
+                             line_start);
         }
 
         /* single character */

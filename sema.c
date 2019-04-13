@@ -1483,18 +1483,16 @@ FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
     return p;
 }
 
-ParserContext *sema_translation_unit_enter(const char *src) {
+ParserContext *sema_translation_unit_enter(const Token **tokens) {
     ParserContext *ctx;
-    Vec *tokens;
 
-    assert(src);
-
-    tokens = lex(src);
+    assert(tokens);
+    assert(*tokens);
 
     ctx = malloc(sizeof(*ctx));
     ctx->env = scope_stack_new();
     ctx->struct_env = scope_stack_new();
-    ctx->tokens = (const Token **)tokens->data;
+    ctx->tokens = tokens;
     ctx->index = 0;
     ctx->current_function = NULL;
     ctx->locals = NULL;
