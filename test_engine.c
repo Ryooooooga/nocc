@@ -496,7 +496,6 @@ void test_engine(void) {
     test_engine_run_function("array",
                              "int array(int n) {\n"
                              "  int a[3];\n"
-                             "\"a\"[0] = 0;"
                              "  a[0] = 2;\n"
                              "  a[1] = 3;\n"
                              "  a[2] = 5;\n"
