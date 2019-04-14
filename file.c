@@ -17,8 +17,9 @@ char *read_file(const char *filename) {
     size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
 
-    buffer = malloc(size);
+    buffer = malloc(size + 1);
     fread(buffer, 1, size, fp);
+    buffer[size] = '\0';
 
     fclose(fp);
 
