@@ -162,6 +162,11 @@ LLVMValueRef LLVMBuildRet(LLVMBuilderRef b, LLVMValueRef val);
 LLVMValueRef LLVMBuildBr(LLVMBuilderRef b, LLVMBasicBlockRef dest);
 LLVMValueRef LLVMBuildCondBr(LLVMBuilderRef b, LLVMValueRef if_,
                              LLVMBasicBlockRef then, LLVMBasicBlockRef else_);
+LLVMValueRef LLVMBuildSwitch(LLVMBuilderRef b, LLVMValueRef value,
+                             LLVMBasicBlockRef default_,
+                             unsigned int num_cases);
+void LLVMAddCase(LLVMValueRef switch_, LLVMValueRef case_value,
+                 LLVMBasicBlockRef dest);
 
 LLVMValueRef LLVMBuildPhi(LLVMBuilderRef b, LLVMTypeRef type, const char *name);
 void LLVMAddIncoming(LLVMValueRef phi, LLVMValueRef *incoming_values,
@@ -248,32 +253,35 @@ char *read_file(const char *filename);
 #define token_identifier 259
 #define token_if 260
 #define token_else 261
-#define token_while 262
-#define token_do 263
-#define token_for 264
-#define token_return 265
-#define token_break 266
-#define token_continue 267
-#define token_void 268
-#define token_char 269
-#define token_int 270
-#define token_long 271
-#define token_unsigned 272
-#define token_const 273
-#define token_struct 274
-#define token_typedef 275
-#define token_extern 276
-#define token_sizeof 277
-#define token_lesser_equal 278
-#define token_greater_equal 279
-#define token_equal 280
-#define token_not_equal 281
-#define token_increment 282
-#define token_decrement 283
-#define token_and 284
-#define token_or 285
-#define token_arrow 286
-#define token_var_args 287
+#define token_switch 262
+#define token_case 263
+#define token_default 264
+#define token_while 265
+#define token_do 266
+#define token_for 267
+#define token_return 268
+#define token_break 269
+#define token_continue 270
+#define token_void 271
+#define token_char 272
+#define token_int 273
+#define token_long 274
+#define token_unsigned 275
+#define token_const 276
+#define token_struct 277
+#define token_typedef 278
+#define token_extern 279
+#define token_sizeof 280
+#define token_lesser_equal 281
+#define token_greater_equal 282
+#define token_equal 283
+#define token_not_equal 284
+#define token_increment 285
+#define token_decrement 286
+#define token_and 287
+#define token_or 288
+#define token_arrow 289
+#define token_var_args 290
 
 struct Token {
     int kind;
@@ -385,20 +393,21 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
 #define node_compound 10
 #define node_return 11
 #define node_if 12
-#define node_while 13
-#define node_do 14
-#define node_for 15
-#define node_break 16
-#define node_continue 17
-#define node_decl 18
-#define node_expr 19
+#define node_switch 13
+#define node_while 14
+#define node_do 15
+#define node_for 16
+#define node_break 17
+#define node_continue 18
+#define node_decl 19
+#define node_expr 20
 
-#define node_typedef 20
-#define node_extern 21
-#define node_member 22
-#define node_variable 23
-#define node_param 24
-#define node_function 25
+#define node_typedef 21
+#define node_extern 22
+#define node_member 23
+#define node_variable 24
+#define node_param 25
+#define node_function 26
 
 typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
@@ -416,6 +425,7 @@ typedef struct StmtNode StmtNode;
 typedef struct CompoundNode CompoundNode;
 typedef struct ReturnNode ReturnNode;
 typedef struct IfNode IfNode;
+typedef struct SwitchNode SwitchNode;
 typedef struct WhileNode WhileNode;
 typedef struct DoNode DoNode;
 typedef struct ForNode ForNode;
@@ -555,6 +565,16 @@ struct IfNode {
     ExprNode *condition;
     StmtNode *then;
     StmtNode *else_;
+};
+
+struct SwitchNode {
+    int kind;
+    int line;
+    ExprNode *condition;
+    ExprNode **case_values;
+    StmtNode **cases;
+    int num_cases;
+    StmtNode *default_;
 };
 
 struct WhileNode {
@@ -751,6 +771,16 @@ void sema_if_stmt_enter_block(ParserContext *ctx);
 void sema_if_stmt_leave_block(ParserContext *ctx);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
+StmtNode *sema_switch_stmt_case(ParserContext *ctx, const Token *t,
+                                ExprNode *case_value, StmtNode **stmts,
+                                int num_stmts);
+StmtNode *sema_switch_stmt_default(ParserContext *ctx, const Token *t,
+                                   StmtNode **stmts, int num_stmts);
+void sema_switch_stmt_enter(ParserContext *ctx);
+StmtNode *sema_switch_stmt_leave(ParserContext *ctx, const Token *t,
+                                 ExprNode *condition, ExprNode **case_values,
+                                 StmtNode **cases, int num_cases,
+                                 StmtNode *default_);
 void sema_while_stmt_enter_body(ParserContext *ctx);
 StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
                                      ExprNode *condition, StmtNode *body);

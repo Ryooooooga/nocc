@@ -1051,6 +1051,117 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
     return (StmtNode *)p;
 }
 
+StmtNode *sema_switch_stmt_case(ParserContext *ctx, const Token *t,
+                                ExprNode *case_value, StmtNode **stmts,
+                                int num_stmts) {
+    CompoundNode *p;
+    int i;
+
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(case_value != NULL);
+    assert(stmts != NULL || num_stmts == 0);
+    assert(num_stmts >= 0);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_compound;
+    p->line = t->line;
+    p->stmts = malloc(sizeof(StmtNode *) * num_stmts);
+    p->num_stmts = num_stmts;
+
+    for (i = 0; i < num_stmts; i++) {
+        p->stmts[i] = stmts[i];
+    }
+
+    return (StmtNode *)p;
+}
+
+StmtNode *sema_switch_stmt_default(ParserContext *ctx, const Token *t,
+                                   StmtNode **stmts, int num_stmts) {
+    CompoundNode *p;
+    int i;
+
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(stmts != NULL || num_stmts == 0);
+    assert(num_stmts >= 0);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_compound;
+    p->line = t->line;
+    p->stmts = malloc(sizeof(StmtNode *) * num_stmts);
+    p->num_stmts = num_stmts;
+
+    for (i = 0; i < num_stmts; i++) {
+        p->stmts[i] = stmts[i];
+    }
+
+    return (StmtNode *)p;
+}
+
+void sema_switch_stmt_enter(ParserContext *ctx) {
+    /* enter switch scope */
+    sema_push_scope(ctx);
+
+    /* accept break */
+    control_flow_push_state(ctx, control_flow_state_break_bit);
+}
+
+StmtNode *sema_switch_stmt_leave(ParserContext *ctx, const Token *t,
+                                 ExprNode *condition, ExprNode **case_values,
+                                 StmtNode **cases, int num_cases,
+                                 StmtNode *default_) {
+    SwitchNode *p;
+    int i;
+
+    assert(ctx != NULL);
+    assert(t != NULL);
+    assert(condition != NULL);
+    assert(case_values != NULL || num_cases == 0);
+    assert(cases != NULL || num_cases == 0);
+    assert(num_cases >= 0);
+
+    /* pop control flow state */
+    control_flow_pop_state(ctx);
+
+    /* leave switch scope */
+    sema_pop_scope(ctx);
+
+    /* make node */
+    p = malloc(sizeof(*p));
+    p->kind = node_switch;
+    p->line = t->line;
+    p->condition = condition;
+    p->case_values = malloc(sizeof(ExprNode *) * num_cases);
+    p->cases = malloc(sizeof(StmtNode *) * num_cases);
+    p->num_cases = num_cases;
+    p->default_ = default_;
+
+    for (i = 0; i < num_cases; i++) {
+        p->case_values[i] = case_values[i];
+        p->cases[i] = cases[i];
+    }
+
+    /* type check */
+    p->condition = integer_promotion(p->condition);
+
+    if (!is_scalar_type(p->condition->type)) {
+        fprintf(stderr, "invalid type of switch condition\n");
+        exit(1);
+    }
+
+    for (i = 0; i < num_cases; i++) {
+        if (!assign_type_conversion(&p->case_values[i], p->condition->type)) {
+            fprintf(stderr, "invalid type of case condition\n");
+            exit(1);
+        }
+    }
+
+    return (StmtNode *)p;
+}
+
 void sema_while_stmt_enter_body(ParserContext *ctx) {
     assert(ctx != NULL);
 

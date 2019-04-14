@@ -780,6 +780,68 @@ bool generate_if_stmt(GeneratorContext *ctx, IfNode *p) {
     return false;
 }
 
+bool generate_switch_stmt(GeneratorContext *ctx, SwitchNode *p) {
+    LLVMValueRef switch_;
+    LLVMValueRef function;
+    LLVMValueRef condition;
+    LLVMBasicBlockRef *case_basic_blocks;
+    LLVMBasicBlockRef default_basic_block;
+    LLVMBasicBlockRef endswitch_basic_block;
+    int i;
+
+    /* generate blocks */
+    function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
+    case_basic_blocks = malloc(sizeof(LLVMBasicBlockRef) * p->num_cases);
+
+    for (i = 0; i < p->num_cases; i++) {
+        case_basic_blocks[i] = LLVMAppendBasicBlock(function, "case");
+    }
+
+    default_basic_block = LLVMAppendBasicBlock(function, "default");
+    endswitch_basic_block = LLVMAppendBasicBlock(function, "endswitch");
+
+    /* condition */
+    condition = generate_expr(ctx, p->condition);
+    switch_ = LLVMBuildSwitch(ctx->builder, condition, default_basic_block, 0);
+
+    push_break_target(ctx, endswitch_basic_block);
+
+    /* case blocks */
+    for (i = 0; i < p->num_cases; i++) {
+        /* case condition */
+        condition = generate_expr(ctx, p->case_values[i]);
+        LLVMAddCase(switch_, condition, case_basic_blocks[i]);
+
+        // case block
+        LLVMPositionBuilderAtEnd(ctx->builder, case_basic_blocks[i]);
+
+        if (!generate_stmt(ctx, p->cases[i])) {
+            /* fallthrough */
+            if (i == p->num_cases - 1) {
+                /* default block */
+                LLVMBuildBr(ctx->builder, default_basic_block);
+            } else {
+                /* next case block */
+                LLVMBuildBr(ctx->builder, case_basic_blocks[i + 1]);
+            }
+        }
+    }
+
+    /* default block */
+    LLVMPositionBuilderAtEnd(ctx->builder, default_basic_block);
+
+    if (p->default_ == NULL || !generate_stmt(ctx, p->default_)) {
+        LLVMBuildBr(ctx->builder, endswitch_basic_block);
+    }
+
+    pop_break_target(ctx);
+
+    /* end switch */
+    LLVMPositionBuilderAtEnd(ctx->builder, endswitch_basic_block);
+
+    return false;
+}
+
 bool generate_while_stmt(GeneratorContext *ctx, WhileNode *p) {
     LLVMValueRef function;
     LLVMBasicBlockRef condition_basic_block;
@@ -977,6 +1039,9 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
     case node_if:
         return generate_if_stmt(ctx, (IfNode *)p);
 
+    case node_switch:
+        return generate_switch_stmt(ctx, (SwitchNode *)p);
+
     case node_while:
         return generate_while_stmt(ctx, (WhileNode *)p);
 
@@ -1159,7 +1224,7 @@ LLVMModuleRef generate(TranslationUnitNode *p) {
     LLVMDisposeBuilder(ctx.builder);
 
     if (LLVMVerifyModule(ctx.module, LLVMReturnStatusAction, &error)) {
-        fprintf(stderr, "\n%s", error);
+        fprintf(stderr, "\n%s\n%s", LLVMPrintModuleToString(ctx.module), error);
         exit(1);
     }
 
