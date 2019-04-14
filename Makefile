@@ -14,7 +14,7 @@ all: nocc test_nocc nocc_stage3
 
 test: nocc test_nocc nocc_stage3
 	./test_nocc .
-	[ "$$(md5 -q nocc_stage2)" == "$$(md5 -q nocc_stage3)" ]
+	[ "$$(md5sum nocc_stage2 | cut -d' ' -f1)" == "$$(md5sum nocc_stage3 | cut -d' ' -f1)" ]
 
 nocc: main.o libnocc.a
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
