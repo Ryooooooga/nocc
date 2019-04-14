@@ -104,6 +104,10 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     assert(ctx != NULL);
     assert(p != NULL);
 
+    if (is_void_pointer_type(p)) {
+        return LLVMPointerType(LLVMInt8Type(), 0);
+    }
+
     switch (p->kind) {
     case type_void:
         return LLVMVoidType();

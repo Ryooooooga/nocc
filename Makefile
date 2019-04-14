@@ -1,7 +1,7 @@
 CC       := clang
 CXX      := clang++
-CFLAGS   := -std=c99 -Wall -Wextra -pedantic -Werror
-CXXFLAGS := -std=c++17 -Wall -Wextra -pedantic -Werror
+CFLAGS   := -std=c99 -Wall -Wextra -pedantic -Werror -Wno-override-module
+CXXFLAGS := -std=c++17 -Wall -Wextra -pedantic -Werror -Wno-override-module
 LDFLAGS  :=
 
 CFLAGS   += $(addprefix -I,$(shell llvm-config --includedir))
