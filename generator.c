@@ -248,6 +248,11 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
     case '&':
         return generate_expr_addr(ctx, p->operand);
 
+    case '!':
+        operand = generate_expr(ctx, p->operand);
+        value = LLVMBuildIsNull(ctx->builder, operand, "not");
+        return LLVMBuildZExt(ctx->builder, value, LLVMInt32Type(), "not_i32");
+
     case token_increment:
     case token_decrement:
         operand = generate_expr_addr(ctx, p->operand);

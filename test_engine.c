@@ -802,6 +802,14 @@ void test_engine(void) {
                              "  return a;\n"
                              "}\n",
                              "switch7", 0, 20);
+
+    test_engine_run_function("not1",
+                             "int not1(int n) {\n"
+                             "  return !0 == 1 &&\n"
+                             "         !1 == 0 &&\n"
+                             "         !2 == 0;\n"
+                             "}\n",
+                             "not1", 0, 1);
 }
 
 int test_extern = 24;

@@ -686,6 +686,18 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         p->type = pointer_type_new(p->operand->type);
         break;
 
+    case '!':
+        p->operand = integer_promotion(p->operand);
+
+        if (!is_scalar_type(p->operand->type)) {
+            fprintf(stderr, "invalid operand type of unary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = type_get_int32();
+        break;
+
     case token_increment:
     case token_decrement:
         if (!operand->is_lvalue) {
