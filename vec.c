@@ -1,7 +1,9 @@
 #include "nocc.h"
 
 Vec *vec_new(void) {
-    Vec *v = malloc(sizeof(*v));
+    Vec *v;
+
+    v = malloc(sizeof(*v));
     v->capacity = 8;
     v->size = 0;
     v->data = malloc(sizeof(void *) * v->capacity);

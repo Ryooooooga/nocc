@@ -823,7 +823,7 @@ bool generate_switch_stmt(GeneratorContext *ctx, SwitchNode *p) {
         condition = generate_expr(ctx, p->case_values[i]);
         LLVMAddCase(switch_, condition, case_basic_blocks[i]);
 
-        // case block
+        /* case block */
         LLVMPositionBuilderAtEnd(ctx->builder, case_basic_blocks[i]);
 
         if (!generate_stmt(ctx, p->cases[i])) {
@@ -1178,9 +1178,7 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
         if (return_type == LLVMVoidType()) {
             LLVMBuildRetVoid(ctx->builder);
         } else if (return_type == LLVMInt32Type()) {
-            LLVMBuildRet(
-                ctx->builder,
-                LLVMConstInt(return_type, (unsigned long long)-1, true));
+            LLVMBuildRet(ctx->builder, LLVMConstInt(return_type, -1, true));
         } else {
             fprintf(stderr, "unknown return type");
             exit(1);
