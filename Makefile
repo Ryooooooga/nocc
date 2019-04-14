@@ -10,10 +10,11 @@ LDFLAGS  += $(shell llvm-config --ldflags --system-libs --libs core support anal
 
 .PHONY: all test clean
 
-all: nocc test_nocc nocc_stage2
+all: nocc test_nocc nocc_stage3
 
-test: nocc test_nocc nocc_stage2
+test: nocc test_nocc nocc_stage3
 	./test_nocc .
+	[ "$$(md5 -q nocc_stage2)" == "$$(md5 -q nocc_stage3)" ]
 
 nocc: main.o libnocc.a
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
@@ -27,11 +28,17 @@ libnocc.a: file.o generator.o lexer.o map.o parser.o path.o preprocessor.o sema.
 nocc_stage2: file-2.ll generator-2.ll lexer-2.ll map-2.ll parser-2.ll path-2.ll preprocessor-2.ll sema-2.ll scope_stack-2.ll type-2.ll util-2.ll vec-2.ll main-2.ll
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
 
+nocc_stage3: file-3.ll generator-3.ll lexer-3.ll map-3.ll parser-3.ll path-3.ll preprocessor-3.ll sema-3.ll scope_stack-3.ll type-3.ll util-3.ll vec-3.ll main-3.ll
+	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
+
 %.o: %.c nocc.h
 	${CC} ${CFLAGS} -c -o $@ $<
 
 %-2.ll: %.c nocc.h nocc
 	./nocc $< > $@
+
+%-3.ll: %.c nocc.h nocc_stage2
+	./nocc_stage2 $< > $@
 
 clean:
 	${RM} nocc test_nocc *.a *.o *.ll
