@@ -1177,11 +1177,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     if (!is_terminated) {
         if (return_type == LLVMVoidType()) {
             LLVMBuildRetVoid(ctx->builder);
-        } else if (return_type == LLVMInt32Type()) {
-            LLVMBuildRet(ctx->builder, LLVMConstInt(return_type, -1, true));
         } else {
-            fprintf(stderr, "unknown return type");
-            exit(1);
+            LLVMBuildRet(ctx->builder, LLVMConstNull(return_type));
         }
     }
 
