@@ -104,6 +104,10 @@ LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p) {
     assert(ctx != NULL);
     assert(p != NULL);
 
+    if (is_void_pointer_type(p)) {
+        return LLVMPointerType(LLVMInt8Type(), 0);
+    }
+
     switch (p->kind) {
     case type_void:
         return LLVMVoidType();
@@ -247,6 +251,11 @@ LLVMValueRef generate_unary_expr(GeneratorContext *ctx, UnaryNode *p) {
 
     case '&':
         return generate_expr_addr(ctx, p->operand);
+
+    case '!':
+        operand = generate_expr(ctx, p->operand);
+        value = LLVMBuildIsNull(ctx->builder, operand, "not");
+        return LLVMBuildZExt(ctx->builder, value, LLVMInt32Type(), "not_i32");
 
     case token_increment:
     case token_decrement:
@@ -404,14 +413,13 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
     LLVMValueRef cmp;
     LLVMValueRef function;
-    LLVMBasicBlockRef current_basic_block;
+    LLVMBasicBlockRef lhs_basic_block;
     LLVMBasicBlockRef rhs_basic_block;
     LLVMBasicBlockRef merge_basic_block;
 
     switch (p->operator_) {
     case token_and:
-        current_basic_block = LLVMGetInsertBlock(ctx->builder);
-        function = LLVMGetBasicBlockParent(current_basic_block);
+        function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
 
         rhs_basic_block = LLVMAppendBasicBlock(function, "andrhs");
         merge_basic_block = LLVMAppendBasicBlock(function, "andmerge");
@@ -422,6 +430,8 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
         LLVMBuildCondBr(ctx->builder, left, rhs_basic_block, merge_basic_block);
 
+        lhs_basic_block = LLVMGetInsertBlock(ctx->builder);
+
         /* right hand side */
         LLVMPositionBuilderAtEnd(ctx->builder, rhs_basic_block);
         right = generate_expr(ctx, p->right);
@@ -429,18 +439,19 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
         LLVMBuildBr(ctx->builder, merge_basic_block);
 
+        rhs_basic_block = LLVMGetInsertBlock(ctx->builder);
+
         /* merge */
         LLVMPositionBuilderAtEnd(ctx->builder, merge_basic_block);
 
         cmp = LLVMBuildPhi(ctx->builder, LLVMInt1Type(), "andphi");
-        LLVMAddIncoming(cmp, &left, &current_basic_block, 1);
+        LLVMAddIncoming(cmp, &left, &lhs_basic_block, 1);
         LLVMAddIncoming(cmp, &right, &rhs_basic_block, 1);
 
         return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "and");
 
     case token_or:
-        current_basic_block = LLVMGetInsertBlock(ctx->builder);
-        function = LLVMGetBasicBlockParent(current_basic_block);
+        function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
 
         rhs_basic_block = LLVMAppendBasicBlock(function, "orrhs");
         merge_basic_block = LLVMAppendBasicBlock(function, "ormerge");
@@ -451,6 +462,8 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
         LLVMBuildCondBr(ctx->builder, left, merge_basic_block, rhs_basic_block);
 
+        lhs_basic_block = LLVMGetInsertBlock(ctx->builder);
+
         /* right hand side */
         LLVMPositionBuilderAtEnd(ctx->builder, rhs_basic_block);
         right = generate_expr(ctx, p->right);
@@ -458,11 +471,13 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
         LLVMBuildBr(ctx->builder, merge_basic_block);
 
+        rhs_basic_block = LLVMGetInsertBlock(ctx->builder);
+
         /* merge */
         LLVMPositionBuilderAtEnd(ctx->builder, merge_basic_block);
 
         cmp = LLVMBuildPhi(ctx->builder, LLVMInt1Type(), "orphi");
-        LLVMAddIncoming(cmp, &left, &current_basic_block, 1);
+        LLVMAddIncoming(cmp, &left, &lhs_basic_block, 1);
         LLVMAddIncoming(cmp, &right, &rhs_basic_block, 1);
 
         return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "or");
@@ -578,6 +593,15 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
 
         cmp = LLVMBuildICmp(ctx->builder, LLVMIntNE, left, right, "cmp");
         return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
+
+    case '&':
+        return LLVMBuildAnd(ctx->builder, left, right, "and");
+
+    case '^':
+        return LLVMBuildXor(ctx->builder, left, right, "xor");
+
+    case '|':
+        return LLVMBuildOr(ctx->builder, left, right, "or");
 
     default:
         fprintf(stderr, "unknown binary operator %d\n", p->operator_);
@@ -812,7 +836,7 @@ bool generate_switch_stmt(GeneratorContext *ctx, SwitchNode *p) {
         condition = generate_expr(ctx, p->case_values[i]);
         LLVMAddCase(switch_, condition, case_basic_blocks[i]);
 
-        // case block
+        /* case block */
         LLVMPositionBuilderAtEnd(ctx->builder, case_basic_blocks[i]);
 
         if (!generate_stmt(ctx, p->cases[i])) {
@@ -1166,13 +1190,8 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
     if (!is_terminated) {
         if (return_type == LLVMVoidType()) {
             LLVMBuildRetVoid(ctx->builder);
-        } else if (return_type == LLVMInt32Type()) {
-            LLVMBuildRet(
-                ctx->builder,
-                LLVMConstInt(return_type, (unsigned long long)-1, true));
         } else {
-            fprintf(stderr, "unknown return type");
-            exit(1);
+            LLVMBuildRet(ctx->builder, LLVMConstNull(return_type));
         }
     }
 

@@ -37,7 +37,7 @@ Token *pp_consume_token(Preprocessor *pp) {
     t = pp_current_token(pp);
 
     if (t->kind != '\0') {
-        pp->index += 1;
+        pp->index++;
     }
 
     return t;
@@ -116,7 +116,7 @@ void pp_concat_string(Preprocessor *pp, const Token *str) {
     t->text = str_cat_n(t->text, text_len1, str->text + 1, text_len2);
     t->string =
         str_cat_n(t->string, t->len_string, str->string, str->len_string);
-    t->len_string += str->len_string;
+    t->len_string = t->len_string + str->len_string;
 }
 
 void pp_expand_macro(Preprocessor *pp, Token *t) {

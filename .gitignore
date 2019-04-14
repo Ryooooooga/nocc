@@ -7,4 +7,6 @@
 *.out
 
 nocc
+nocc_stage2
+nocc_stage3
 test_nocc

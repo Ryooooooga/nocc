@@ -1,10 +1,8 @@
 #include "nocc.h"
 
-enum {
-    control_flow_state_none = 0,
-    control_flow_state_break_bit = 1,
-    control_flow_state_continue_bit = 2,
-};
+#define control_flow_state_none 0
+#define control_flow_state_break_bit 1
+#define control_flow_state_continue_bit 2
 
 void sema_push_scope(ParserContext *ctx) {
     assert(ctx != NULL);
@@ -303,8 +301,11 @@ StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
 
     /* redefinition check */
     if (!p->is_incomplete) {
-        fprintf(stderr, "redefinition of struct %s\n",
-                p->identifier ? p->identifier : "<anonymous>");
+        if (p->identifier) {
+            fprintf(stderr, "redefinition of struct %s\n", p->identifier);
+        } else {
+            fprintf(stderr, "redefinition of struct %s\n", "<anonymous>");
+        }
         exit(1);
     }
 
@@ -686,6 +687,18 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         p->type = pointer_type_new(p->operand->type);
         break;
 
+    case '!':
+        p->operand = integer_promotion(p->operand);
+
+        if (!is_scalar_type(p->operand->type)) {
+            fprintf(stderr, "invalid operand type of unary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = type_get_int32();
+        break;
+
     case token_increment:
     case token_decrement:
         if (!operand->is_lvalue) {
@@ -887,6 +900,21 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         }
 
         p->type = type_get_int32();
+        break;
+
+    case '&':
+    case '^':
+    case '|':
+        /* bitwise operator */
+        usual_arithmetic_conversion(&p->left, &p->right);
+
+        if (!is_int32_type(p->left->type) || !is_int32_type(p->right->type)) {
+            fprintf(stderr, "invalid operand type of binary operator %s\n",
+                    t->text);
+            exit(1);
+        }
+
+        p->type = p->left->type;
         break;
 
     case token_and:

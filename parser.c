@@ -572,6 +572,7 @@ ExprNode *parse_unary_expr(ParserContext *ctx) {
     case '-':
     case '*':
     case '&':
+    case '!':
     case token_increment:
     case token_decrement:
         /* unary operator */
@@ -691,7 +692,7 @@ ExprNode *parse_equality_expr(ParserContext *ctx) {
     return left;
 }
 
-ExprNode *parse_logical_and_expr(ParserContext *ctx) {
+ExprNode *parse_bitwise_and_expr(ParserContext *ctx) {
     const Token *t;
     ExprNode *left;
     ExprNode *right;
@@ -699,12 +700,78 @@ ExprNode *parse_logical_and_expr(ParserContext *ctx) {
     /* equality expression */
     left = parse_equality_expr(ctx);
 
-    while (current_token(ctx)->kind == token_and) {
-        /* && */
+    while (current_token(ctx)->kind == '&') {
+        /* & */
         t = consume_token(ctx);
 
         /* equality expression */
         right = parse_equality_expr(ctx);
+
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
+    }
+
+    return left;
+}
+
+ExprNode *parse_bitwise_xor_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    /* bitwise and expression */
+    left = parse_bitwise_and_expr(ctx);
+
+    while (current_token(ctx)->kind == '^') {
+        /* ^ */
+        t = consume_token(ctx);
+
+        /* bitwise and expression */
+        right = parse_bitwise_and_expr(ctx);
+
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
+    }
+
+    return left;
+}
+
+ExprNode *parse_bitwise_or_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    /* bitwise xor expression */
+    left = parse_bitwise_xor_expr(ctx);
+
+    while (current_token(ctx)->kind == '|') {
+        /* | */
+        t = consume_token(ctx);
+
+        /* bitwise xor expression */
+        right = parse_bitwise_xor_expr(ctx);
+
+        /* make node */
+        left = sema_binary_expr(ctx, left, t, right);
+    }
+
+    return left;
+}
+
+ExprNode *parse_logical_and_expr(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *left;
+    ExprNode *right;
+
+    /* bitwise or expression */
+    left = parse_bitwise_or_expr(ctx);
+
+    while (current_token(ctx)->kind == token_and) {
+        /* && */
+        t = consume_token(ctx);
+
+        /* bitwise or expression */
+        right = parse_bitwise_or_expr(ctx);
 
         /* make node */
         left = sema_binary_expr(ctx, left, t, right);

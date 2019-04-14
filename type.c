@@ -1,19 +1,30 @@
 #include "nocc.h"
 
-Type void_ = {type_void};
-Type int8 = {type_int8};
-Type int32 = {type_int32};
-
 Type *type_get_void(void) {
-    return &void_;
+    Type *t;
+
+    t = malloc(sizeof(*t));
+    t->kind = type_void;
+
+    return t;
 }
 
 Type *type_get_int8(void) {
-    return &int8;
+    Type *t;
+
+    t = malloc(sizeof(*t));
+    t->kind = type_int8;
+
+    return t;
 }
 
 Type *type_get_int32(void) {
-    return &int32;
+    Type *t;
+
+    t = malloc(sizeof(*t));
+    t->kind = type_int32;
+
+    return t;
 }
 
 Type *pointer_type_new(Type *element_type) {
@@ -81,6 +92,7 @@ bool type_equals(Type *a, Type *b) {
 
     switch (a->kind) {
     case type_void:
+    case type_int8:
     case type_int32:
         return true;
 
