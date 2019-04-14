@@ -810,6 +810,24 @@ void test_engine(void) {
                              "         !2 == 0;\n"
                              "}\n",
                              "not1", 0, 1);
+
+    test_engine_run_function("bit_or",
+                             "int bit_or(int n) {\n"
+                             "  return 107 | 55;\n"
+                             "}\n",
+                             "bit_or", 0, 107 | 55);
+
+    test_engine_run_function("bit_xor",
+                             "int bit_xor(int n) {\n"
+                             "  return 107 ^ 55;\n"
+                             "}\n",
+                             "bit_xor", 0, 107 ^ 55);
+
+    test_engine_run_function("bit_and",
+                             "int bit_and(int n) {\n"
+                             "  return 107 & 55;\n"
+                             "}\n",
+                             "bit_and", 0, 107 & 55);
 }
 
 int test_extern = 24;

@@ -590,6 +590,15 @@ LLVMValueRef generate_binary_expr(GeneratorContext *ctx, BinaryNode *p) {
         cmp = LLVMBuildICmp(ctx->builder, LLVMIntNE, left, right, "cmp");
         return LLVMBuildZExt(ctx->builder, cmp, LLVMInt32Type(), "cmp_i32");
 
+    case '&':
+        return LLVMBuildAnd(ctx->builder, left, right, "and");
+
+    case '^':
+        return LLVMBuildXor(ctx->builder, left, right, "xor");
+
+    case '|':
+        return LLVMBuildOr(ctx->builder, left, right, "or");
+
     default:
         fprintf(stderr, "unknown binary operator %d\n", p->operator_);
         exit(1);

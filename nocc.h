@@ -126,6 +126,12 @@ LLVMValueRef LLVMBuildSRem(LLVMBuilderRef b, LLVMValueRef left,
                            LLVMValueRef right, const char *name);
 LLVMValueRef LLVMBuildPtrDiff(LLVMBuilderRef b, LLVMValueRef left,
                               LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildAnd(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildOr(LLVMBuilderRef b, LLVMValueRef left,
+                         LLVMValueRef right, const char *name);
+LLVMValueRef LLVMBuildXor(LLVMBuilderRef b, LLVMValueRef left,
+                          LLVMValueRef right, const char *name);
 LLVMValueRef LLVMBuildNeg(LLVMBuilderRef b, LLVMValueRef val, const char *name);
 LLVMValueRef LLVMBuildTrunc(LLVMBuilderRef b, LLVMValueRef val,
                             LLVMTypeRef type, const char *name);
