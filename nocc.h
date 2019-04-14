@@ -388,20 +388,21 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
 #define node_compound 10
 #define node_return 11
 #define node_if 12
-#define node_while 13
-#define node_do 14
-#define node_for 15
-#define node_break 16
-#define node_continue 17
-#define node_decl 18
-#define node_expr 19
+#define node_switch 13
+#define node_while 14
+#define node_do 15
+#define node_for 16
+#define node_break 17
+#define node_continue 18
+#define node_decl 19
+#define node_expr 20
 
-#define node_typedef 20
-#define node_extern 21
-#define node_member 22
-#define node_variable 23
-#define node_param 24
-#define node_function 25
+#define node_typedef 21
+#define node_extern 22
+#define node_member 23
+#define node_variable 24
+#define node_param 25
+#define node_function 26
 
 typedef struct ExprNode ExprNode;
 typedef struct IntegerNode IntegerNode;
@@ -765,6 +766,16 @@ void sema_if_stmt_enter_block(ParserContext *ctx);
 void sema_if_stmt_leave_block(ParserContext *ctx);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
                        StmtNode *then, StmtNode *else_);
+StmtNode *sema_switch_stmt_case(ParserContext *ctx, const Token *t,
+                                ExprNode *case_value, StmtNode **stmts,
+                                int num_stmts);
+StmtNode *sema_switch_stmt_default(ParserContext *ctx, const Token *t,
+                                   StmtNode **stmts, int num_stmts);
+void sema_switch_stmt_enter(ParserContext *ctx);
+StmtNode *sema_switch_stmt_leave(ParserContext *ctx, const Token *t,
+                                 ExprNode *condition, ExprNode **case_values,
+                                 StmtNode **cases, int num_cases,
+                                 StmtNode *default_);
 void sema_while_stmt_enter_body(ParserContext *ctx);
 StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
                                      ExprNode *condition, StmtNode *body);

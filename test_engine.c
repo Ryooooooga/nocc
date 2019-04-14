@@ -784,6 +784,24 @@ void test_engine(void) {
                              "  return a;\n"
                              "}\n",
                              "switch6", 1, 20);
+
+    test_engine_run_function("switch7",
+                             "int switch7(int n) {\n"
+                             "  int a;\n"
+                             "  a = 0;\n"
+                             "  switch (n) {\n"
+                             "  case 0:\n"
+                             "    a = 10;\n"
+                             "  case 1:\n"
+                             "    a = 20;\n"
+                             "    break;\n"
+                             "  default:\n"
+                             "    a = -99;\n"
+                             "    break;\n"
+                             "  }\n"
+                             "  return a;\n"
+                             "}\n",
+                             "switch7", 0, 20);
 }
 
 int test_extern = 24;

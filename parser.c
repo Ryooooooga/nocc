@@ -879,6 +879,141 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
     return sema_if_stmt(ctx, t, condition, then, else_);
 }
 
+void parse_switch_stmt_case(ParserContext *ctx, ExprNode **case_value,
+                            StmtNode **case_) {
+    const Token *t;
+    Vec *stmts;
+
+    /* case */
+    t = consume_token(ctx);
+
+    if (t->kind != token_case) {
+        fprintf(stderr, "expected case, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* expression */
+    *case_value = parse_expr(ctx);
+
+    /* : */
+    if (current_token(ctx)->kind != ':') {
+        fprintf(stderr, "expected :, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* statement* */
+    stmts = vec_new();
+
+    while (current_token(ctx)->kind != '}' &&
+           current_token(ctx)->kind != token_case &&
+           current_token(ctx)->kind != token_default) {
+        vec_push(stmts, parse_stmt(ctx));
+    }
+
+    /* make node */
+    *case_ = sema_switch_stmt_case(ctx, t, *case_value,
+                                   (StmtNode **)stmts->data, stmts->size);
+}
+
+StmtNode *parse_switch_stmt_default(ParserContext *ctx) {
+    const Token *t;
+    Vec *stmts;
+
+    /* default */
+    t = consume_token(ctx);
+
+    if (t->kind != token_default) {
+        fprintf(stderr, "expected default, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* : */
+    if (current_token(ctx)->kind != ':') {
+        fprintf(stderr, "expected :, but got %s\n", current_token(ctx)->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* statement* */
+    stmts = vec_new();
+
+    while (current_token(ctx)->kind != '}' &&
+           current_token(ctx)->kind != token_case &&
+           current_token(ctx)->kind != token_default) {
+        vec_push(stmts, parse_stmt(ctx));
+    }
+
+    /* make node */
+    return sema_switch_stmt_default(ctx, t, (StmtNode **)stmts->data,
+                                    stmts->size);
+}
+
+StmtNode *parse_switch_stmt(ParserContext *ctx) {
+    const Token *t;
+    ExprNode *condition;
+    Vec *case_values;
+    Vec *cases;
+    StmtNode *default_;
+
+    /* switch */
+    t = consume_token(ctx);
+
+    if (t->kind != token_switch) {
+        fprintf(stderr, "expected switch, but got %s\n", t->text);
+        exit(1);
+    }
+
+    /* expression */
+    condition = parse_paren_expr(ctx);
+
+    /* enter switch scope */
+    sema_switch_stmt_enter(ctx);
+
+    /* { */
+    if (current_token(ctx)->kind != '{') {
+        fprintf(stderr, "expected {, but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* switch labels */
+    case_values = vec_new();
+    cases = vec_new();
+    default_ = NULL;
+
+    while (current_token(ctx)->kind != '}') {
+        if (current_token(ctx)->kind == token_case) {
+            ExprNode *case_value;
+            StmtNode *case_;
+
+            /* case label */
+            parse_switch_stmt_case(ctx, &case_value, &case_);
+
+            vec_push(case_values, case_value);
+            vec_push(cases, case_);
+        } else if (current_token(ctx)->kind == token_default) {
+            /* default label */
+            default_ = parse_switch_stmt_default(ctx);
+            break;
+        } else {
+            break;
+        }
+    }
+
+    /* } */
+    if (current_token(ctx)->kind != '}') {
+        fprintf(stderr, "expected }, but got %s\n", t->text);
+        exit(1);
+    }
+    consume_token(ctx);
+
+    /* leave switch scope and make node */
+    return sema_switch_stmt_leave(
+        ctx, t, condition, (ExprNode **)case_values->data,
+        (StmtNode **)cases->data, cases->size, default_);
+}
+
 StmtNode *parse_while_stmt(ParserContext *ctx) {
     const Token *t;
     ExprNode *condition;
@@ -1116,6 +1251,9 @@ StmtNode *parse_stmt(ParserContext *ctx) {
 
     case token_if:
         return parse_if_stmt(ctx);
+
+    case token_switch:
+        return parse_switch_stmt(ctx);
 
     case token_while:
         return parse_while_stmt(ctx);
