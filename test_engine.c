@@ -697,6 +697,93 @@ void test_engine(void) {
                              "  return a == 0;\n"
                              "}\n",
                              "shortcircuit4", 0, 1);
+
+    test_engine_run_function("switch1",
+                             "int switch1(int n) {\n"
+                             "  switch (n) {\n"
+                             "  }\n"
+                             "  return n;\n"
+                             "}\n",
+                             "switch1", 42, 42);
+
+    test_engine_run_function("switch2",
+                             "int switch2(int n) {\n"
+                             "  int a;\n"
+                             "  a = 0;\n"
+                             "  switch (n) {\n"
+                             "  case 0:\n"
+                             "    a = 10;\n"
+                             "    break;\n"
+                             "    a = -1;\n"
+                             "  }\n"
+                             "  return a;\n"
+                             "}\n",
+                             "switch2", 0, 10);
+
+    test_engine_run_function("switch3",
+                             "int switch3(int n) {\n"
+                             "  int a;\n"
+                             "  a = 0;\n"
+                             "  switch (n) {\n"
+                             "  case 0:\n"
+                             "    a = 10;\n"
+                             "    break;\n"
+                             "    a = -1;\n"
+                             "  }\n"
+                             "  return a;\n"
+                             "}\n",
+                             "switch3", 1, 0);
+
+    test_engine_run_function("switch4",
+                             "int switch4(int n) {\n"
+                             "  int a;\n"
+                             "  a = 0;\n"
+                             "  switch (n) {\n"
+                             "  case 0:\n"
+                             "    a = 10;\n"
+                             "    break;\n"
+                             "  default:\n"
+                             "    a = -99;\n"
+                             "    break;\n"
+                             "  }\n"
+                             "  return a;\n"
+                             "}\n",
+                             "switch4", 0, 10);
+
+    test_engine_run_function("switch5",
+                             "int switch5(int n) {\n"
+                             "  int a;\n"
+                             "  a = 0;\n"
+                             "  switch (n) {\n"
+                             "  case 0:\n"
+                             "    a = 10;\n"
+                             "    break;\n"
+                             "  default:\n"
+                             "    a = -99;\n"
+                             "    break;\n"
+                             "  }\n"
+                             "  return a;\n"
+                             "}\n",
+                             "switch5", 1, -99);
+
+    test_engine_run_function("switch6",
+                             "int switch6(int n) {\n"
+                             "  int a;\n"
+                             "  a = 0;\n"
+                             "  switch (n) {\n"
+                             "  case 0:\n"
+                             "    a = 10;\n"
+                             "    break;\n"
+                             "  case 1:\n"
+                             "    a = 20;\n"
+                             "    break;\n"
+                             "  default:\n"
+                             "    a = -99;\n"
+                             "    break;\n"
+                             "  }\n"
+                             "  return a;\n"
+                             "}\n",
+                             "switch6", 1, 20);
 }
 
 int test_extern = 24;
