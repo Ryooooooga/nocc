@@ -162,6 +162,11 @@ LLVMValueRef LLVMBuildRet(LLVMBuilderRef b, LLVMValueRef val);
 LLVMValueRef LLVMBuildBr(LLVMBuilderRef b, LLVMBasicBlockRef dest);
 LLVMValueRef LLVMBuildCondBr(LLVMBuilderRef b, LLVMValueRef if_,
                              LLVMBasicBlockRef then, LLVMBasicBlockRef else_);
+LLVMValueRef LLVMBuildSwitch(LLVMBuilderRef b, LLVMValueRef value,
+                             LLVMBasicBlockRef default_,
+                             unsigned int num_cases);
+void LLVMAddCase(LLVMValueRef switch_, LLVMValueRef case_value,
+                 LLVMBasicBlockRef dest);
 
 LLVMValueRef LLVMBuildPhi(LLVMBuilderRef b, LLVMTypeRef type, const char *name);
 void LLVMAddIncoming(LLVMValueRef phi, LLVMValueRef *incoming_values,
