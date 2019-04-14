@@ -16,7 +16,7 @@ char *path_join(const char *dir, const char *filename) {
     }
 
     if (dir_len > 0 && dir[dir_len - 1] == '/') {
-        dir_len -= 1;
+        dir_len--;
     }
 
     path = malloc(sizeof(char) * (dir_len + 1 + name_len + 1));
@@ -36,7 +36,7 @@ char *path_dir(const char *path) {
     len = strlen(path);
 
     while (len > 0 && path[len - 1] != '/') {
-        len -= 1;
+        len--;
     }
 
     return str_dup_n(path, len);

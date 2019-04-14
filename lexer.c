@@ -62,27 +62,27 @@ char parse_literal_char(const char *src, int *index, int *line) {
         exit(1);
 
     case '\\':
-        *index += 1; /* eat \ */
+        (*index)++; /* eat \ */
 
         switch (src[*index]) {
         case '0':
-            *index += 1; /* eat 0 */
+            (*index)++; /* eat 0 */
             return '\0';
 
         case '\'':
-            *index += 1; /* eat ' */
+            (*index)++; /* eat ' */
             return '\'';
 
         case '\"':
-            *index += 1; /* eat " */
+            (*index)++; /* eat " */
             return '\"';
 
         case 'n':
-            *index += 1; /* eat n */
+            (*index)++; /* eat n */
             return '\n';
 
         case '\\':
-            *index += 1; /* eat \ */
+            (*index)++; /* eat \ */
             return '\\';
 
         default:
@@ -92,7 +92,7 @@ char parse_literal_char(const char *src, int *index, int *line) {
 
     default:
         c = src[*index];
-        *index += 1; /* eat c */
+        (*index)++; /* eat c */
         return c;
     }
 }
@@ -112,8 +112,8 @@ Token *lex_token(const char *src, int *index, int *line) {
 
         /* new line */
         if (src[*index] == '\n') {
-            *line += 1;
-            *index += 1;
+            (*line)++;
+            (*index)++;
 
             return token_new('\n', src + start, *index - start, line_start);
         }
@@ -121,7 +121,7 @@ Token *lex_token(const char *src, int *index, int *line) {
         /* separator */
         if (isspace(src[*index])) {
             while (isspace(src[*index]) && src[*index] != '\n') {
-                *index += 1;
+                (*index)++;
             }
 
             return token_new(' ', src + start, *index - start, line_start);
@@ -129,17 +129,17 @@ Token *lex_token(const char *src, int *index, int *line) {
 
         /* comment */
         if (src[*index + 0] == '/' && src[*index + 1] == '*') {
-            *index += 2; /* eat '/' '*' */
+            *index = *index + 2; /* eat '/' '*' */
 
             while (!(src[*index + 0] == '*' && src[*index + 1] == '/')) {
                 if (src[*index] == '\n') {
-                    *line += 1;
+                    (*line)++;
                 }
 
-                *index += 1;
+                (*index)++;
             }
 
-            *index += 2; /* eat '*' '/' */
+            *index = *index + 2; /* eat '*' '/' */
 
             return token_new(' ', " ", 1, line_start);
         }
@@ -148,7 +148,7 @@ Token *lex_token(const char *src, int *index, int *line) {
         if (isdigit(src[*index])) {
             /* [0-9]+ */
             while (isdigit(src[*index])) {
-                *index += 1;
+                (*index)++;
             }
 
             return token_new(token_number, src + start, *index - start,
@@ -159,7 +159,7 @@ Token *lex_token(const char *src, int *index, int *line) {
         if (src[*index] == '\'') {
             char c;
 
-            *index += 1; /* eat ' */
+            (*index)++; /* eat ' */
 
             /* character literal contents */
             c = parse_literal_char(src, index, line);
@@ -170,7 +170,7 @@ Token *lex_token(const char *src, int *index, int *line) {
                 exit(1);
             }
 
-            *index += 1; /* eat ' */
+            (*index)++; /* eat ' */
 
             return character_token_new(c, src + start, *index - start,
                                        line_start);
@@ -180,7 +180,7 @@ Token *lex_token(const char *src, int *index, int *line) {
         if (src[*index] == '\"') {
             Vec *chars;
 
-            *index += 1; /* eat " */
+            (*index)++; /* eat " */
 
             /* string literal contents */
             chars = vec_new();
@@ -190,7 +190,7 @@ Token *lex_token(const char *src, int *index, int *line) {
                                                                      line));
             }
 
-            *index += 1; /* eat " */
+            (*index)++; /* eat " */
 
             return string_token_new(chars, src + start, *index - start,
                                     line_start);
@@ -202,7 +202,7 @@ Token *lex_token(const char *src, int *index, int *line) {
 
             /* [0-9A-Z_a-z]+ */
             while (isalnum(src[*index]) || (src[*index] == '_')) {
-                *index += 1;
+                (*index)++;
             }
 
             t = token_new(token_identifier, src + start, *index - start,
@@ -256,68 +256,68 @@ Token *lex_token(const char *src, int *index, int *line) {
         }
 
         if (src[*index + 0] == '<' && src[*index + 1] == '=') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_lesser_equal, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '>' && src[*index + 1] == '=') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_greater_equal, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '=' && src[*index + 1] == '=') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_equal, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '!' && src[*index + 1] == '=') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_not_equal, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '+' && src[*index + 1] == '+') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_increment, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '-' && src[*index + 1] == '-') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_decrement, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '&' && src[*index + 1] == '&') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_and, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '|' && src[*index + 1] == '|') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_or, src + start, *index - start, line_start);
         }
 
         if (src[*index + 0] == '-' && src[*index + 1] == '>') {
-            *index += 2;
+            *index = *index + 2;
             return token_new(token_arrow, src + start, *index - start,
                              line_start);
         }
 
         if (src[*index + 0] == '.' && src[*index + 1] == '.' &&
             src[*index + 2] == '.') {
-            *index += 3;
+            *index = *index + 3;
             return token_new(token_var_args, src + start, *index - start,
                              line_start);
         }
 
         /* single character */
         kind = src[start];
-        *index += 1;
+        (*index)++;
 
         return token_new(kind, src + start, 1, line_start);
     }
