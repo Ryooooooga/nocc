@@ -774,7 +774,7 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
                                    StmtNode **stmts, int num_stmts,
                                    const Token *close);
 StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
-                           ExprNode *return_value, const Token *semi);
+                           ExprNode *return_value);
 void sema_if_stmt_enter_block(ParserContext *ctx);
 void sema_if_stmt_leave_block(ParserContext *ctx);
 StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,

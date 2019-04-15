@@ -25,6 +25,28 @@ const Token *consume_token(ParserContext *ctx) {
     return ctx->tokens[ctx->index++];
 }
 
+const Token *consume_token_if(ParserContext *ctx, int kind) {
+    assert(ctx != NULL);
+
+    if (current_token(ctx)->kind == kind) {
+        return consume_token(ctx);
+    }
+
+    return NULL;
+}
+
+const Token *expect_token(ParserContext *ctx, int expected_token_kind) {
+    assert(ctx != NULL);
+
+    if (current_token(ctx)->kind == expected_token_kind) {
+        return consume_token(ctx);
+    }
+
+    fprintf(stderr, "expected %d, but got %s\n", expected_token_kind,
+            current_token(ctx)->text); /* TODO: better error message */
+    exit(1);
+}
+
 bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     DeclNode *symbol;
 
@@ -73,11 +95,7 @@ MemberNode *parse_struct_member(ParserContext *ctx) {
     parse_declarator(ctx, &type, &t);
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     /* make node */
     return sema_struct_member(ctx, type, t);
@@ -87,11 +105,7 @@ Type *parse_identifier_type(ParserContext *ctx) {
     const Token *t;
 
     /* identifier */
-    t = consume_token(ctx);
-
-    if (t->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", t->text);
-    }
+    t = expect_token(ctx, token_identifier);
 
     /* get type */
     return sema_identifier_type(ctx, t);
@@ -105,26 +119,15 @@ Type *parse_struct_type(ParserContext *ctx) {
     Vec *members;
 
     /* struct */
-    t = consume_token(ctx);
-
-    if (t->kind != token_struct) {
-        fprintf(stderr, "expected struct, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_struct);
 
     /* identifier */
-    identifier = consume_token(ctx);
+    identifier = expect_token(ctx, token_identifier);
 
-    if (identifier->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
-        exit(1);
-    }
-
-    /* { */
-    if (current_token(ctx)->kind != '{') {
+    /* {? */
+    if (consume_token_if(ctx, '{') == NULL) {
         return sema_struct_type_without_body(ctx, t, identifier);
     }
-    consume_token(ctx);
 
     /* register symbol and enter struct scope */
     type = sema_struct_type_enter(ctx, t, identifier);
@@ -137,11 +140,7 @@ Type *parse_struct_type(ParserContext *ctx) {
     }
 
     /* } */
-    if (current_token(ctx)->kind != '}') {
-        fprintf(stderr, "expected }, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, '}');
 
     /* leave struct scope and make node */
     return sema_struct_type_leave(ctx, type, (MemberNode **)members->data,
@@ -151,20 +150,20 @@ Type *parse_struct_type(ParserContext *ctx) {
 Type *parse_primary_type(ParserContext *ctx) {
     switch (current_token(ctx)->kind) {
     case token_void:
-        consume_token(ctx); /* eat void */
+        expect_token(ctx, token_void);
         return type_get_void();
 
     case token_char:
-        consume_token(ctx); /* eat char */
+        expect_token(ctx, token_char);
         return type_get_int8();
 
     case token_unsigned:
-        consume_token(ctx);             /* eat long */
+        expect_token(ctx, token_unsigned);
         return parse_primary_type(ctx); /* TODO: unsigned type */
 
     case token_int:
     case token_long:        /* TODO: long type */
-        consume_token(ctx); /* eat int */
+        consume_token(ctx); /* eat int or long */
         return type_get_int32();
 
     case token_identifier:
@@ -187,13 +186,7 @@ Type *parse_type(ParserContext *ctx) {
     assert(ctx != NULL);
 
     /* const? */
-    is_const = false;
-
-    if (current_token(ctx)->kind == token_const) {
-        consume_token(ctx); /* eat const */
-
-        is_const = true;
-    }
+    is_const = consume_token_if(ctx, token_const) != NULL;
 
     /* primary type */
     type = parse_primary_type(ctx);
@@ -202,10 +195,7 @@ Type *parse_type(ParserContext *ctx) {
     (void)is_const;
 
     /* pointer type */
-    while (current_token(ctx)->kind == '*') {
-        /* * */
-        consume_token(ctx);
-
+    while (consume_token_if(ctx, '*') != NULL) {
         type = pointer_type_new(type);
     }
 
@@ -218,23 +208,13 @@ ExprNode *parse_paren_expr(ParserContext *ctx) {
     ExprNode *expr;
 
     /* ( */
-    open = consume_token(ctx);
-
-    if (open->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", open->text);
-        exit(1);
-    }
+    open = expect_token(ctx, '(');
 
     /* expression */
     expr = parse_expr(ctx);
 
     /* ) */
-    close = consume_token(ctx);
-
-    if (close->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", close->text);
-        exit(1);
-    }
+    close = expect_token(ctx, ')');
 
     /* make node */
     return sema_paren_expr(ctx, open, expr, close);
@@ -245,12 +225,7 @@ ExprNode *parse_number_expr(ParserContext *ctx) {
     long value;
 
     /* number */
-    t = consume_token(ctx);
-
-    if (t->kind != token_number) {
-        fprintf(stderr, "expected number, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_number);
 
     /* convert */
     errno = 0;
@@ -269,12 +244,7 @@ ExprNode *parse_character_expr(ParserContext *ctx) {
     const Token *t;
 
     /* character */
-    t = consume_token(ctx);
-
-    if (t->kind != token_character) {
-        fprintf(stderr, "expected character, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_character);
 
     /* make node */
     return sema_integer_expr(ctx, t, t->string[0]);
@@ -284,12 +254,7 @@ ExprNode *parse_string_expr(ParserContext *ctx) {
     const Token *t;
 
     /* string */
-    t = consume_token(ctx);
-
-    if (t->kind != token_string) {
-        fprintf(stderr, "expected string, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_string);
 
     /* make node */
     return sema_string_expr(ctx, t, t->string, t->len_string);
@@ -299,12 +264,7 @@ ExprNode *parse_identifier_expr(ParserContext *ctx) {
     const Token *t;
 
     /* identifier */
-    t = consume_token(ctx);
-
-    if (t->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_identifier);
 
     /* make node */
     return sema_identifier_expr(ctx, t);
@@ -340,12 +300,7 @@ ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
     Vec *args;
 
     /* ( */
-    open = consume_token(ctx);
-
-    if (open->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", open->text);
-        exit(1);
-    }
+    open = expect_token(ctx, '(');
 
     /* argument list */
     args = vec_new();
@@ -355,22 +310,14 @@ ExprNode *parse_call_expr(ParserContext *ctx, ExprNode *callee) {
         vec_push(args, parse_assign_expr(ctx));
 
         /* {, expression} */
-        while (current_token(ctx)->kind == ',') {
-            /* , */
-            consume_token(ctx);
-
+        while (consume_token_if(ctx, ',') != NULL) {
             /* expression */
             vec_push(args, parse_assign_expr(ctx));
         }
     }
 
     /* ) */
-    close = consume_token(ctx);
-
-    if (close->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", close->text);
-        exit(1);
-    }
+    close = expect_token(ctx, ')');
 
     /* make node */
     return sema_call_expr(ctx, callee, open, (ExprNode **)args->data,
@@ -382,22 +329,13 @@ ExprNode *parse_index_expr(ParserContext *ctx, ExprNode *operand) {
     ExprNode *index;
 
     /* [ */
-    t = consume_token(ctx);
-
-    if (t->kind != '[') {
-        fprintf(stderr, "expected [, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, '[');
 
     /* expression */
     index = parse_expr(ctx);
 
     /* ] */
-    if (current_token(ctx)->kind != ']') {
-        fprintf(stderr, "expected ], but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ']');
 
     return sema_binary_expr(ctx, operand, t, index);
 }
@@ -407,20 +345,10 @@ ExprNode *parse_dot_expr(ParserContext *ctx, ExprNode *parent) {
     const Token *identifier;
 
     /* . */
-    t = consume_token(ctx);
-
-    if (t->kind != '.') {
-        fprintf(stderr, "expected ., but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, '.');
 
     /* identifier */
-    identifier = consume_token(ctx);
-
-    if (identifier->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
-        exit(1);
-    }
+    identifier = expect_token(ctx, token_identifier);
 
     /* make node */
     return sema_dot_expr(ctx, parent, t, identifier);
@@ -431,20 +359,10 @@ ExprNode *parse_arrow_expr(ParserContext *ctx, ExprNode *parent) {
     const Token *identifier;
 
     /* -> */
-    t = consume_token(ctx);
-
-    if (t->kind != token_arrow) {
-        fprintf(stderr, "expected ->, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_arrow);
 
     /* identifier */
-    identifier = consume_token(ctx);
-
-    if (identifier->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", identifier->text);
-        exit(1);
-    }
+    identifier = expect_token(ctx, token_identifier);
 
     /* make node */
     return sema_arrow_expr(ctx, parent, t, identifier);
@@ -493,23 +411,13 @@ ExprNode *parse_cast_expr(ParserContext *ctx) {
     ExprNode *operand;
 
     /* ( */
-    open = consume_token(ctx);
-
-    if (open->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", open->text);
-        exit(1);
-    }
+    open = expect_token(ctx, '(');
 
     /* type */
     type = parse_type(ctx);
 
     /* ) */
-    close = consume_token(ctx);
-
-    if (close->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", close->text);
-        exit(1);
-    }
+    close = expect_token(ctx, ')');
 
     /* unary expression */
     operand = parse_unary_expr(ctx);
@@ -523,29 +431,19 @@ ExprNode *parse_sizeof_expr(ParserContext *ctx) {
     Type *type;
 
     /* sizeof */
-    t = consume_token(ctx);
-
-    if (t->kind != token_sizeof) {
-        fprintf(stderr, "expected sizeof, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_sizeof);
 
     if (current_token(ctx)->kind == '(' &&
         is_type_specifier_token(ctx, peek_token(ctx))) {
         /* sizeof ( type ) */
         /* ( */
-        consume_token(ctx);
+        expect_token(ctx, '(');
 
         /* type */
         type = parse_type(ctx);
 
         /* ) */
-        if (current_token(ctx)->kind != ')') {
-            fprintf(stderr, "expected ), but got %s\n",
-                    current_token(ctx)->text);
-            exit(1);
-        }
-        consume_token(ctx);
+        expect_token(ctx, ')');
 
         /* make node */
         return sema_sizeof_expr(ctx, t, type);
@@ -702,7 +600,7 @@ ExprNode *parse_bitwise_and_expr(ParserContext *ctx) {
 
     while (current_token(ctx)->kind == '&') {
         /* & */
-        t = consume_token(ctx);
+        t = expect_token(ctx, '&');
 
         /* equality expression */
         right = parse_equality_expr(ctx);
@@ -724,7 +622,7 @@ ExprNode *parse_bitwise_xor_expr(ParserContext *ctx) {
 
     while (current_token(ctx)->kind == '^') {
         /* ^ */
-        t = consume_token(ctx);
+        t = expect_token(ctx, '^');
 
         /* bitwise and expression */
         right = parse_bitwise_and_expr(ctx);
@@ -746,7 +644,7 @@ ExprNode *parse_bitwise_or_expr(ParserContext *ctx) {
 
     while (current_token(ctx)->kind == '|') {
         /* | */
-        t = consume_token(ctx);
+        t = expect_token(ctx, '|');
 
         /* bitwise xor expression */
         right = parse_bitwise_xor_expr(ctx);
@@ -768,7 +666,7 @@ ExprNode *parse_logical_and_expr(ParserContext *ctx) {
 
     while (current_token(ctx)->kind == token_and) {
         /* && */
-        t = consume_token(ctx);
+        t = expect_token(ctx, token_and);
 
         /* bitwise or expression */
         right = parse_bitwise_or_expr(ctx);
@@ -790,7 +688,7 @@ ExprNode *parse_logical_or_expr(ParserContext *ctx) {
 
     while (current_token(ctx)->kind == token_or) {
         /* || */
-        t = consume_token(ctx);
+        t = expect_token(ctx, token_or);
 
         /* logical and expression */
         right = parse_logical_and_expr(ctx);
@@ -817,7 +715,7 @@ ExprNode *parse_assign_expr(ParserContext *ctx) {
         return left;
     }
 
-    t = consume_token(ctx);
+    t = expect_token(ctx, '=');
 
     /* assignment expression */
     right = parse_assign_expr(ctx);
@@ -841,12 +739,7 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
     sema_compound_stmt_enter(ctx);
 
     /* { */
-    open = consume_token(ctx);
-
-    if (open->kind != '{') {
-        fprintf(stderr, "expected {, but got %s\n", open->text);
-        exit(1);
-    }
+    open = expect_token(ctx, '{');
 
     /* {statement} */
     stmts = vec_new();
@@ -856,12 +749,7 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
     }
 
     /* } */
-    close = consume_token(ctx);
-
-    if (close->kind != '}') {
-        fprintf(stderr, "expected }, but got %s\n", close->text);
-        exit(1);
-    }
+    close = expect_token(ctx, '}');
 
     /* make node and leave scope */
     return sema_compound_stmt_leave(ctx, open, (StmtNode **)stmts->data,
@@ -870,34 +758,24 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
 
 StmtNode *parse_return_stmt(ParserContext *ctx) {
     const Token *t;
-    const Token *semi;
     ExprNode *return_value;
 
     /* return */
-    t = consume_token(ctx);
+    t = expect_token(ctx, token_return);
 
-    if (t->kind != token_return) {
-        fprintf(stderr, "expected return, but got %s\n", t->text);
-        exit(1);
+    /* ;? */
+    if (consume_token_if(ctx, ';') != NULL) {
+        return sema_return_stmt(ctx, t, NULL);
     }
 
     /* expression */
-    return_value = NULL;
-
-    if (current_token(ctx)->kind != ';') {
-        return_value = parse_expr(ctx);
-    }
+    return_value = parse_expr(ctx);
 
     /* ; */
-    semi = consume_token(ctx);
-
-    if (semi->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", semi->text);
-        exit(1);
-    }
+    expect_token(ctx, ';');
 
     /* make node */
-    return sema_return_stmt(ctx, t, return_value, semi);
+    return sema_return_stmt(ctx, t, return_value);
 }
 
 StmtNode *parse_if_stmt(ParserContext *ctx) {
@@ -907,12 +785,7 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
     StmtNode *else_;
 
     /* if */
-    t = consume_token(ctx);
-
-    if (t->kind != token_if) {
-        fprintf(stderr, "expected if, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_if);
 
     /* ( expression ) */
     condition = parse_paren_expr(ctx);
@@ -926,21 +799,19 @@ StmtNode *parse_if_stmt(ParserContext *ctx) {
     /* leave then scope */
     sema_if_stmt_leave_block(ctx);
 
-    /* else */
-    else_ = NULL;
-
-    if (current_token(ctx)->kind == token_else) {
-        consume_token(ctx);
-
-        /* enter else scope */
-        sema_if_stmt_enter_block(ctx);
-
-        /* statement */
-        else_ = parse_stmt(ctx);
-
-        /* leave else scope */
-        sema_if_stmt_leave_block(ctx);
+    /* else? */
+    if (consume_token_if(ctx, token_else) == NULL) {
+        return sema_if_stmt(ctx, t, condition, then, NULL);
     }
+
+    /* enter else scope */
+    sema_if_stmt_enter_block(ctx);
+
+    /* statement */
+    else_ = parse_stmt(ctx);
+
+    /* leave else scope */
+    sema_if_stmt_leave_block(ctx);
 
     /* make node */
     return sema_if_stmt(ctx, t, condition, then, else_);
@@ -952,22 +823,13 @@ void parse_switch_stmt_case(ParserContext *ctx, ExprNode **case_value,
     Vec *stmts;
 
     /* case */
-    t = consume_token(ctx);
-
-    if (t->kind != token_case) {
-        fprintf(stderr, "expected case, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_case);
 
     /* expression */
     *case_value = parse_expr(ctx);
 
     /* : */
-    if (current_token(ctx)->kind != ':') {
-        fprintf(stderr, "expected :, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ':');
 
     /* statement* */
     stmts = vec_new();
@@ -988,19 +850,10 @@ StmtNode *parse_switch_stmt_default(ParserContext *ctx) {
     Vec *stmts;
 
     /* default */
-    t = consume_token(ctx);
-
-    if (t->kind != token_default) {
-        fprintf(stderr, "expected default, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_default);
 
     /* : */
-    if (current_token(ctx)->kind != ':') {
-        fprintf(stderr, "expected :, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ':');
 
     /* statement* */
     stmts = vec_new();
@@ -1024,12 +877,7 @@ StmtNode *parse_switch_stmt(ParserContext *ctx) {
     StmtNode *default_;
 
     /* switch */
-    t = consume_token(ctx);
-
-    if (t->kind != token_switch) {
-        fprintf(stderr, "expected switch, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_switch);
 
     /* expression */
     condition = parse_paren_expr(ctx);
@@ -1038,11 +886,7 @@ StmtNode *parse_switch_stmt(ParserContext *ctx) {
     sema_switch_stmt_enter(ctx);
 
     /* { */
-    if (current_token(ctx)->kind != '{') {
-        fprintf(stderr, "expected {, but got %s\n", t->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, '{');
 
     /* switch labels */
     case_values = vec_new();
@@ -1069,11 +913,7 @@ StmtNode *parse_switch_stmt(ParserContext *ctx) {
     }
 
     /* } */
-    if (current_token(ctx)->kind != '}') {
-        fprintf(stderr, "expected }, but got %s\n", t->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, '}');
 
     /* leave switch scope and make node */
     return sema_switch_stmt_leave(
@@ -1087,12 +927,7 @@ StmtNode *parse_while_stmt(ParserContext *ctx) {
     StmtNode *body;
 
     /* while */
-    t = consume_token(ctx);
-
-    if (t->kind != token_while) {
-        fprintf(stderr, "expected while, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_while);
 
     /* ( expression ) */
     condition = parse_paren_expr(ctx);
@@ -1113,12 +948,7 @@ StmtNode *parse_do_stmt(ParserContext *ctx) {
     ExprNode *condition;
 
     /* do */
-    t = consume_token(ctx);
-
-    if (t->kind != token_do) {
-        fprintf(stderr, "expected do, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_do);
 
     /* enter body scope */
     sema_do_stmt_enter_body(ctx);
@@ -1130,22 +960,13 @@ StmtNode *parse_do_stmt(ParserContext *ctx) {
     sema_do_stmt_leave_body(ctx);
 
     /* while */
-    if (current_token(ctx)->kind != token_while) {
-        fprintf(stderr, "expected while, but got %s\n",
-                current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, token_while);
 
     /* ( expression ) */
     condition = parse_paren_expr(ctx);
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     /* leave body scope and make node */
     return sema_do_stmt(ctx, t, body, condition);
@@ -1159,19 +980,10 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
     StmtNode *body;
 
     /* for */
-    t = consume_token(ctx);
-
-    if (t->kind != token_for) {
-        fprintf(stderr, "expected for, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_for);
 
     /* ( */
-    if (current_token(ctx)->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, '(');
 
     /* initialization expression */
     initialization = NULL;
@@ -1181,11 +993,7 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
     }
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     /* condition expression */
     condition = NULL;
@@ -1195,11 +1003,7 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
     }
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     /* continuation expression */
     continuation = NULL;
@@ -1209,11 +1013,7 @@ StmtNode *parse_for_stmt(ParserContext *ctx) {
     }
 
     /* ) */
-    if (current_token(ctx)->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ')');
 
     /* enter body scope */
     sema_for_stmt_enter_body(ctx);
@@ -1230,19 +1030,10 @@ StmtNode *parse_break_stmt(ParserContext *ctx) {
     const Token *t;
 
     /* break */
-    t = consume_token(ctx);
-
-    if (t->kind != token_break) {
-        fprintf(stderr, "expected break, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_break);
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     return sema_break_stmt(ctx, t);
 }
@@ -1251,19 +1042,10 @@ StmtNode *parse_continue_stmt(ParserContext *ctx) {
     const Token *t;
 
     /* continue */
-    t = consume_token(ctx);
-
-    if (t->kind != token_continue) {
-        fprintf(stderr, "expected continue, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_continue);
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     return sema_continue_stmt(ctx, t);
 }
@@ -1276,12 +1058,7 @@ StmtNode *parse_decl_stmt(ParserContext *ctx) {
     decl = parse_decl(ctx);
 
     /* ; */
-    t = consume_token(ctx);
-
-    if (t->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, ';');
 
     /* make node */
     return sema_decl_stmt(ctx, decl, t);
@@ -1295,12 +1072,7 @@ StmtNode *parse_expr_stmt(ParserContext *ctx) {
     expr = parse_expr(ctx);
 
     /* ; */
-    t = consume_token(ctx);
-
-    if (t->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, ';');
 
     /* make node */
     return sema_expr_stmt(ctx, expr, t);
@@ -1350,7 +1122,7 @@ void parse_direct_declarator(ParserContext *ctx, Type **type, const Token **t) {
 
     switch (current_token(ctx)->kind) {
     case token_identifier:
-        *t = consume_token(ctx);
+        *t = expect_token(ctx, token_identifier);
         break;
 
     default:
@@ -1366,21 +1138,13 @@ void parse_array_declarator(ParserContext *ctx, Type **type, const Token **t) {
     (void)t;
 
     /* [ */
-    if (current_token(ctx)->kind != '[') {
-        fprintf(stderr, "expected [, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, '[');
 
     /* expression */
     size = parse_expr(ctx);
 
     /* ] */
-    if (current_token(ctx)->kind != ']') {
-        fprintf(stderr, "expected ], but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ']');
 
     /* postfix declarator */
     parse_postfix_declarator(ctx, type, t);
@@ -1417,12 +1181,7 @@ DeclNode *parse_typedef(ParserContext *ctx) {
     Type *type;
 
     /* typedef */
-    t = consume_token(ctx);
-
-    if (t->kind != token_typedef) {
-        fprintf(stderr, "expected typedef, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_typedef);
 
     /* type */
     type = parse_type(ctx);
@@ -1496,11 +1255,7 @@ DeclNode *parse_top_level_typedef(ParserContext *ctx) {
     decl = parse_typedef(ctx);
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     return decl;
 }
@@ -1511,12 +1266,7 @@ DeclNode *parse_extern(ParserContext *ctx) {
     Type *type;
 
     /* extern */
-    t = consume_token(ctx);
-
-    if (t->kind != token_extern) {
-        fprintf(stderr, "expected extern, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_extern);
 
     /* type */
     type = parse_type(ctx);
@@ -1525,11 +1275,7 @@ DeclNode *parse_extern(ParserContext *ctx) {
     parse_declarator(ctx, &type, &identifier);
 
     /* ; */
-    if (current_token(ctx)->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ';');
 
     /* make node and register symbol */
     return sema_extern(ctx, t, type, identifier);
@@ -1548,9 +1294,7 @@ DeclNode *parse_function(ParserContext *ctx) {
     return_type = parse_type(ctx);
 
     /* ;? */
-    if (current_token(ctx)->kind == ';') {
-        consume_token(ctx);
-
+    if (consume_token_if(ctx, ';') != NULL) {
         return NULL;
     }
 
@@ -1560,31 +1304,17 @@ DeclNode *parse_function(ParserContext *ctx) {
         parse_declarator(ctx, &return_type, &t);
 
         /* ; */
-        if (current_token(ctx)->kind != ';') {
-            fprintf(stderr, "expected ;, but got %s\n",
-                    current_token(ctx)->text);
-            exit(1);
-        }
-        consume_token(ctx);
+        expect_token(ctx, ';');
 
         /* variable declaration */
         return sema_var_decl(ctx, return_type, t);
     }
 
     /* identifier */
-    t = consume_token(ctx);
-
-    if (t->kind != token_identifier) {
-        fprintf(stderr, "expected identifier, but got %s\n", t->text);
-        exit(1);
-    }
+    t = expect_token(ctx, token_identifier);
 
     /* ( */
-    if (current_token(ctx)->kind != '(') {
-        fprintf(stderr, "expected (, but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, '(');
 
     /* enter parameter scope */
     sema_function_enter_params(ctx);
@@ -1602,13 +1332,9 @@ DeclNode *parse_function(ParserContext *ctx) {
         /* param */
         vec_push(params, parse_param(ctx));
 
-        while (current_token(ctx)->kind == ',') {
-            /* , */
-            consume_token(ctx);
-
-            if (current_token(ctx)->kind == token_var_args) {
-                consume_token(ctx); /* eat ... */
-
+        while (consume_token_if(ctx, ',') != NULL) {
+            /* ...? */
+            if (consume_token_if(ctx, token_var_args) != NULL) {
                 var_args = true;
                 break;
             }
@@ -1619,20 +1345,15 @@ DeclNode *parse_function(ParserContext *ctx) {
     }
 
     /* ) */
-    if (current_token(ctx)->kind != ')') {
-        fprintf(stderr, "expected ), but got %s\n", current_token(ctx)->text);
-        exit(1);
-    }
-    consume_token(ctx);
+    expect_token(ctx, ')');
 
     /* leave parameter scope and make node */
     p = sema_function_leave_params(ctx, return_type, t,
                                    (ParamNode **)params->data, params->size,
                                    var_args);
 
-    if (current_token(ctx)->kind == ';') {
-        consume_token(ctx); /* eat ; */
-
+    /* ;? */
+    if (consume_token_if(ctx, ';') != NULL) {
         return (DeclNode *)p;
     }
 

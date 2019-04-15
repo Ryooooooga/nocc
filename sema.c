@@ -1005,14 +1005,13 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
 }
 
 StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
-                           ExprNode *return_value, const Token *semi) {
+                           ExprNode *return_value) {
     ReturnNode *p;
     Type *return_type;
 
     assert(ctx != NULL);
     assert(ctx->current_function != NULL);
     assert(t != NULL);
-    assert(semi != NULL);
 
     p = malloc(sizeof(*p));
     p->kind = node_return;
