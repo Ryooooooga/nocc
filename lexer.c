@@ -198,61 +198,13 @@ Token *lex_token(const char *src, int *index, int *line) {
 
         /* identifier */
         if (isalpha(src[*index]) || (src[*index] == '_')) {
-            Token *t;
-
             /* [0-9A-Z_a-z]+ */
             while (isalnum(src[*index]) || (src[*index] == '_')) {
                 (*index)++;
             }
 
-            t = token_new(token_identifier, src + start, *index - start,
-                          line_start);
-
-            if (strcmp(t->text, "if") == 0) {
-                t->kind = token_if;
-            } else if (strcmp(t->text, "else") == 0) {
-                t->kind = token_else;
-            } else if (strcmp(t->text, "switch") == 0) {
-                t->kind = token_switch;
-            } else if (strcmp(t->text, "case") == 0) {
-                t->kind = token_case;
-            } else if (strcmp(t->text, "default") == 0) {
-                t->kind = token_default;
-            } else if (strcmp(t->text, "while") == 0) {
-                t->kind = token_while;
-            } else if (strcmp(t->text, "do") == 0) {
-                t->kind = token_do;
-            } else if (strcmp(t->text, "for") == 0) {
-                t->kind = token_for;
-            } else if (strcmp(t->text, "return") == 0) {
-                t->kind = token_return;
-            } else if (strcmp(t->text, "break") == 0) {
-                t->kind = token_break;
-            } else if (strcmp(t->text, "continue") == 0) {
-                t->kind = token_continue;
-            } else if (strcmp(t->text, "void") == 0) {
-                t->kind = token_void;
-            } else if (strcmp(t->text, "char") == 0) {
-                t->kind = token_char;
-            } else if (strcmp(t->text, "int") == 0) {
-                t->kind = token_int;
-            } else if (strcmp(t->text, "long") == 0) {
-                t->kind = token_long;
-            } else if (strcmp(t->text, "unsigned") == 0) {
-                t->kind = token_unsigned;
-            } else if (strcmp(t->text, "const") == 0) {
-                t->kind = token_const;
-            } else if (strcmp(t->text, "struct") == 0) {
-                t->kind = token_struct;
-            } else if (strcmp(t->text, "typedef") == 0) {
-                t->kind = token_typedef;
-            } else if (strcmp(t->text, "extern") == 0) {
-                t->kind = token_extern;
-            } else if (strcmp(t->text, "sizeof") == 0) {
-                t->kind = token_sizeof;
-            }
-
-            return t;
+            return token_new(token_identifier, src + start, *index - start,
+                             line_start);
         }
 
         if (src[*index + 0] == '<' && src[*index + 1] == '=') {
