@@ -758,29 +758,24 @@ StmtNode *parse_compound_stmt(ParserContext *ctx) {
 
 StmtNode *parse_return_stmt(ParserContext *ctx) {
     const Token *t;
-    const Token *semi;
     ExprNode *return_value;
 
     /* return */
     t = expect_token(ctx, token_return);
 
-    /* expression */
-    return_value = NULL;
-
-    if (current_token(ctx)->kind != ';') {
-        return_value = parse_expr(ctx);
+    /* ;? */
+    if (consume_token_if(ctx, ';') != NULL) {
+        return sema_return_stmt(ctx, t, NULL);
     }
+
+    /* expression */
+    return_value = parse_expr(ctx);
 
     /* ; */
-    semi = consume_token(ctx);
-
-    if (semi->kind != ';') {
-        fprintf(stderr, "expected ;, but got %s\n", semi->text);
-        exit(1);
-    }
+    expect_token(ctx, ';');
 
     /* make node */
-    return sema_return_stmt(ctx, t, return_value, semi);
+    return sema_return_stmt(ctx, t, return_value);
 }
 
 StmtNode *parse_if_stmt(ParserContext *ctx) {
