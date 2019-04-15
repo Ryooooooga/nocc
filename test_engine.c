@@ -560,29 +560,29 @@ void test_engine(void) {
                              "}\n",
                              "arrow", 42, 42);
 
-    extern int test_extern;
-    test_extern = 42;
-    test_engine_run_function("extern",
-                             "extern int test_extern;\n"
-                             "int extern_(int n) {\n"
-                             "  if (test_extern != 42) return 0;\n"
-                             "  test_extern = 33;\n"
-                             "  return test_extern;\n"
-                             "}\n",
-                             "extern_", 0, 33);
-    assert(test_extern == 33);
+    // extern int test_extern;
+    // test_extern = 42;
+    // test_engine_run_function("extern",
+    //                          "extern int test_extern;\n"
+    //                          "int extern_(int n) {\n"
+    //                          "  if (test_extern != 42) return 0;\n"
+    //                          "  test_extern = 33;\n"
+    //                          "  return test_extern;\n"
+    //                          "}\n",
+    //                          "extern_", 0, 33);
+    // assert(test_extern == 33);
 
-    test_extern = 42;
-    test_engine_run_function("extern2",
-                             "extern int test_extern;\n"
-                             "extern int test_extern;\n"
-                             "int extern2(int n) {\n"
-                             "  if (test_extern != 42) return 0;\n"
-                             "  test_extern = 33;\n"
-                             "  return test_extern;\n"
-                             "}\n",
-                             "extern2", 0, 33);
-    assert(test_extern == 33);
+    // test_extern = 42;
+    // test_engine_run_function("extern2",
+    //                          "extern int test_extern;\n"
+    //                          "extern int test_extern;\n"
+    //                          "int extern2(int n) {\n"
+    //                          "  if (test_extern != 42) return 0;\n"
+    //                          "  test_extern = 33;\n"
+    //                          "  return test_extern;\n"
+    //                          "}\n",
+    //                          "extern2", 0, 33);
+    // assert(test_extern == 33);
 
     test_engine_run_function("extern3",
                              "extern int test_extern3;\n"
