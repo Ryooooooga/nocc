@@ -173,6 +173,9 @@ bool is_incomplete_type(Type *t) {
     case type_function:
         return true;
 
+    case type_array:
+        return is_incomplete_type(array_element_type(t));
+
     case type_struct:
         return ((StructType *)t)->is_incomplete;
 
