@@ -7,6 +7,7 @@ struct Preprocessor {
     Vec *include_directories;
     Vec *include_stack;
     Map *macros;
+    Map *keywords;
 };
 
 typedef struct Preprocessor Preprocessor;
@@ -128,6 +129,11 @@ void pp_expand_macro(Preprocessor *pp, Token *t) {
 
     if (macro_tokens == NULL) {
         /* identifier is not a macro */
+        /* check keywords */
+        if (map_contains(pp->keywords, t->text)) {
+            t->kind = (intptr_t)map_get(pp->keywords, t->text);
+        }
+
         vec_push(pp->result, t);
         return;
     }
@@ -490,6 +496,30 @@ Vec *preprocess(const char *filename, const char *src,
     pp.include_directories = include_directories;
     pp.include_stack = vec_new();
     pp.macros = map_new();
+    pp.keywords = map_new();
+
+    /* keywords */
+    map_add(pp.keywords, "if", (void *)(intptr_t)token_if);
+    map_add(pp.keywords, "else", (void *)(intptr_t)token_else);
+    map_add(pp.keywords, "switch", (void *)(intptr_t)token_switch);
+    map_add(pp.keywords, "case", (void *)(intptr_t)token_case);
+    map_add(pp.keywords, "default", (void *)(intptr_t)token_default);
+    map_add(pp.keywords, "while", (void *)(intptr_t)token_while);
+    map_add(pp.keywords, "do", (void *)(intptr_t)token_do);
+    map_add(pp.keywords, "for", (void *)(intptr_t)token_for);
+    map_add(pp.keywords, "return", (void *)(intptr_t)token_return);
+    map_add(pp.keywords, "break", (void *)(intptr_t)token_break);
+    map_add(pp.keywords, "continue", (void *)(intptr_t)token_continue);
+    map_add(pp.keywords, "void", (void *)(intptr_t)token_void);
+    map_add(pp.keywords, "char", (void *)(intptr_t)token_char);
+    map_add(pp.keywords, "int", (void *)(intptr_t)token_int);
+    map_add(pp.keywords, "long", (void *)(intptr_t)token_long);
+    map_add(pp.keywords, "unsigned", (void *)(intptr_t)token_unsigned);
+    map_add(pp.keywords, "const", (void *)(intptr_t)token_const);
+    map_add(pp.keywords, "struct", (void *)(intptr_t)token_struct);
+    map_add(pp.keywords, "typedef", (void *)(intptr_t)token_typedef);
+    map_add(pp.keywords, "extern", (void *)(intptr_t)token_extern);
+    map_add(pp.keywords, "sizeof", (void *)(intptr_t)token_sizeof);
 
     vec_push(pp.include_stack, (char *)filename);
 

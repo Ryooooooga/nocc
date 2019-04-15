@@ -60,6 +60,14 @@ void test_preprocessor(Vec *include_directories) {
                 {'\0', "", NULL},
             });
 
+    test_pp("keywords", "if int if0", vec_new(),
+            (TestSuite[]){
+                {token_if, "if", NULL},
+                {token_int, "int", NULL},
+                {token_identifier, "if0", NULL},
+                {'\0', "", NULL},
+            });
+
     test_pp("string", "\"hell\" \"o, \"\n\"world\"\n", vec_new(),
             (TestSuite[]){
                 {token_string, "\"hello, world\"", "hello, world"},
@@ -104,6 +112,15 @@ void test_preprocessor(Vec *include_directories) {
                 {token_string, "\"xab\"", "xab"},
                 {token_identifier, "c", NULL},
                 {token_string, "\"dy\"", "dy"},
+                {'\0', "", NULL},
+            });
+
+    test_pp("define4",
+            "# define if else\n"
+            "if",
+            vec_new(),
+            (TestSuite[]){
+                {token_else, "else", NULL},
                 {'\0', "", NULL},
             });
 

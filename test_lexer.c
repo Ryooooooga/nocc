@@ -72,7 +72,7 @@ void test_lexer(void) {
                                       });
 
     test_tokens("if (x<=y==true) {\n}", (TokenTestSuite[]){
-                                            {token_if, "if", 1, NULL},
+                                            {token_identifier, "if", 1, NULL},
                                             {' ', " ", 1, NULL},
                                             {'(', "(", 1, NULL},
                                             {token_identifier, "x", 1, NULL},
