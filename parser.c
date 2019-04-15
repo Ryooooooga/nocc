@@ -42,7 +42,8 @@ const Token *expect_token(ParserContext *ctx, int expected_token_kind) {
         return consume_token(ctx);
     }
 
-    fprintf(stderr, "expected %d, but got %s\n", expected_token_kind,
+    fprintf(stderr, "error at line %d: expected %d, but got %s\n",
+            current_token(ctx)->line, expected_token_kind,
             current_token(ctx)->text); /* TODO: better error message */
     exit(1);
 }
@@ -173,8 +174,8 @@ Type *parse_primary_type(ParserContext *ctx) {
         return parse_struct_type(ctx);
 
     default:
-        fprintf(stderr, "expected type, but got %s\n",
-                current_token(ctx)->text);
+        fprintf(stderr, "error at line %d: expected type, but got %s\n",
+                current_token(ctx)->line, current_token(ctx)->text);
         exit(1);
     }
 }
@@ -227,7 +228,8 @@ ExprNode *parse_number_expr(ParserContext *ctx) {
     value = strtol(t->text, NULL, 10);
 
     if (errno == ERANGE || value > INT_MAX) {
-        fprintf(stderr, "too large integer constant %s\n", t->text);
+        fprintf(stderr, "error at line %d: too large integer constant %s\n",
+                current_token(ctx)->line, t->text);
         exit(1);
     }
 
@@ -283,8 +285,8 @@ ExprNode *parse_primary_expr(ParserContext *ctx) {
         return parse_identifier_expr(ctx);
 
     default:
-        fprintf(stderr, "expected expression, but got %s\n",
-                current_token(ctx)->text);
+        fprintf(stderr, "error at line %d: expected expression, but got %s\n",
+                current_token(ctx)->line, current_token(ctx)->text);
         exit(1);
     }
 }
@@ -1127,8 +1129,8 @@ void parse_direct_declarator(ParserContext *ctx, Type **type, const Token **t) {
         break;
 
     default:
-        fprintf(stderr, "expected declarator, but got %s\n",
-                current_token(ctx)->text);
+        fprintf(stderr, "error at line %d: expected declarator, but got %s\n",
+                current_token(ctx)->line, current_token(ctx)->text);
         exit(1);
     }
 }
