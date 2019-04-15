@@ -194,11 +194,6 @@ Type *parse_type(ParserContext *ctx) {
     /* TODO: const type */
     (void)is_const;
 
-    /* pointer type */
-    while (consume_token_if(ctx, '*') != NULL) {
-        type = pointer_type_new(type);
-    }
-
     return type;
 }
 
@@ -416,6 +411,9 @@ ExprNode *parse_cast_expr(ParserContext *ctx) {
     /* type */
     type = parse_type(ctx);
 
+    /* abstract declarator */
+    parse_abstract_declarator(ctx, &type);
+
     /* ) */
     close = expect_token(ctx, ')');
 
@@ -441,6 +439,9 @@ ExprNode *parse_sizeof_expr(ParserContext *ctx) {
 
         /* type */
         type = parse_type(ctx);
+
+        /* abstract declarator */
+        parse_abstract_declarator(ctx, &type);
 
         /* ) */
         expect_token(ctx, ')');
@@ -1132,10 +1133,8 @@ void parse_direct_declarator(ParserContext *ctx, Type **type, const Token **t) {
     }
 }
 
-void parse_array_declarator(ParserContext *ctx, Type **type, const Token **t) {
+void parse_array_declarator(ParserContext *ctx, Type **type) {
     ExprNode *size;
-
-    (void)t;
 
     /* [ */
     expect_token(ctx, '[');
@@ -1147,22 +1146,41 @@ void parse_array_declarator(ParserContext *ctx, Type **type, const Token **t) {
     expect_token(ctx, ']');
 
     /* postfix declarator */
-    parse_postfix_declarator(ctx, type, t);
+    parse_declarator_postfix(ctx, type);
 
     /* make array type */
     *type = sema_array_declarator(ctx, *type, size);
 }
 
-void parse_postfix_declarator(ParserContext *ctx, Type **type,
-                              const Token **t) {
+void parse_declarator_postfix(ParserContext *ctx, Type **type) {
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(*type != NULL);
+
     switch (current_token(ctx)->kind) {
     case '[':
-        parse_array_declarator(ctx, type, t);
+        parse_array_declarator(ctx, type);
         break;
 
     default:
         return;
     }
+}
+
+void parse_declarator_prefix(ParserContext *ctx, Type **type) {
+    /* pointer types */
+    /* TODO: const pointer */
+    while (consume_token_if(ctx, '*') != NULL) {
+        *type = pointer_type_new(*type);
+    }
+}
+
+void parse_abstract_declarator(ParserContext *ctx, Type **type) {
+    assert(ctx != NULL);
+    assert(type != NULL);
+    assert(*type != NULL);
+
+    parse_declarator_prefix(ctx, type);
 }
 
 void parse_declarator(ParserContext *ctx, Type **type, const Token **t) {
@@ -1171,8 +1189,10 @@ void parse_declarator(ParserContext *ctx, Type **type, const Token **t) {
     assert(*type != NULL);
     assert(t != NULL);
 
+    parse_declarator_prefix(ctx, type);
+
     parse_direct_declarator(ctx, type, t);
-    parse_postfix_declarator(ctx, type, t);
+    parse_declarator_postfix(ctx, type);
 }
 
 DeclNode *parse_typedef(ParserContext *ctx) {
@@ -1297,6 +1317,9 @@ DeclNode *parse_function(ParserContext *ctx) {
     if (consume_token_if(ctx, ';') != NULL) {
         return NULL;
     }
+
+    /* FIXME: pointer */
+    parse_declarator_prefix(ctx, &return_type);
 
     if (current_token(ctx)->kind == token_identifier &&
         peek_token(ctx)->kind != '(') {
