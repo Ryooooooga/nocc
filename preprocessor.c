@@ -256,7 +256,7 @@ void pp_include(Preprocessor *pp) {
     saved_tokens = pp->tokens;
     saved_index = pp->index;
 
-    pp->tokens = (Token **)lex(src)->data;
+    pp->tokens = (Token **)lex(path, src)->data;
     pp->index = 0;
 
     /* push include stack */
@@ -491,7 +491,7 @@ Vec *preprocess(const char *filename, const char *src,
 
     /* make preprocessor context */
     pp.result = vec_new();
-    pp.tokens = (Token **)lex(src)->data;
+    pp.tokens = (Token **)lex(filename, src)->data;
     pp.index = 0;
     pp.include_directories = include_directories;
     pp.include_stack = vec_new();

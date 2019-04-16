@@ -1,14 +1,24 @@
 #include "nocc.h"
 
-Token *token_new(int kind, const char *text, int length, int line) {
+typedef struct LexerContext {
+    char *filename;
+    char *src;
+    int index;
+    int line;
+} LexerContext;
+
+Token *token_new_text(LexerContext *ctx, int kind, const char *text, int length,
+                      int line) {
     Token *t;
 
+    assert(ctx != NULL);
     assert(text != NULL);
-    assert(0 <= length);
+    assert(length >= 0);
 
     t = malloc(sizeof(*t));
     t->kind = kind;
     t->text = str_dup_n(text, length);
+    t->filename = ctx->filename;
     t->line = line;
     t->string = NULL;
     t->len_string = 0;
@@ -16,23 +26,28 @@ Token *token_new(int kind, const char *text, int length, int line) {
     return t;
 }
 
-Token *character_token_new(char c, const char *text, int length, int line) {
+Token *token_new(LexerContext *ctx, int kind, int start, int line) {
+    return token_new_text(ctx, kind, ctx->src + start, ctx->index - start,
+                          line);
+}
+
+Token *character_token_new(LexerContext *ctx, char c, int start, int line) {
     Token *t;
 
-    t = token_new(token_character, text, length, line);
+    t = token_new(ctx, token_character, start, line);
     t->string = str_dup_n(&c, 1);
     t->len_string = 1;
 
     return t;
 }
 
-Token *string_token_new(Vec *chars, const char *text, int length, int line) {
+Token *string_token_new(LexerContext *ctx, Vec *chars, int start, int line) {
     Token *t;
     int i;
 
     assert(chars != NULL);
 
-    t = token_new(token_string, text, length, line);
+    t = token_new(ctx, token_string, start, line);
     t->string = malloc(sizeof(char) * (chars->size + 1));
     t->len_string = chars->size;
 
@@ -45,254 +60,258 @@ Token *string_token_new(Vec *chars, const char *text, int length, int line) {
     return t;
 }
 
-char parse_literal_char(const char *src, int *index, int *line) {
-    char c;
+char current_char(LexerContext *ctx) {
+    assert(ctx != NULL);
 
-    assert(src != NULL);
-    assert(index != NULL);
-    assert(line != NULL);
+    return ctx->src[ctx->index];
+}
 
-    switch (src[*index]) {
+char consume_char(LexerContext *ctx) {
+    assert(ctx != NULL);
+
+    switch (current_char(ctx)) {
     case '\0':
-        fprintf(stderr, "unexpected end of file in a literal\n");
+        return '\0';
+
+    case '\n':
+        ctx->line++;
+        break;
+
+    default:
+        break;
+    }
+
+    return ctx->src[ctx->index++];
+}
+
+char parse_literal_char(LexerContext *ctx) {
+    assert(ctx != NULL);
+
+    switch (current_char(ctx)) {
+    case '\0':
+        fprintf(stderr,
+                "error at %s(%d): unexpected end of file in a literal\n",
+                ctx->filename, ctx->line);
         exit(1);
 
     case '\n':
-        fprintf(stderr, "unterminated literal\n");
+        fprintf(stderr, "error at %s(%d): unterminated literal\n",
+                ctx->filename, ctx->line);
         exit(1);
 
     case '\\':
-        (*index)++; /* eat \ */
+        consume_char(ctx);
 
-        switch (src[*index]) {
+        switch (current_char(ctx)) {
         case '0':
-            (*index)++; /* eat 0 */
+            consume_char(ctx);
             return '\0';
 
         case '\'':
-            (*index)++; /* eat ' */
+            consume_char(ctx);
             return '\'';
 
         case '\"':
-            (*index)++; /* eat " */
+            consume_char(ctx);
             return '\"';
 
         case 'n':
-            (*index)++; /* eat n */
+            consume_char(ctx);
             return '\n';
 
         case '\\':
-            (*index)++; /* eat \ */
+            consume_char(ctx);
             return '\\';
 
         default:
-            fprintf(stderr, "unknown escape sequence '\\%c'\n", src[*index]);
+            fprintf(stderr, "error at %s(%d): unknown escape sequence '\\%c'\n",
+                    ctx->filename, ctx->line, current_char(ctx));
             exit(1);
         }
 
     default:
-        c = src[*index];
-        (*index)++; /* eat c */
-        return c;
+        return consume_char(ctx);
     }
 }
 
-Token *lex_token(const char *src, int *index, int *line) {
-    assert(src != NULL);
-    assert(index != NULL);
-    assert(line != NULL);
+Token *lex_token(LexerContext *ctx) {
+    assert(ctx != NULL);
 
-    while (src[*index]) {
-        int kind;
-        int line_start;
-        int start;
+    int line_start;
+    int start;
+    char c;
 
-        line_start = *line;
-        start = *index;
+    line_start = ctx->line;
+    start = ctx->index;
+    c = consume_char(ctx);
 
-        /* new line */
-        if (src[*index] == '\n') {
-            (*line)++;
-            (*index)++;
+    /* new line */
+    if (c == '\n') {
+        return token_new(ctx, '\n', start, line_start);
+    }
 
-            return token_new('\n', src + start, *index - start, line_start);
+    /* separator */
+    if (isspace(c)) {
+        while (isspace(current_char(ctx)) && current_char(ctx) != '\n') {
+            consume_char(ctx);
         }
 
-        /* separator */
-        if (isspace(src[*index])) {
-            while (isspace(src[*index]) && src[*index] != '\n') {
-                (*index)++;
+        return token_new(ctx, ' ', start, line_start);
+    }
+
+    /* comment */
+    if (c == '/' && current_char(ctx) == '*') {
+        consume_char(ctx); /* eat '*' */
+
+        while (true) {
+            c = consume_char(ctx);
+
+            if (c == '*' && current_char(ctx) == '/') {
+                break;
             }
 
-            return token_new(' ', src + start, *index - start, line_start);
-        }
-
-        /* comment */
-        if (src[*index + 0] == '/' && src[*index + 1] == '*') {
-            *index = *index + 2; /* eat '/' '*' */
-
-            while (!(src[*index + 0] == '*' && src[*index + 1] == '/')) {
-                if (src[*index] == '\n') {
-                    (*line)++;
-                }
-
-                (*index)++;
-            }
-
-            *index = *index + 2; /* eat '*' '/' */
-
-            return token_new(' ', " ", 1, line_start);
-        }
-
-        /* number */
-        if (isdigit(src[*index])) {
-            /* [0-9]+ */
-            while (isdigit(src[*index])) {
-                (*index)++;
-            }
-
-            return token_new(token_number, src + start, *index - start,
-                             line_start);
-        }
-
-        /* character */
-        if (src[*index] == '\'') {
-            char c;
-
-            (*index)++; /* eat ' */
-
-            /* character literal contents */
-            c = parse_literal_char(src, index, line);
-
-            /* ' */
-            if (src[*index] != '\'') {
-                fprintf(stderr, "unterminated character literal\n");
+            if (c == '\0') {
+                fprintf(stderr,
+                        "error at %s(%d): unterminated /* ... */ comment\n",
+                        ctx->filename, line_start);
                 exit(1);
             }
-
-            (*index)++; /* eat ' */
-
-            return character_token_new(c, src + start, *index - start,
-                                       line_start);
         }
 
-        /* string */
-        if (src[*index] == '\"') {
-            Vec *chars;
-
-            (*index)++; /* eat " */
-
-            /* string literal contents */
-            chars = vec_new();
-
-            while (src[*index] != '\"') {
-                vec_push(chars, (void *)(intptr_t)parse_literal_char(src, index,
-                                                                     line));
-            }
-
-            (*index)++; /* eat " */
-
-            return string_token_new(chars, src + start, *index - start,
-                                    line_start);
-        }
-
-        /* identifier */
-        if (isalpha(src[*index]) || (src[*index] == '_')) {
-            /* [0-9A-Z_a-z]+ */
-            while (isalnum(src[*index]) || (src[*index] == '_')) {
-                (*index)++;
-            }
-
-            return token_new(token_identifier, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '<' && src[*index + 1] == '=') {
-            *index = *index + 2;
-            return token_new(token_lesser_equal, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '>' && src[*index + 1] == '=') {
-            *index = *index + 2;
-            return token_new(token_greater_equal, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '=' && src[*index + 1] == '=') {
-            *index = *index + 2;
-            return token_new(token_equal, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '!' && src[*index + 1] == '=') {
-            *index = *index + 2;
-            return token_new(token_not_equal, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '+' && src[*index + 1] == '+') {
-            *index = *index + 2;
-            return token_new(token_increment, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '-' && src[*index + 1] == '-') {
-            *index = *index + 2;
-            return token_new(token_decrement, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '&' && src[*index + 1] == '&') {
-            *index = *index + 2;
-            return token_new(token_and, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '|' && src[*index + 1] == '|') {
-            *index = *index + 2;
-            return token_new(token_or, src + start, *index - start, line_start);
-        }
-
-        if (src[*index + 0] == '-' && src[*index + 1] == '>') {
-            *index = *index + 2;
-            return token_new(token_arrow, src + start, *index - start,
-                             line_start);
-        }
-
-        if (src[*index + 0] == '.' && src[*index + 1] == '.' &&
-            src[*index + 2] == '.') {
-            *index = *index + 3;
-            return token_new(token_var_args, src + start, *index - start,
-                             line_start);
-        }
-
-        /* single character */
-        kind = src[start];
-        (*index)++;
-
-        return token_new(kind, src + start, 1, line_start);
+        consume_char(ctx); /* eat '/' */
+        return token_new_text(ctx, ' ', " ", 1, line_start);
     }
 
-    /* end of file */
-    return token_new('\0', src + *index, 0, *line);
+    /* number */
+    if (isdigit(c)) {
+        /* [0-9]+ */
+        while (isdigit(current_char(ctx))) {
+            consume_char(ctx);
+        }
+
+        return token_new(ctx, token_number, start, line_start);
+    }
+
+    /* character */
+    if (c == '\'') {
+        /* character literal contents */
+        c = parse_literal_char(ctx);
+
+        /* ' */
+        if (consume_char(ctx) != '\'') {
+            fprintf(stderr, "error at %s(%d): unterminated character literal\n",
+                    ctx->filename, line_start);
+            exit(1);
+        }
+
+        return character_token_new(ctx, c, start, line_start);
+    }
+
+    /* string */
+    if (c == '\"') {
+        Vec *chars;
+
+        /* string literal contents */
+        chars = vec_new();
+
+        while (current_char(ctx) != '\"') {
+            vec_push(chars, (void *)(intptr_t)parse_literal_char(ctx));
+        }
+
+        consume_char(ctx); /* eat " */
+        return string_token_new(ctx, chars, start, line_start);
+    }
+
+    /* identifier */
+    if (isalpha(c) || (c == '_')) {
+        /* [0-9A-Z_a-z]+ */
+        while (isalnum(current_char(ctx)) || (current_char(ctx) == '_')) {
+            consume_char(ctx);
+        }
+
+        return token_new(ctx, token_identifier, start, line_start);
+    }
+
+    if (c == '<' && current_char(ctx) == '=') {
+        consume_char(ctx);
+        return token_new(ctx, token_lesser_equal, start, line_start);
+    }
+
+    if (c == '>' && current_char(ctx) == '=') {
+        consume_char(ctx);
+        return token_new(ctx, token_greater_equal, start, line_start);
+    }
+
+    if (c == '=' && current_char(ctx) == '=') {
+        consume_char(ctx);
+        return token_new(ctx, token_equal, start, line_start);
+    }
+
+    if (c == '!' && current_char(ctx) == '=') {
+        consume_char(ctx);
+        return token_new(ctx, token_not_equal, start, line_start);
+    }
+
+    if (c == '+' && current_char(ctx) == '+') {
+        consume_char(ctx);
+        return token_new(ctx, token_increment, start, line_start);
+    }
+
+    if (c == '-' && current_char(ctx) == '-') {
+        consume_char(ctx);
+        return token_new(ctx, token_decrement, start, line_start);
+    }
+
+    if (c == '&' && current_char(ctx) == '&') {
+        consume_char(ctx);
+        return token_new(ctx, token_and, start, line_start);
+    }
+
+    if (c == '|' && current_char(ctx) == '|') {
+        consume_char(ctx);
+        return token_new(ctx, token_or, start, line_start);
+    }
+
+    if (c == '-' && current_char(ctx) == '>') {
+        consume_char(ctx);
+        return token_new(ctx, token_arrow, start, line_start);
+    }
+
+    if (c == '.' && current_char(ctx) == '.') {
+        consume_char(ctx);
+
+        if (current_char(ctx) == '.') {
+            /* ... */
+            consume_char(ctx);
+            return token_new(ctx, token_var_args, start, line_start);
+        }
+
+        /* .. */
+        fprintf(stderr, "error at %s(%d): invalid token '..'\n", ctx->filename,
+                line_start);
+    }
+
+    /* single character */
+    return token_new(ctx, c, start, line_start);
 }
 
-Vec *lex(const char *src) {
-    int index;
-    int line;
+Vec *lex(const char *filename, const char *src) {
+    LexerContext ctx;
     Token *t;
     Vec *tokens;
 
+    assert(filename != NULL);
     assert(src != NULL);
 
-    index = 0;
-    line = 1;
+    ctx.filename = str_dup(filename);
+    ctx.src = str_dup(src);
+    ctx.index = 0;
+    ctx.line = 1;
 
     tokens = vec_new();
 
     do {
-        t = lex_token(src, &index, &line);
+        t = lex_token(&ctx);
         vec_push(tokens, t);
     } while (t->kind != '\0');
 

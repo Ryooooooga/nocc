@@ -294,6 +294,7 @@ char *read_file(const char *filename);
 struct Token {
     int kind;
     char *text;
+    const char *filename;
     int line;
     char *string;
     int len_string;
@@ -301,7 +302,7 @@ struct Token {
 
 typedef struct Token Token;
 
-Vec *lex(const char *src);
+Vec *lex(const char *filename, const char *src);
 Vec *preprocess(const char *filename, const char *src,
                 Vec *include_directories);
 
