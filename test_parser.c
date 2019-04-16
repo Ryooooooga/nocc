@@ -1,13 +1,29 @@
 #include "nocc.h"
 
+Token *test_token_new(int kind, char *text, char *string) {
+    Token *t;
+
+    assert(text != NULL);
+
+    t = malloc(sizeof(*t));
+    t->kind = kind;
+    t->text = text;
+    t->filename = str_dup("test_lexer");
+    t->line = 1;
+    t->string = string;
+    t->len_string = string == NULL ? 0 : strlen(string);
+
+    return t;
+}
+
 void test_parsing_type_void(void) {
     ParserContext *ctx = &(ParserContext){
         .env = scope_stack_new(),
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_void, "void", 1, NULL, 0},
-                &(Token){'\0', "", 1, NULL, 0},
+                test_token_new(token_void, "void", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
@@ -23,8 +39,8 @@ void test_parsing_type_int(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_int, "int", 1, NULL, 0},
-                &(Token){'\0', "", 1, NULL, 0},
+                test_token_new(token_int, "int", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
@@ -40,19 +56,17 @@ void test_parsing_integer(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "42", 1, NULL, 0},
-                &(Token){'\0', "", 1, NULL, 0},
+                test_token_new(token_number, "42", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    ExprNode *p = parse_expr(ctx);
-    IntegerNode *q = (IntegerNode *)p;
+    IntegerNode *p = (IntegerNode *)parse_expr(ctx);
 
     assert(p->kind == node_integer);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
-    assert(q->value == 42);
+    assert(p->value == 42);
 }
 
 void test_parsing_identifier(void) {
@@ -61,8 +75,8 @@ void test_parsing_identifier(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_identifier, "xyz", 1, NULL, 0},
-                &(Token){'\0', "", 1, NULL, 0},
+                test_token_new(token_identifier, "xyz", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
@@ -76,14 +90,12 @@ void test_parsing_identifier(void) {
 
     scope_stack_register(ctx->env, decl->identifier, decl);
 
-    ExprNode *p = parse_expr(ctx);
-    IdentifierNode *q = (IdentifierNode *)p;
+    IdentifierNode *p = (IdentifierNode *)parse_expr(ctx);
 
     assert(p->kind == node_identifier);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
-    assert(strcmp(q->identifier, "xyz") == 0);
-    assert(q->declaration == (DeclNode *)decl);
+    assert(strcmp(p->identifier, "xyz") == 0);
+    assert(p->declaration == (DeclNode *)decl);
 }
 
 void test_parsing_call(void) {
@@ -113,7 +125,6 @@ void test_parsing_call(void) {
     CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 0);
 
@@ -155,7 +166,6 @@ void test_parsing_call_arg(void) {
     CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 1);
 
@@ -199,7 +209,6 @@ void test_parsing_call_args(void) {
     CastNode *callee = (CastNode *)p->callee;
 
     assert(p->kind == node_call);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
     assert(p->num_args == 3);
 
@@ -216,26 +225,22 @@ void test_parsing_negative(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){'-', "-", 1, NULL, 0},
-                &(Token){token_number, "10", 2, NULL, 0},
-                &(Token){'\0', "", 1, NULL, 0},
+                test_token_new('-', "-", NULL),
+                test_token_new(token_number, "10", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    ExprNode *p = parse_expr(ctx);
-    UnaryNode *q = (UnaryNode *)p;
+    UnaryNode *p = (UnaryNode *)parse_expr(ctx);
 
     assert(p->kind == node_unary);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
-    assert(q->operator_ == '-');
+    assert(p->operator_ == '-');
 
-    ExprNode *child = q->operand;
-    IntegerNode *integer = (IntegerNode *)child;
+    IntegerNode *integer = (IntegerNode *)p->operand;
 
-    assert(child->kind == node_integer);
-    assert(child->line == 2);
+    assert(integer->kind == node_integer);
     assert(integer->value == 10);
 }
 
@@ -245,32 +250,28 @@ void test_parsing_addition(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "6", 1, NULL, 0},
-                &(Token){'+', "+", 1, NULL, 0},
-                &(Token){token_number, "12", 2, NULL, 0},
-                &(Token){token_number, "10", 2, NULL, 0},
-                &(Token){'\0', "", 1, NULL, 0},
+                test_token_new(token_number, "6", NULL),
+                test_token_new('+', "+", NULL),
+                test_token_new(token_number, "12", NULL),
+                test_token_new(token_number, "10", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    ExprNode *p = parse_expr(ctx);
-    BinaryNode *q = (BinaryNode *)p;
+    BinaryNode *p = (BinaryNode *)parse_expr(ctx);
 
     assert(p->kind == node_binary);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
-    assert(q->operator_ == '+');
+    assert(p->operator_ == '+');
 
-    IntegerNode *left = (IntegerNode *)q->left;
-    IntegerNode *right = (IntegerNode *)q->right;
+    IntegerNode *left = (IntegerNode *)p->left;
+    IntegerNode *right = (IntegerNode *)p->right;
 
-    assert(q->left->kind == node_integer);
-    assert(q->left->line == 1);
+    assert(left->kind == node_integer);
     assert(left->value == 6);
 
-    assert(q->right->kind == node_integer);
-    assert(q->right->line == 2);
+    assert(right->kind == node_integer);
     assert(right->value == 12);
 }
 
@@ -280,33 +281,29 @@ void test_parsing_multiplication(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "6", 1, NULL, 0},
-                &(Token){'+', "+", 1, NULL, 0},
-                &(Token){token_number, "4", 1, NULL, 0},
-                &(Token){'*', "*", 1, NULL, 0},
-                &(Token){token_number, "3", 1, NULL, 0},
-                &(Token){'\0', "", 2, NULL, 0},
+                test_token_new(token_number, "6", NULL),
+                test_token_new('+', "+", NULL),
+                test_token_new(token_number, "4", NULL),
+                test_token_new('*', "*", NULL),
+                test_token_new(token_number, "3", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    ExprNode *p = parse_expr(ctx);
-    BinaryNode *q = (BinaryNode *)p;
+    BinaryNode *p = (BinaryNode *)parse_expr(ctx);
 
     assert(p->kind == node_binary);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
-    assert(q->operator_ == '+');
+    assert(p->operator_ == '+');
 
-    IntegerNode *left = (IntegerNode *)q->left;
-    BinaryNode *right = (BinaryNode *)q->right;
+    IntegerNode *left = (IntegerNode *)p->left;
+    BinaryNode *right = (BinaryNode *)p->right;
 
-    assert(q->left->kind == node_integer);
-    assert(q->left->line == 1);
+    assert(left->kind == node_integer);
     assert(left->value == 6);
 
-    assert(q->right->kind == node_binary);
-    assert(q->right->line == 1);
+    assert(right->kind == node_binary);
     assert(right->operator_ == '*');
     assert(right->left->kind == node_integer);
     assert(right->right->kind == node_integer);
@@ -318,37 +315,33 @@ void test_parsing_paren(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){'(', "(", 1, NULL, 0},
-                &(Token){token_number, "6", 1, NULL, 0},
-                &(Token){'+', "+", 1, NULL, 0},
-                &(Token){token_number, "4", 1, NULL, 0},
-                &(Token){')', ")", 1, NULL, 0},
-                &(Token){'*', "*", 1, NULL, 0},
-                &(Token){token_number, "3", 1, NULL, 0},
-                &(Token){'\0', "", 2, NULL, 0},
+                test_token_new('(', "(", NULL),
+                test_token_new(token_number, "6", NULL),
+                test_token_new('+', "+", NULL),
+                test_token_new(token_number, "4", NULL),
+                test_token_new(')', ")", NULL),
+                test_token_new('*', "*", NULL),
+                test_token_new(token_number, "3", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    ExprNode *p = parse_expr(ctx);
-    BinaryNode *q = (BinaryNode *)p;
+    BinaryNode *p = (BinaryNode *)parse_expr(ctx);
 
     assert(p->kind == node_binary);
-    assert(p->line == 1);
     assert(is_int32_type(p->type));
-    assert(q->operator_ == '*');
+    assert(p->operator_ == '*');
 
-    BinaryNode *left = (BinaryNode *)q->left;
-    IntegerNode *right = (IntegerNode *)q->right;
+    BinaryNode *left = (BinaryNode *)p->left;
+    IntegerNode *right = (IntegerNode *)p->right;
 
     assert(left->kind == node_binary);
-    assert(left->line == 1);
     assert(left->operator_ == '+');
     assert(left->left->kind == node_integer);
     assert(left->right->kind == node_integer);
 
     assert(right->kind == node_integer);
-    assert(right->line == 1);
     assert(right->value == 3);
 }
 
@@ -358,19 +351,18 @@ void test_parsing_expr_stmt(void) {
         .struct_env = scope_stack_new(),
         .tokens =
             (const Token *[]){
-                &(Token){token_number, "42", 1, NULL, 0},
-                &(Token){';', ";", 1, NULL, 0},
-                &(Token){'\0', "", 2, NULL, 0},
+                test_token_new(token_number, "42", NULL),
+                test_token_new(';', ";", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    StmtNode *p = parse_stmt(ctx);
-    ExprStmtNode *q = (ExprStmtNode *)p;
+    ExprStmtNode *p = (ExprStmtNode *)parse_stmt(ctx);
 
     assert(p->kind == node_expr);
     assert(p->line == 1);
-    assert(q->expr->kind == node_integer);
+    assert(p->expr->kind == node_integer);
 }
 
 void test_parsing_return_stmt(void) {
@@ -389,21 +381,19 @@ void test_parsing_return_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){token_return, "return", 1, NULL, 0},
-                &(Token){token_number, "42", 1, NULL, 0},
-                &(Token){';', ";", 1, NULL, 0},
-                &(Token){'\0', "", 2, NULL, 0},
+                test_token_new(token_return, "return", NULL),
+                test_token_new(token_number, "42", NULL),
+                test_token_new(';', ";", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    StmtNode *p = parse_stmt(ctx);
-    ReturnNode *q = (ReturnNode *)p;
+    ReturnNode *p = (ReturnNode *)parse_stmt(ctx);
 
     assert(p->kind == node_return);
-    assert(p->line == 1);
-    assert(q->return_value != NULL);
-    assert(q->return_value->kind == node_integer);
+    assert(p->return_value != NULL);
+    assert(p->return_value->kind == node_integer);
 }
 
 void test_parsing_return_void_stmt(void) {
@@ -422,19 +412,18 @@ void test_parsing_return_void_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){token_return, "return", 1, NULL, 0},
-                &(Token){';', ";", 1, NULL, 0},
-                &(Token){'\0', "", 2, NULL, 0},
+                test_token_new(token_return, "return", NULL),
+                test_token_new(';', ";", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    StmtNode *p = parse_stmt(ctx);
-    ReturnNode *q = (ReturnNode *)p;
+    ReturnNode *p = (ReturnNode *)parse_stmt(ctx);
 
     assert(p->kind == node_return);
     assert(p->line == 1);
-    assert(q->return_value == NULL);
+    assert(p->return_value == NULL);
 }
 
 void test_parsing_compound_stmt(void) {
@@ -461,29 +450,27 @@ void test_parsing_compound_stmt(void) {
             },
         .tokens =
             (const Token *[]){
-                &(Token){'{', "{", 1, NULL, 0},
-                &(Token){token_number, "42", 1, NULL, 0},
-                &(Token){';', ";", 1, NULL, 0},
-                &(Token){token_return, "return", 1, NULL, 0},
-                &(Token){';', ";", 1, NULL, 0},
-                &(Token){'}', "}", 1, NULL, 0},
-                &(Token){'\0', "", 2, NULL, 0},
+                test_token_new('{', "{", NULL),
+                test_token_new(token_number, "42", NULL),
+                test_token_new(';', ";", NULL),
+                test_token_new(token_return, "return", NULL),
+                test_token_new(';', ";", NULL),
+                test_token_new('}', "}", NULL),
+                test_token_new('\0', "", NULL),
             },
         .index = 0,
     };
 
-    StmtNode *p = parse_stmt(ctx);
-    CompoundNode *q = (CompoundNode *)p;
+    CompoundNode *p = (CompoundNode *)parse_stmt(ctx);
 
     assert(p->kind == node_compound);
-    assert(p->line == 1);
-    assert(q->num_stmts == len_suites);
+    assert(p->num_stmts == len_suites);
 
     for (int i = 0; i < len_suites; i++) {
-        if (q->stmts[i]->kind != suites[i].kind) {
+        if (p->stmts[i]->kind != suites[i].kind) {
             fprintf(stderr,
-                    "%d: q->stmts[i]->kind is expected %d, but got %d\n", i,
-                    suites[i].kind, q->stmts[i]->kind);
+                    "%d: p->stmts[i]->kind is expected %d, but got %d\n", i,
+                    suites[i].kind, p->stmts[i]->kind);
             exit(1);
         }
     }

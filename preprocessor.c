@@ -54,6 +54,48 @@ Token *pp_skip_separator(Preprocessor *pp) {
     return pp_current_token(pp);
 }
 
+Token *pp_expect_token(Preprocessor *pp, const char *expected_token) {
+    assert(pp != NULL);
+    assert(expected_token != NULL);
+
+    if (strcmp(pp_current_token(pp)->text, expected_token) == 0) {
+        return pp_consume_token(pp);
+    }
+
+    fprintf(stderr, "error at %s(%d): expected %s, but got %s\n",
+            pp_current_token(pp)->filename, pp_current_token(pp)->line,
+            expected_token, pp_current_token(pp)->text);
+    exit(1);
+}
+
+Token *pp_expect_token_kind(Preprocessor *pp, int expected_token_kind) {
+    assert(pp != NULL);
+
+    if (pp_current_token(pp)->kind == expected_token_kind) {
+        return pp_consume_token(pp);
+    }
+
+    /* TODO: better error message */
+    fprintf(stderr, "error at %s(%d): expected %d, but got %s\n",
+            pp_current_token(pp)->filename, pp_current_token(pp)->line,
+            expected_token_kind, pp_current_token(pp)->text);
+    exit(1);
+}
+
+Token *pp_expect_line_ending(Preprocessor *pp) {
+    assert(pp != NULL);
+
+    if (pp_skip_separator(pp)->kind == '\0' ||
+        pp_skip_separator(pp)->kind == '\n') {
+        return pp_consume_token(pp);
+    }
+
+    fprintf(stderr, "error at %s(%d): expected line ending, but got %s\n",
+            pp_current_token(pp)->filename, pp_current_token(pp)->line,
+            pp_current_token(pp)->text);
+    exit(1);
+}
+
 const char *pp_current_file_path(Preprocessor *pp) {
     assert(pp != NULL);
     assert(pp->include_stack->size > 0);
@@ -61,7 +103,7 @@ const char *pp_current_file_path(Preprocessor *pp) {
     return vec_back(pp->include_stack);
 }
 
-void pp_read_file(Preprocessor *pp, const char *filename, char **path,
+bool pp_read_file(Preprocessor *pp, const char *filename, char **path,
                   char **src) {
     int i;
 
@@ -75,7 +117,7 @@ void pp_read_file(Preprocessor *pp, const char *filename, char **path,
     *src = read_file(*path);
 
     if (*src != NULL) {
-        return;
+        return true;
     }
 
     /* search include directories */
@@ -84,7 +126,7 @@ void pp_read_file(Preprocessor *pp, const char *filename, char **path,
         *src = read_file(*path);
 
         if (*src != NULL) {
-            return;
+            return true;
         }
     }
 
@@ -92,9 +134,7 @@ void pp_read_file(Preprocessor *pp, const char *filename, char **path,
     *path = NULL;
     *src = NULL;
 
-    fprintf(stderr, "cannot include file %s in %s\n", filename,
-            pp_current_file_path(pp));
-    exit(1);
+    return false;
 }
 
 void pp_concat_string(Preprocessor *pp, const Token *str) {
@@ -172,22 +212,11 @@ void pp_define(Preprocessor *pp) {
     Vec *macro_tokens;
 
     /* define */
-    if (strcmp(pp_current_token(pp)->text, "define") != 0) {
-        fprintf(stderr, "expected define, but got %s\n",
-                pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_expect_token(pp, "define");
 
     /* identifier */
-    identifier = pp_skip_separator(pp);
-
-    if (identifier->kind != token_identifier) {
-        fprintf(stderr, "expected identifier after #define, but got %s\n",
-                identifier->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_skip_separator(pp);
+    identifier = pp_expect_token_kind(pp, token_identifier);
 
     /* macro contents */
     macro_tokens = vec_new();
@@ -199,8 +228,8 @@ void pp_define(Preprocessor *pp) {
 
     /* redefinition check */
     if (map_contains(pp->macros, identifier->text)) {
-        fprintf(stderr, "macro %s has already been defined\n",
-                identifier->text);
+        fprintf(stderr, "error at %s(%d): macro %s has already been defined\n",
+                identifier->filename, identifier->line, identifier->text);
         exit(1);
     }
 
@@ -209,6 +238,7 @@ void pp_define(Preprocessor *pp) {
 }
 
 void pp_include(Preprocessor *pp) {
+    const Token *t;
     const Token *filename;
     char *path;
     char *src;
@@ -217,46 +247,34 @@ void pp_include(Preprocessor *pp) {
     int saved_index;
 
     /* include */
-    if (strcmp(pp_current_token(pp)->text, "include") != 0) {
-        fprintf(stderr, "expected include, but got %s\n",
-                pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    t = pp_expect_token(pp, "include");
 
     /* string */
-    filename = pp_skip_separator(pp);
-
-    if (filename->kind != token_string) {
-        fprintf(stderr, "expected string after #include, but got %s\n",
-                filename->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_skip_separator(pp);
+    filename = pp_expect_token_kind(pp, token_string); /* TODO: <path> */
 
     /* new line */
-    if (pp_skip_separator(pp)->kind != '\0' &&
-        pp_skip_separator(pp)->kind != '\n') {
-        fprintf(stderr, "expected new line after #include %s, but got %s\n",
-                filename->text, pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_expect_line_ending(pp);
 
     /* check the depth of include stack */
     if (pp->include_stack->size >= 256) {
-        fprintf(stderr, "#include nested too deeply\n");
+        fprintf(stderr, "error at %s(%d): #include nested too deeply\n",
+                t->filename, t->line);
         exit(1);
     }
 
     /* open file */
-    pp_read_file(pp, filename->string, &path, &src);
+    if (!pp_read_file(pp, filename->string, &path, &src)) {
+        fprintf(stderr, "error at %s(%d): cannot include file %s\n",
+                t->filename, t->line, filename->string);
+        exit(1);
+    }
 
     /* read file */
     saved_tokens = pp->tokens;
     saved_index = pp->index;
 
-    pp->tokens = (Token **)lex(src)->data;
+    pp->tokens = (Token **)lex(path, src)->data;
     pp->index = 0;
 
     /* push include stack */
@@ -288,7 +306,9 @@ void pp_skip_until_else_or_endif(Preprocessor *pp, bool accept_else) {
         switch (pp_skip_separator(pp)->kind) {
         case '\0':
             fprintf(stderr,
-                    "unexpected end of file, unterminated #if directives\n");
+                    "error at %s(%d): "
+                    "unexpected end of file, unterminated #if directives\n",
+                    pp_current_token(pp)->filename, pp_current_token(pp)->line);
             exit(1);
 
         case '\n':
@@ -329,30 +349,20 @@ void pp_ifdef(Preprocessor *pp, bool defined) {
     /* ifndef */
     if (strcmp(pp_current_token(pp)->text, "ifdef") != 0 &&
         strcmp(pp_current_token(pp)->text, "ifndef") != 0) {
-        fprintf(stderr, "expected ifdef or ifndef, but got %s\n",
+        fprintf(stderr,
+                "error at %s(%d): expected ifdef or ifndef, but got %s\n",
+                pp_current_token(pp)->filename, pp_current_token(pp)->line,
                 pp_current_token(pp)->text);
         exit(1);
     }
     pp_consume_token(pp);
 
     /* identifier */
-    macro_name = pp_skip_separator(pp);
-
-    if (macro_name->kind != token_identifier) {
-        fprintf(stderr, "expected identifier after #ifndef, but got %s\n",
-                macro_name->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_skip_separator(pp);
+    macro_name = pp_expect_token_kind(pp, token_identifier);
 
     /* new line */
-    if (pp_skip_separator(pp)->kind != '\0' &&
-        pp_skip_separator(pp)->kind != '\n') {
-        fprintf(stderr, "expected new line after #ifndef %s, but got %s\n",
-                macro_name->text, pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_expect_line_ending(pp);
 
     /* check if the macro has been defined */
     if (map_contains(pp->macros, macro_name->text) == defined) {
@@ -365,25 +375,17 @@ void pp_ifdef(Preprocessor *pp, bool defined) {
 }
 
 void pp_else(Preprocessor *pp, bool accept_else, bool skip) {
+    const Token *t;
+
     /* else */
-    if (strcmp(pp_current_token(pp)->text, "else") != 0) {
-        fprintf(stderr, "expected else, but got %s\n",
-                pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    t = pp_expect_token(pp, "else");
 
     /* new line */
-    if (pp_skip_separator(pp)->kind != '\0' &&
-        pp_skip_separator(pp)->kind != '\n') {
-        fprintf(stderr, "expected new line after #else, but got %s\n",
-                pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_expect_line_ending(pp);
 
     if (!accept_else) {
-        fprintf(stderr, "#else without #if\n");
+        fprintf(stderr, "error at %s(%d): #else without #if\n", t->filename,
+                t->line);
         exit(1);
     }
 
@@ -395,25 +397,17 @@ void pp_else(Preprocessor *pp, bool accept_else, bool skip) {
 }
 
 void pp_endif(Preprocessor *pp, bool accept_endif) {
+    const Token *t;
+
     /* endif */
-    if (strcmp(pp_current_token(pp)->text, "endif") != 0) {
-        fprintf(stderr, "expected endif, but got %s\n",
-                pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    t = pp_expect_token(pp, "endif");
 
     /* new line */
-    if (pp_skip_separator(pp)->kind != '\0' &&
-        pp_skip_separator(pp)->kind != '\n') {
-        fprintf(stderr, "expected new line after #endif, but got %s\n",
-                pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_expect_line_ending(pp);
 
     if (!accept_endif) {
-        fprintf(stderr, "#endif without #if\n");
+        fprintf(stderr, "error at %s(%d): #endif without #if\n", t->filename,
+                t->line);
         exit(1);
     }
 }
@@ -422,11 +416,7 @@ bool pp_directive(Preprocessor *pp, bool accept_else, bool accept_endif) {
     Token *t;
 
     /* # */
-    if (pp_current_token(pp)->kind != '#') {
-        fprintf(stderr, "expected #, but got %s", pp_current_token(pp)->text);
-        exit(1);
-    }
-    pp_consume_token(pp);
+    pp_expect_token_kind(pp, '#');
 
     /* identifier */
     t = pp_skip_separator(pp);
@@ -450,7 +440,8 @@ bool pp_directive(Preprocessor *pp, bool accept_else, bool accept_endif) {
         pp_endif(pp, accept_endif);
         return false;
     } else {
-        fprintf(stderr, "unknown preprocessor directive #%s\n", t->text);
+        fprintf(stderr, "error at %s(%d): unknown preprocessor directive #%s\n",
+                t->filename, t->line, t->text);
         exit(1);
     }
 }
@@ -491,7 +482,7 @@ Vec *preprocess(const char *filename, const char *src,
 
     /* make preprocessor context */
     pp.result = vec_new();
-    pp.tokens = (Token **)lex(src)->data;
+    pp.tokens = (Token **)lex(filename, src)->data;
     pp.index = 0;
     pp.include_directories = include_directories;
     pp.include_stack = vec_new();

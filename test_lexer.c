@@ -8,7 +8,7 @@ typedef struct {
 } TokenTestSuite;
 
 static void test_tokens(const char *src, const TokenTestSuite *suites) {
-    const Token **toks = (const Token **)lex(src)->data;
+    const Token **toks = (const Token **)lex("test_lexer", src)->data;
     int i = 0;
 
     do {

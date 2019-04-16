@@ -294,6 +294,7 @@ char *read_file(const char *filename);
 struct Token {
     int kind;
     char *text;
+    const char *filename;
     int line;
     char *string;
     int len_string;
@@ -301,7 +302,7 @@ struct Token {
 
 typedef struct Token Token;
 
-Vec *lex(const char *src);
+Vec *lex(const char *filename, const char *src);
 Vec *preprocess(const char *filename, const char *src,
                 Vec *include_directories);
 
@@ -344,6 +345,7 @@ struct FunctionType {
 
 struct StructType {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     struct MemberNode **members;
@@ -454,6 +456,7 @@ typedef struct TranslationUnitNode TranslationUnitNode;
 
 struct ExprNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -461,6 +464,7 @@ struct ExprNode {
 
 struct IntegerNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -469,6 +473,7 @@ struct IntegerNode {
 
 struct StringNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -478,6 +483,7 @@ struct StringNode {
 
 struct IdentifierNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -487,6 +493,7 @@ struct IdentifierNode {
 
 struct PostfixNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -496,6 +503,7 @@ struct PostfixNode {
 
 struct CallNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -506,6 +514,7 @@ struct CallNode {
 
 struct UnaryNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -515,6 +524,7 @@ struct UnaryNode {
 
 struct SizeofNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -523,6 +533,7 @@ struct SizeofNode {
 
 struct CastNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -531,6 +542,7 @@ struct CastNode {
 
 struct BinaryNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -541,6 +553,7 @@ struct BinaryNode {
 
 struct DotNode {
     int kind;
+    char *filename;
     int line;
     Type *type;
     bool is_lvalue;
@@ -551,11 +564,13 @@ struct DotNode {
 
 struct StmtNode {
     int kind;
+    char *filename;
     int line;
 };
 
 struct CompoundNode {
     int kind;
+    char *filename;
     int line;
     StmtNode **stmts;
     int num_stmts;
@@ -563,12 +578,14 @@ struct CompoundNode {
 
 struct ReturnNode {
     int kind;
+    char *filename;
     int line;
     ExprNode *return_value;
 };
 
 struct IfNode {
     int kind;
+    char *filename;
     int line;
     ExprNode *condition;
     StmtNode *then;
@@ -577,6 +594,7 @@ struct IfNode {
 
 struct SwitchNode {
     int kind;
+    char *filename;
     int line;
     ExprNode *condition;
     ExprNode **case_values;
@@ -587,6 +605,7 @@ struct SwitchNode {
 
 struct WhileNode {
     int kind;
+    char *filename;
     int line;
     ExprNode *condition;
     StmtNode *body;
@@ -594,6 +613,7 @@ struct WhileNode {
 
 struct DoNode {
     int kind;
+    char *filename;
     int line;
     StmtNode *body;
     ExprNode *condition;
@@ -601,6 +621,7 @@ struct DoNode {
 
 struct ForNode {
     int kind;
+    char *filename;
     int line;
     ExprNode *initialization;
     ExprNode *condition;
@@ -610,28 +631,33 @@ struct ForNode {
 
 struct BreakNode {
     int kind;
+    char *filename;
     int line;
 };
 
 struct ContinueNode {
     int kind;
+    char *filename;
     int line;
 };
 
 struct DeclStmtNode {
     int kind;
+    char *filename;
     int line;
     DeclNode *decl;
 };
 
 struct ExprStmtNode {
     int kind;
+    char *filename;
     int line;
     ExprNode *expr;
 };
 
 struct DeclNode {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     Type *type;
@@ -640,6 +666,7 @@ struct DeclNode {
 
 struct TypedefNode {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     Type *type;
@@ -648,6 +675,7 @@ struct TypedefNode {
 
 struct ExternNode {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     Type *type;
@@ -656,6 +684,7 @@ struct ExternNode {
 
 struct MemberNode {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     Type *type;
@@ -664,6 +693,7 @@ struct MemberNode {
 
 struct VariableNode {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     Type *type;
@@ -672,6 +702,7 @@ struct VariableNode {
 
 struct ParamNode {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     Type *type;
@@ -680,6 +711,7 @@ struct ParamNode {
 
 struct FunctionNode {
     int kind;
+    char *filename;
     int line;
     char *identifier;
     Type *type;
