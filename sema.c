@@ -66,6 +66,7 @@ ExprNode *implicit_cast_node_new(ExprNode *expr, Type *dest_type) {
 
     p = malloc(sizeof(*p));
     p->kind = node_cast;
+    p->filename = str_dup(expr->filename);
     p->line = expr->line;
     p->type = dest_type;
     p->is_lvalue = false;
@@ -209,13 +210,15 @@ Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
     p = scope_stack_find(ctx->env, t->text, true);
 
     if (p == NULL) {
-        fprintf(stderr, "type %s not found in this scope\n", t->text);
+        fprintf(stderr, "erroor at %s(%d): type %s not found in this scope\n",
+                t->filename, t->line, t->text);
         exit(1);
     }
 
     /* check the symbol kind */
     if (p->kind != node_typedef) {
-        fprintf(stderr, "symbol %s is not a type\n", t->text);
+        fprintf(stderr, "erroor at %s(%d): symbol %s is not a type\n",
+                t->filename, t->line, t->text);
         exit(1);
     }
 
@@ -232,6 +235,7 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_member;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = type;
     p->identifier = str_dup(t->text);
@@ -274,6 +278,7 @@ StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = type_struct;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->identifier = str_dup(identifier->text);
     p->members = NULL;
@@ -365,6 +370,7 @@ ExprNode *sema_integer_expr(ParserContext *ctx, const Token *t, int value) {
 
     p = malloc(sizeof(*p));
     p->kind = node_integer;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = type_get_int32();
     p->is_lvalue = false;
@@ -384,6 +390,7 @@ ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
 
     p = malloc(sizeof(*p));
     p->kind = node_string;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = array_type_new(type_get_int8(), length + 1);
     p->is_lvalue = false;
@@ -404,6 +411,7 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
 
     p = malloc(sizeof(*p));
     p->kind = node_identifier;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = NULL;
     p->is_lvalue = false;
@@ -444,6 +452,7 @@ ExprNode *sema_postfix_expr(ParserContext *ctx, ExprNode *operand,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_postfix;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = NULL;
     p->is_lvalue = false;
@@ -503,6 +512,7 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
 
     p = malloc(sizeof(*p));
     p->kind = node_call;
+    p->filename = str_dup(open->filename);
     p->line = open->line;
     p->type = NULL;
     p->is_lvalue = false;
@@ -565,6 +575,7 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_dot;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = NULL;
     p->is_lvalue = false;
@@ -619,6 +630,7 @@ ExprNode *sema_arrow_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
     /* make *parent node */
     p = malloc(sizeof(*p));
     p->kind = node_unary;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = pointer_element_type(parent->type);
     p->is_lvalue = true;
@@ -639,6 +651,7 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
 
     p = malloc(sizeof(*p));
     p->kind = node_unary;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = NULL;
     p->is_lvalue = false;
@@ -742,6 +755,7 @@ ExprNode *sema_sizeof_expr(ParserContext *ctx, const Token *t, Type *operand) {
 
     p = malloc(sizeof(*p));
     p->kind = node_sizeof;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = type_get_int32(); /* TODO: size_t */
     p->is_lvalue = false;
@@ -768,6 +782,7 @@ ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
 
     p = malloc(sizeof(*p));
     p->kind = node_cast;
+    p->filename = str_dup(open->filename);
     p->line = open->line;
     p->type = type;
     p->is_lvalue = false;
@@ -798,6 +813,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 
     p = malloc(sizeof(*p));
     p->kind = node_binary;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->type = NULL;
     p->is_lvalue = false;
@@ -834,8 +850,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
 
             p->type = p->right->type;
         } else {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+            fprintf(stderr,
+                    "error at %s(%d): error at %s(%d): invalid operand type of "
+                    "binary operator %s\n",
+                    t->filename, t->line, t->filename, t->line, t->text);
             exit(1);
         }
         break;
@@ -856,8 +874,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             /* T* - T* -> ptrdiff_t */
             p->type = type_get_int32();
         } else {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of binary operator %s\n",
+                t->filename, t->line, t->text);
             exit(1);
         }
         break;
@@ -872,8 +892,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             /* int * int -> int */
             p->type = p->left->type;
         } else {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of binary operator %s\n",
+                t->filename, t->line, t->text);
             exit(1);
         }
         break;
@@ -888,8 +910,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         relational_operation_type_conversion(&p->left, &p->right);
 
         if (!type_equals(p->left->type, p->right->type)) {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of binary operator %s\n",
+                t->filename, t->line, t->text);
             exit(1);
         }
 
@@ -993,6 +1017,7 @@ StmtNode *sema_compound_stmt_leave(ParserContext *ctx, const Token *open,
 
     p = malloc(sizeof(*p));
     p->kind = node_compound;
+    p->filename = str_dup(open->filename);
     p->line = open->line;
     p->stmts = malloc(sizeof(StmtNode *) * num_stmts);
     p->num_stmts = num_stmts;
@@ -1015,6 +1040,7 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
 
     p = malloc(sizeof(*p));
     p->kind = node_return;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->return_value = return_value;
 
@@ -1062,6 +1088,7 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
 
     p = malloc(sizeof(*p));
     p->kind = node_if;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->condition = condition;
     p->then = then;
@@ -1093,6 +1120,7 @@ StmtNode *sema_switch_stmt_case(ParserContext *ctx, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_compound;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->stmts = malloc(sizeof(StmtNode *) * num_stmts);
     p->num_stmts = num_stmts;
@@ -1117,6 +1145,7 @@ StmtNode *sema_switch_stmt_default(ParserContext *ctx, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_compound;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->stmts = malloc(sizeof(StmtNode *) * num_stmts);
     p->num_stmts = num_stmts;
@@ -1159,6 +1188,7 @@ StmtNode *sema_switch_stmt_leave(ParserContext *ctx, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_switch;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->condition = condition;
     p->case_values = malloc(sizeof(ExprNode *) * num_cases);
@@ -1218,6 +1248,7 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_while;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->condition = condition;
     p->body = body;
@@ -1265,6 +1296,7 @@ StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
 
     p = malloc(sizeof(*p));
     p->kind = node_do;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->body = body;
     p->condition = condition;
@@ -1310,6 +1342,7 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_for;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->initialization = initialization;
     p->condition = condition;
@@ -1344,6 +1377,7 @@ StmtNode *sema_break_stmt(ParserContext *ctx, const Token *t) {
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_break;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
 
     return (StmtNode *)p;
@@ -1364,6 +1398,7 @@ StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t) {
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_continue;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
 
     return (StmtNode *)p;
@@ -1377,6 +1412,7 @@ StmtNode *sema_decl_stmt(ParserContext *ctx, DeclNode *decl, const Token *t) {
 
     p = malloc(sizeof(*p));
     p->kind = node_decl;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->decl = decl;
 
@@ -1392,6 +1428,7 @@ StmtNode *sema_expr_stmt(ParserContext *ctx, ExprNode *expr, const Token *t) {
 
     p = malloc(sizeof(*p));
     p->kind = node_expr;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->expr = expr;
 
@@ -1430,6 +1467,7 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_typedef;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->identifier = str_dup(identifier->text);
     p->type = type;
@@ -1460,6 +1498,7 @@ DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_extern;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->identifier = str_dup(identifier->text);
     p->type = type;
@@ -1496,6 +1535,7 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
 
     p = malloc(sizeof(*p));
     p->kind = node_variable;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->identifier = str_dup(t->text);
     p->type = type;
@@ -1541,6 +1581,7 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
 
     p = malloc(sizeof(*p));
     p->kind = node_param;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->identifier = str_dup(t->text);
     p->type = type;
@@ -1624,6 +1665,7 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_function;
+    p->filename = str_dup(t->filename);
     p->line = t->line;
     p->identifier = t->text;
     p->type = func_type;
