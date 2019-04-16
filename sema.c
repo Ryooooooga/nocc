@@ -139,7 +139,7 @@ void usual_arithmetic_conversion(ExprNode **left, ExprNode **right) {
     *right = integer_promotion(*right);
 }
 
-void relational_operation_type_conversion(ExprNode **left, ExprNode **right) {
+bool relational_operation_type_conversion(ExprNode **left, ExprNode **right) {
     assert(left != NULL);
     assert(*left != NULL);
     assert(right != NULL);
@@ -148,15 +148,23 @@ void relational_operation_type_conversion(ExprNode **left, ExprNode **right) {
     *left = integer_promotion(*left);
     *right = integer_promotion(*right);
 
+    if (!is_scalar_type((*left)->type) || !is_scalar_type((*right)->type)) {
+        return false;
+    }
+
     if (is_pointer_type((*left)->type) && is_pointer_type((*right)->type)) {
         if (is_void_pointer_type((*left)->type) &&
             !is_void_pointer_type((*right)->type)) {
+            /* void* < T* */
             *right = implicit_cast_node_new(*right, (*left)->type);
         } else if (!is_void_pointer_type((*left)->type) &&
                    is_void_pointer_type((*right)->type)) {
+            /* T* < void* */
             *left = implicit_cast_node_new(*left, (*right)->type);
         }
     }
+
+    return type_equals((*left)->type, (*right)->type);
 }
 
 bool assign_type_conversion(ExprNode **expr, Type *dest_type) {
@@ -210,14 +218,14 @@ Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
     p = scope_stack_find(ctx->env, t->text, true);
 
     if (p == NULL) {
-        fprintf(stderr, "erroor at %s(%d): type %s not found in this scope\n",
+        fprintf(stderr, "error at %s(%d): type %s not found in this scope\n",
                 t->filename, t->line, t->text);
         exit(1);
     }
 
     /* check the symbol kind */
     if (p->kind != node_typedef) {
-        fprintf(stderr, "erroor at %s(%d): symbol %s is not a type\n",
+        fprintf(stderr, "error at %s(%d): symbol %s is not a type\n",
                 t->filename, t->line, t->text);
         exit(1);
     }
@@ -243,13 +251,16 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
 
     /* type check */
     if (is_incomplete_type(type)) {
-        fprintf(stderr, "member of struct must be a complete type\n");
+        fprintf(stderr,
+                "error at %s(%d): member of struct must be a complete type\n",
+                p->filename, p->line);
         exit(1);
     }
 
     /* redefinition check */
     if (scope_stack_find(ctx->env, p->identifier, false)) {
-        fprintf(stderr, "member %s is already defined\n", p->identifier);
+        fprintf(stderr, "error at %s(%d): member %s is already defined\n",
+                p->filename, p->line, p->identifier);
         exit(1);
     }
 
@@ -307,9 +318,12 @@ StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
     /* redefinition check */
     if (!p->is_incomplete) {
         if (p->identifier) {
-            fprintf(stderr, "redefinition of struct %s\n", p->identifier);
+            fprintf(stderr, "error at %s(%d): redefinition of struct %s\n",
+                    t->filename, t->line, p->identifier);
         } else {
-            fprintf(stderr, "redefinition of struct %s\n", "<anonymous>");
+            /* TODO: refactoring with conditional expression */
+            fprintf(stderr, "error at %s(%d): redefinition of struct %s\n",
+                    t->filename, t->line, "<anonymous>");
         }
         exit(1);
     }
@@ -336,7 +350,8 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
 
     /* check the number of members */
     if (num_members == 0) {
-        fprintf(stderr, "empty struct is not supported\n");
+        fprintf(stderr, "error at %s(%d): empty struct is not supported\n",
+                type->filename, type->line);
         exit(1);
     }
 
@@ -419,7 +434,8 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     p->declaration = scope_stack_find(ctx->env, p->identifier, true);
 
     if (p->declaration == NULL) {
-        fprintf(stderr, "undeclared symbol %s\n", p->identifier);
+        fprintf(stderr, "error at %s(%d): undeclared symbol %s\n", p->filename,
+                p->line, p->identifier);
         exit(1);
     }
 
@@ -433,8 +449,8 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
         break;
 
     default:
-        fprintf(stderr, "symbol %s is not a variable: %d\n", p->identifier,
-                p->declaration->kind);
+        fprintf(stderr, "error at %s(%d): symbol %s is not a variable: %d\n",
+                p->filename, p->line, p->identifier, p->declaration->kind);
         exit(1);
     }
 
@@ -463,22 +479,27 @@ ExprNode *sema_postfix_expr(ParserContext *ctx, ExprNode *operand,
     case token_increment:
     case token_decrement:
         if (!operand->is_lvalue) {
-            fprintf(stderr, "operand of postfix operator %s must be a lvalue\n",
-                    t->text);
+            fprintf(stderr,
+                    "error at %s(%d): "
+                    "operand of postfix operator %s must be a lvalue\n",
+                    p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
         if (is_incomplete_pointer_type(p->operand->type)) {
             fprintf(stderr,
+                    "error at %s(%d): "
                     "operand of postfix operator %s cannot be a pointer "
                     "of incomplete type\n",
-                    t->text);
+                    p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
         if (!is_scalar_type(p->operand->type)) {
-            fprintf(stderr, "invalid operand type of postfix operator %s\n",
-                    t->text);
+            fprintf(stderr,
+                    "error at %s(%d): "
+                    "invalid operand type of postfix operator %s\n",
+                    p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
@@ -487,7 +508,8 @@ ExprNode *sema_postfix_expr(ParserContext *ctx, ExprNode *operand,
         break;
 
     default:
-        fprintf(stderr, "unknown postfix operator %s\n", t->text);
+        fprintf(stderr, "error at %s(%d): unknown postfix operator %s\n",
+                t->filename, t->line, t->text);
         exit(1);
     }
 
@@ -526,7 +548,8 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
 
     /* callee type */
     if (!is_function_pointer_type(p->callee->type)) {
-        fprintf(stderr, "invalid callee type\n");
+        fprintf(stderr, "error at %s(%d): invalid callee type\n",
+                p->callee->filename, p->callee->line);
         exit(1);
     }
 
@@ -536,14 +559,16 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
 
     /* check argument types */
     if (num_args != num_params && !(is_var_args && num_args >= num_params)) {
-        fprintf(stderr, "invalid number of arguments\n");
+        fprintf(stderr, "error at %s(%d): invalid number of arguments\n",
+                p->filename, p->line);
         exit(1);
     }
 
     for (i = 0; i < num_params; i++) {
         if (!assign_type_conversion(&p->args[i],
                                     function_param_type(func_type, i))) {
-            fprintf(stderr, "invalid type of argument\n");
+            fprintf(stderr, "error at %s(%d): invalid type of argument\n",
+                    p->args[i]->filename, p->args[i]->line);
             exit(1);
         }
     }
@@ -551,7 +576,9 @@ ExprNode *sema_call_expr(ParserContext *ctx, ExprNode *callee,
     /* variadic arguments part */
     for (i = num_params; i < num_args; i++) {
         if (!default_argument_promotion(&p->args[i])) {
-            fprintf(stderr, "invalid type of varidic argument");
+            fprintf(stderr,
+                    "error at %s(%d): invalid type of varidic argument\n",
+                    p->args[i]->filename, p->args[i]->line);
             exit(1);
         }
     }
@@ -585,7 +612,10 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
 
     /* check the parent type */
     if (!is_struct_type(parent->type)) {
-        fprintf(stderr, "member reference base type must be a struct type");
+        fprintf(stderr,
+                "error at %s(%d): "
+                "member reference base type must be a struct type\n",
+                p->parent->filename, p->parent->line);
         exit(1);
     }
 
@@ -593,7 +623,8 @@ ExprNode *sema_dot_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
     member = struct_type_find_member(parent->type, p->identifier, &p->index);
 
     if (member == NULL) {
-        fprintf(stderr, "cannot find member named %s\n", p->identifier);
+        fprintf(stderr, "error at %s(%d): cannot find member named %s\n",
+                identifier->filename, identifier->line, p->identifier);
         exit(1);
     }
 
@@ -618,12 +649,17 @@ ExprNode *sema_arrow_expr(ParserContext *ctx, ExprNode *parent, const Token *t,
 
     /* type check */
     if (!is_pointer_type(parent->type)) {
-        fprintf(stderr, "invalid operand type of opeartor ->\n");
+        fprintf(stderr,
+                "error at %s(%d): invalid operand type of opeartor ->\n",
+                parent->filename, parent->line);
         exit(1);
     }
 
     if (is_incomplete_pointer_type(parent->type)) {
-        fprintf(stderr, "cannot access member of incomplete pointer type\n");
+        fprintf(stderr,
+                "error at %s(%d): "
+                "cannot access member of incomplete pointer type\n",
+                parent->filename, parent->line);
         exit(1);
     }
 
@@ -664,8 +700,10 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         p->operand = integer_promotion(p->operand);
 
         if (!is_int32_type(p->operand->type)) {
-            fprintf(stderr, "invalid operand type of unary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of unary operator %s\n",
+                p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
@@ -676,13 +714,18 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         p->operand = decay_type_conversion(p->operand);
 
         if (!is_pointer_type(p->operand->type)) {
-            fprintf(stderr, "invalid operand type of unary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of unary operator %s\n",
+                p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
         if (is_incomplete_pointer_type(p->operand->type)) {
-            fprintf(stderr, "cannot dereference pointer of incomplete type\n");
+            fprintf(stderr,
+                    "error at %s(%d): "
+                    "cannot dereference pointer of incomplete type\n",
+                    p->operand->filename, p->operand->line);
             exit(1);
         }
 
@@ -692,8 +735,10 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
 
     case '&':
         if (!p->operand->is_lvalue) {
-            fprintf(stderr, "operand of unary operator %s must be a lvalue\n",
-                    t->text);
+            fprintf(stderr,
+                    "error at %s(%d): "
+                    "operand of unary operator %s must be a lvalue\n",
+                    p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
@@ -704,8 +749,10 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         p->operand = integer_promotion(p->operand);
 
         if (!is_scalar_type(p->operand->type)) {
-            fprintf(stderr, "invalid operand type of unary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of unary operator %s\n",
+                p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
@@ -715,22 +762,27 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
     case token_increment:
     case token_decrement:
         if (!operand->is_lvalue) {
-            fprintf(stderr, "operand of prefix operator %s must be a lvalue\n",
-                    t->text);
+            fprintf(stderr,
+                    "error at %s(%d): "
+                    "operand of prefix operator %s must be a lvalue\n",
+                    p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
         if (is_incomplete_pointer_type(p->operand->type)) {
             fprintf(stderr,
-                    "operand of prefix operator %s cannot be a pointer "
-                    "of incomplete type\n",
-                    t->text);
+                    "error at %s(%d): "
+                    "operand of prefix operator %s cannot be "
+                    "a pointer of incomplete type\n",
+                    p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
         if (!is_scalar_type(p->operand->type)) {
-            fprintf(stderr, "invalid operand type of prefix operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of prefix operator %s\n",
+                p->operand->filename, p->operand->line, t->text);
             exit(1);
         }
 
@@ -739,7 +791,8 @@ ExprNode *sema_unary_expr(ParserContext *ctx, const Token *t,
         break;
 
     default:
-        fprintf(stderr, "unknown unary operator %s\n", t->text);
+        fprintf(stderr, "error at %s(%d): unknown unary operator %s\n",
+                t->filename, t->line, t->text);
         exit(1);
     }
 
@@ -763,7 +816,8 @@ ExprNode *sema_sizeof_expr(ParserContext *ctx, const Token *t, Type *operand) {
 
     /* type check */
     if (is_incomplete_type(p->operand)) {
-        fprintf(stderr, "cannot get size of incomplete type\n");
+        fprintf(stderr, "error at %s(%d): cannot get size of incomplete type\n",
+                t->filename, t->line);
         exit(1);
     }
 
@@ -795,7 +849,8 @@ ExprNode *sema_cast_expr(ParserContext *ctx, const Token *open, Type *type,
 
     /* type check */
     if (!can_cast_into(p->operand->type, p->type)) {
-        fprintf(stderr, "invalid type cast\n");
+        fprintf(stderr, "error at %s(%d): invalid type cast\n", p->filename,
+                p->line);
         exit(1);
     }
 
@@ -826,34 +881,31 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         /* a + b */
         usual_arithmetic_conversion(&p->left, &p->right);
 
-        if (is_integer_type(p->left->type) && is_integer_type(p->right->type)) {
+        if (is_incomplete_pointer_type(p->left->type) ||
+            is_incomplete_pointer_type(p->right->type)) {
+            /* <?>* + T or T + <?> */
+            fprintf(stderr,
+                    "error at %s(%d): "
+                    "arithmetic on a pointer to an incomplete type\n",
+                    p->filename, p->line);
+            exit(1);
+        } else if (is_integer_type(p->left->type) &&
+                   is_integer_type(p->right->type)) {
             /* int + int -> int */
             p->type = p->left->type;
         } else if (is_pointer_type(p->left->type) &&
                    is_integer_type(p->right->type)) {
             /* T* + int -> T* */
-            if (is_incomplete_pointer_type(p->left->type)) {
-                fprintf(stderr,
-                        "arithmetic on a pointer to an incomplete type\n");
-                exit(1);
-            }
-
             p->type = p->left->type;
         } else if (is_integer_type(p->left->type) &&
                    is_pointer_type(p->right->type)) {
             /* int + T* -> T* */
-            if (is_incomplete_pointer_type(p->right->type)) {
-                fprintf(stderr,
-                        "arithmetic on a pointer to an incomplete type\n");
-                exit(1);
-            }
-
             p->type = p->right->type;
         } else {
-            fprintf(stderr,
-                    "error at %s(%d): error at %s(%d): invalid operand type of "
-                    "binary operator %s\n",
-                    t->filename, t->line, t->filename, t->line, t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of binary operator %s\n",
+                p->filename, p->line, t->text);
             exit(1);
         }
         break;
@@ -877,7 +929,7 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             fprintf(
                 stderr,
                 "error at %s(%d): invalid operand type of binary operator %s\n",
-                t->filename, t->line, t->text);
+                p->filename, p->line, t->text);
             exit(1);
         }
         break;
@@ -892,10 +944,11 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             /* int * int -> int */
             p->type = p->left->type;
         } else {
+            /* ? * ? */
             fprintf(
                 stderr,
                 "error at %s(%d): invalid operand type of binary operator %s\n",
-                t->filename, t->line, t->text);
+                p->filename, p->line, t->text);
             exit(1);
         }
         break;
@@ -907,19 +960,11 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case token_equal:
     case token_not_equal:
         /* relational operator */
-        relational_operation_type_conversion(&p->left, &p->right);
-
-        if (!type_equals(p->left->type, p->right->type)) {
+        if (!relational_operation_type_conversion(&p->left, &p->right)) {
             fprintf(
                 stderr,
                 "error at %s(%d): invalid operand type of binary operator %s\n",
-                t->filename, t->line, t->text);
-            exit(1);
-        }
-
-        if (!is_scalar_type(p->left->type)) {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+                p->filename, p->line, t->text);
             exit(1);
         }
 
@@ -933,8 +978,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         usual_arithmetic_conversion(&p->left, &p->right);
 
         if (!is_int32_type(p->left->type) || !is_int32_type(p->right->type)) {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of binary operator %s\n",
+                p->filename, p->line, t->text);
             exit(1);
         }
 
@@ -947,8 +994,10 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
         usual_arithmetic_conversion(&p->left, &p->right);
 
         if (!is_scalar_type(p->left->type) || !is_scalar_type(p->right->type)) {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of binary operator %s\n",
+                p->filename, p->line, t->text);
             exit(1);
         }
 
@@ -958,14 +1007,17 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
     case '=':
         /* assignment operator */
         if (!p->left->is_lvalue) {
-            fprintf(stderr, "cannot assign to rvalue\n");
+            fprintf(stderr, "error at %s(%d): cannot assign to rvalue\n",
+                    p->left->filename, p->left->line);
             exit(1);
         }
 
         /* assignment type conversion */
         if (!assign_type_conversion(&p->right, p->left->type)) {
-            fprintf(stderr, "invalid operand type of binary operator %s\n",
-                    t->text);
+            fprintf(
+                stderr,
+                "error at %s(%d): invalid operand type of binary operator %s\n",
+                p->filename, p->line, t->text);
             exit(1);
         }
 
@@ -980,13 +1032,16 @@ ExprNode *sema_binary_expr(ParserContext *ctx, ExprNode *left, const Token *t,
             p->type = pointer_element_type(p->left->type);
             p->is_lvalue = true;
         } else {
-            fprintf(stderr, "invalid operand type of operator []\n");
+            fprintf(stderr,
+                    "error at %s(%d): invalid operand type of operator []\n",
+                    p->filename, p->line);
             exit(1);
         }
         break;
 
     default:
-        fprintf(stderr, "unknown binary operator %s\n", t->text);
+        fprintf(stderr, "error at %s(%d): unknown binary operator %s\n",
+                t->filename, t->line, t->text);
         exit(1);
     }
 
@@ -1047,17 +1102,25 @@ StmtNode *sema_return_stmt(ParserContext *ctx, const Token *t,
     /* type check */
     return_type = function_return_type(ctx->current_function->type);
 
-    if (is_void_type(return_type)) {
-        if (p->return_value != NULL) {
-            fprintf(stderr, "void function should not return a value\n");
-            exit(1);
-        }
-    } else {
-        if (p->return_value == NULL ||
-            !assign_type_conversion(&p->return_value, return_type)) {
-            fprintf(stderr, "invalid return type\n");
-            exit(1);
-        }
+    if (is_void_type(return_type) && p->return_value != NULL) {
+        fprintf(stderr,
+                "error at %s(%d): void function %s should not return a value\n",
+                p->filename, p->line, ctx->current_function->identifier);
+        exit(1);
+    }
+
+    if (!is_void_type(return_type) && p->return_value == NULL) {
+        fprintf(stderr,
+                "error at %s(%d): non-void function %s should return a value\n",
+                p->filename, p->line, ctx->current_function->identifier);
+        exit(1);
+    }
+
+    if (p->return_value != NULL &&
+        !assign_type_conversion(&p->return_value, return_type)) {
+        fprintf(stderr, "error at %s(%d): invalid return type\n",
+                p->return_value->filename, p->return_value->line);
+        exit(1);
     }
 
     return (StmtNode *)p;
@@ -1097,8 +1160,9 @@ StmtNode *sema_if_stmt(ParserContext *ctx, const Token *t, ExprNode *condition,
     /* type check */
     p->condition = integer_promotion(p->condition);
 
-    if (!is_scalar_type(condition->type)) {
-        fprintf(stderr, "invalid condition type\n");
+    if (!is_scalar_type(p->condition->type)) {
+        fprintf(stderr, "error at %s(%d): invalid condition type\n",
+                p->condition->filename, p->condition->line);
         exit(1);
     }
 
@@ -1205,13 +1269,15 @@ StmtNode *sema_switch_stmt_leave(ParserContext *ctx, const Token *t,
     p->condition = integer_promotion(p->condition);
 
     if (!is_scalar_type(p->condition->type)) {
-        fprintf(stderr, "invalid type of switch condition\n");
+        fprintf(stderr, "error at %s(%d): invalid type of switch condition\n",
+                p->condition->filename, p->condition->line);
         exit(1);
     }
 
     for (i = 0; i < num_cases; i++) {
         if (!assign_type_conversion(&p->case_values[i], p->condition->type)) {
-            fprintf(stderr, "invalid type of case condition\n");
+            fprintf(stderr, "error %s(%d): invalid type of case condition\n",
+                    p->case_values[i]->filename, p->case_values[i]->line);
             exit(1);
         }
     }
@@ -1256,8 +1322,9 @@ StmtNode *sema_while_stmt_leave_body(ParserContext *ctx, const Token *t,
     /* type check */
     p->condition = integer_promotion(p->condition);
 
-    if (!is_scalar_type(condition->type)) {
-        fprintf(stderr, "invalid condition type\n");
+    if (!is_scalar_type(p->condition->type)) {
+        fprintf(stderr, "error at %s(%d): invalid condition type\n",
+                p->condition->filename, p->condition->line);
         exit(1);
     }
 
@@ -1304,8 +1371,9 @@ StmtNode *sema_do_stmt(ParserContext *ctx, const Token *t, StmtNode *body,
     /* type check */
     p->condition = integer_promotion(p->condition);
 
-    if (!is_scalar_type(condition->type)) {
-        fprintf(stderr, "invalid condition type\n");
+    if (!is_scalar_type(p->condition->type)) {
+        fprintf(stderr, "error at %s(%d): invalid condition type\n",
+                p->condition->filename, p->condition->line);
         exit(1);
     }
 
@@ -1354,7 +1422,8 @@ StmtNode *sema_for_stmt_leave_body(ParserContext *ctx, const Token *t,
         p->condition = integer_promotion(p->condition);
 
         if (!is_scalar_type(p->condition->type)) {
-            fprintf(stderr, "invalid condition type\n");
+            fprintf(stderr, "error at %s(%d): invalid condition type\n",
+                    p->condition->filename, p->condition->line);
             exit(1);
         }
     }
@@ -1370,7 +1439,8 @@ StmtNode *sema_break_stmt(ParserContext *ctx, const Token *t) {
 
     /* loop check */
     if (!is_break_accepted(ctx)) {
-        fprintf(stderr, "break outside of loop\n");
+        fprintf(stderr, "error at %s(%d): break outside of loop\n", t->filename,
+                t->line);
         exit(1);
     }
 
@@ -1391,7 +1461,8 @@ StmtNode *sema_continue_stmt(ParserContext *ctx, const Token *t) {
 
     /* loop check */
     if (!is_continue_accepted(ctx)) {
-        fprintf(stderr, "continue outside of loop\n");
+        fprintf(stderr, "error at %s(%d): continue outside of loop\n",
+                t->filename, t->line);
         exit(1);
     }
 
@@ -1448,7 +1519,8 @@ Type *sema_array_declarator(ParserContext *ctx, Type *type, ExprNode *size) {
 
     /* size check */
     if (array_size <= 0) {
-        fprintf(stderr, "invalid array size %d\n", array_size);
+        fprintf(stderr, "error at %s(%d): invalid array size %d\n",
+                size->filename, size->line, array_size);
         exit(1);
     }
 
@@ -1475,7 +1547,8 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
 
     /* redefinition check */
     if (scope_stack_find(ctx->env, p->identifier, false)) {
-        fprintf(stderr, "redefinition of symbol %s\n", p->identifier);
+        fprintf(stderr, "error at %s(%d): redefinition of symbol %s\n",
+                t->filename, t->line, p->identifier);
         exit(1);
     }
 
@@ -1509,12 +1582,14 @@ DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
 
     if (decl != NULL) {
         if (decl->kind != node_extern && decl->kind != node_variable) {
-            fprintf(stderr, "redeclaration of symbol %s\n", p->identifier);
+            fprintf(stderr, "error at %s(%d): redeclaration of symbol %s\n",
+                    p->filename, p->line, p->identifier);
             exit(1);
         }
 
         if (!type_equals(decl->type, p->type)) {
-            fprintf(stderr, "conflicting type for %s\n", p->identifier);
+            fprintf(stderr, "error at %s(%d): conflicting type for %s\n",
+                    p->filename, p->line, p->identifier);
             exit(1);
         }
     }
@@ -1543,7 +1618,8 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
 
     /* type check */
     if (is_incomplete_type(type)) {
-        fprintf(stderr, "variable must have a complete type\n");
+        fprintf(stderr, "error at %s(%d): variable must have a complete type\n",
+                t->filename, t->line);
         exit(1);
     }
 
@@ -1553,8 +1629,9 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     if (decl != NULL) {
         if (ctx->current_function != NULL || decl->kind != node_extern) {
             fprintf(stderr,
+                    "error at %s(%d): "
                     "symbol %s has already been declared in this scope\n",
-                    p->identifier);
+                    t->filename, t->line, p->identifier);
             exit(1);
         }
     }
@@ -1589,14 +1666,18 @@ ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
 
     /* type check */
     if (is_incomplete_type(type)) {
-        fprintf(stderr, "parameter must have a complete type\n");
+        fprintf(stderr,
+                "error at %s(%d): parameter must have a complete type\n",
+                t->filename, t->line);
         exit(1);
     }
 
     /* redeclaration check */
     if (scope_stack_find(ctx->env, p->identifier, false)) {
-        fprintf(stderr, "symbol %s has already been declared in this scope\n",
-                p->identifier);
+        fprintf(stderr,
+                "error at %s(%d): "
+                "symbol %s has already been declared in this scope\n",
+                t->filename, t->line, p->identifier);
         exit(1);
     }
 
@@ -1646,18 +1727,20 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
 
     if (symbol != NULL) {
         if (symbol->kind != node_function) {
-            fprintf(stderr, "redeclaration of symbol %s\n", symbol->identifier);
+            fprintf(stderr, "error at %s(%d): redeclaration of symbol %s\n",
+                    t->filename, t->line, symbol->identifier);
             exit(1);
         }
 
         if (!type_equals(symbol->type, func_type)) {
-            fprintf(stderr, "conflicting type for %s\n", symbol->identifier);
+            fprintf(stderr, "error at %s(%d): conflicting type for %s\n",
+                    t->filename, t->line, symbol->identifier);
             exit(1);
         }
 
         if (((FunctionNode *)symbol)->body != NULL) {
-            fprintf(stderr, "redefinition of function %s\n",
-                    symbol->identifier);
+            fprintf(stderr, "error at %s(%d): redefinition of function %s\n",
+                    t->filename, t->line, symbol->identifier);
             exit(1);
         }
     }
