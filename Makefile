@@ -41,4 +41,4 @@ nocc_stage3: file-3.ll generator-3.ll lexer-3.ll map-3.ll parser-3.ll path-3.ll 
 	./nocc_stage2 $< > $@
 
 clean:
-	${RM} nocc test_nocc *.a *.o *.ll
+	${RM} nocc test_nocc nocc_stage* *.a *.o *.ll
