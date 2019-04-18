@@ -4,7 +4,7 @@ A LLVM based self-hosting C compiler.
 
 ## Environment
 
-OS: macOS Mojave 10.14.4
+OS: macOS Mojave 10.14.4, Windows 10 (Msys2 Mingw64)
 
 Compiler: clang 7.0.0, clang++ 7.0.0
 

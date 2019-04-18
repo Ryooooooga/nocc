@@ -512,6 +512,15 @@ Vec *preprocess(const char *filename, const char *src,
     map_add(pp.keywords, "extern", (void *)(intptr_t)token_extern);
     map_add(pp.keywords, "sizeof", (void *)(intptr_t)token_sizeof);
 
+    /* predefined macro */
+#ifdef __APPLE__
+    map_add(pp.macros, "__APPLE__", vec_new());
+#endif
+
+#ifdef __MINGW64__
+    map_add(pp.macros, "__MINGW64__", vec_new());
+#endif
+
     vec_push(pp.include_stack, (char *)filename);
 
     preprocess_lines(&pp, false, false);
