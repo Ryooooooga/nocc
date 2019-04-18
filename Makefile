@@ -1,7 +1,7 @@
 CC       := clang
 CXX      := clang++
-CFLAGS   := -std=c99 -Wall -Wextra -pedantic -Werror -Wno-override-module
-CXXFLAGS := -std=c++17 -Wall -Wextra -pedantic -Werror -Wno-override-module
+CFLAGS   := -std=c99 -Wall -Wextra -pedantic -Werror -Wno-override-module -Wno-incompatible-library-redeclaration -Wno-int-to-void-pointer-cast
+CXXFLAGS := -std=c++17 -Wall -Wextra -pedantic -Werror -Wno-override-module -Wno-incompatible-library-redeclaration -Wno-int-to-void-pointer-cast
 LDFLAGS  :=
 
 CFLAGS   += $(addprefix -I,$(shell llvm-config --includedir))
@@ -14,7 +14,7 @@ all: nocc test_nocc nocc_stage3
 
 test: nocc test_nocc nocc_stage3
 	./test_nocc .
-	[ "$$(md5sum nocc_stage2 | cut -d' ' -f1)" == "$$(md5sum nocc_stage3 | cut -d' ' -f1)" ]
+	cmp -b nocc_stage2 nocc_stage3
 
 nocc: main.o libnocc.a
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
