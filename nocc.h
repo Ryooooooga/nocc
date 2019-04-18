@@ -232,42 +232,11 @@ int LLVMVerifyModule(LLVMModuleRef module, int action, char **message);
 
 #endif
 
-char *str_dup(const char *s);
-char *str_dup_n(const char *s, int length);
-char *str_cat_n(const char *s1, int len1, const char *s2, int len2);
-
-char *path_join(const char *directory, const char *filename);
-char *path_dir(const char *path);
-
-struct Vec {
-    int capacity;
-    int size;
-    void **data;
-};
-
-typedef struct Vec Vec;
-
-Vec *vec_new(void);
-void vec_reserve(Vec *v, int capacity);
-void vec_resize(Vec *v, int size);
-void *vec_back(Vec *v);
-void vec_push(Vec *v, void *value);
-void *vec_pop(Vec *v);
-
-struct Map {
-    Vec *keys;
-    Vec *values;
-};
-
-typedef struct Map Map;
-
-Map *map_new(void);
-int map_size(Map *m);
-bool map_contains(Map *m, const char *k);
-void *map_get(Map *m, const char *k);
-void map_add(Map *m, const char *k, void *v);
-
-char *read_file(const char *filename);
+#include "file.h"
+#include "map.h"
+#include "path.h"
+#include "util.h"
+#include "vec.h"
 
 #define token_number 256
 #define token_character 257
@@ -305,16 +274,14 @@ char *read_file(const char *filename);
 #define token_arrow 289
 #define token_var_args 290
 
-struct Token {
+typedef struct Token {
     int kind;
     char *text;
     const char *filename;
     int line;
     char *string;
     int len_string;
-};
-
-typedef struct Token Token;
+} Token;
 
 Vec *lex(const char *filename, const char *src);
 Vec *preprocess(const char *filename, const char *src,
@@ -328,36 +295,30 @@ Vec *preprocess(const char *filename, const char *src,
 #define type_function 5
 #define type_struct 6
 
-typedef struct Type Type;
-typedef struct PointerType PointerType;
-typedef struct ArrayType ArrayType;
-typedef struct FunctionType FunctionType;
-typedef struct StructType StructType;
-
-struct Type {
+typedef struct Type {
     int kind;
-};
+} Type;
 
-struct PointerType {
+typedef struct PointerType {
     int kind;
     Type *element_type;
-};
+} PointerType;
 
-struct ArrayType {
+typedef struct ArrayType {
     int kind;
     Type *element_type;
     int length;
-};
+} ArrayType;
 
-struct FunctionType {
+typedef struct FunctionType {
     int kind;
     Type *return_type;
     Type **param_types;
     int num_params;
     bool var_args;
-};
+} FunctionType;
 
-struct StructType {
+typedef struct StructType {
     int kind;
     char *filename;
     int line;
@@ -366,7 +327,7 @@ struct StructType {
     int num_members;
     bool is_incomplete;
     LLVMTypeRef generated_type;
-};
+} StructType;
 
 Type *type_get_void(void);
 Type *type_get_int8(void);
@@ -744,11 +705,9 @@ struct TranslationUnitNode {
     int num_decls;
 };
 
-struct ScopeStack {
+typedef struct ScopeStack {
     Vec *scopes;
-};
-
-typedef struct ScopeStack ScopeStack;
+} ScopeStack;
 
 ScopeStack *scope_stack_new(void);
 int scope_stack_depth(ScopeStack *s);
@@ -757,7 +716,7 @@ void scope_stack_pop(ScopeStack *s);
 void *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
 void scope_stack_register(ScopeStack *s, const char *name, void *value);
 
-struct ParserContext {
+typedef struct ParserContext {
     ScopeStack *env;
     ScopeStack *struct_env;
     FunctionNode *current_function;
@@ -765,9 +724,7 @@ struct ParserContext {
     Vec *flow_state;
     const Token **tokens;
     int index;
-};
-
-typedef struct ParserContext ParserContext;
+} ParserContext;
 
 Type *parse_type(ParserContext *ctx);
 ExprNode *parse_unary_expr(ParserContext *ctx);
@@ -876,14 +833,12 @@ TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
                                                  DeclNode **decls,
                                                  int num_decls);
 
-struct GeneratorContext {
+typedef struct GeneratorContext {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
     Vec *break_targets;
     Vec *continue_targets;
-};
-
-typedef struct GeneratorContext GeneratorContext;
+} GeneratorContext;
 
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p);
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p);
