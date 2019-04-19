@@ -57,8 +57,8 @@ void test_generating_identifier(void) {
         .builder = LLVMCreateBuilder(),
     };
 
-    ParamNode *decl = &(ParamNode){
-        .kind = node_param,
+    VariableNode *decl = &(VariableNode){
+        .kind = node_variable,
         .line = 1,
         .identifier = "a",
         .type = type_get_int32(),
@@ -409,9 +409,9 @@ void test_generating_function_with_param(void) {
         .type = function_type_new(type_get_void(), (Type *[]){type_get_int32()},
                                   1, false),
         .params =
-            (ParamNode *[]){
-                &(ParamNode){
-                    .kind = node_param,
+            (VariableNode *[]){
+                &(VariableNode){
+                    .kind = node_variable,
                     .line = 1,
                     .identifier = "a",
                     .type = type_get_int32(),
@@ -460,15 +460,15 @@ void test_generating_function_with_params(void) {
             type_get_void(), (Type *[]){type_get_int32(), type_get_int32()}, 2,
             false),
         .params =
-            (ParamNode *[]){
-                &(ParamNode){
-                    .kind = node_param,
+            (VariableNode *[]){
+                &(VariableNode){
+                    .kind = node_variable,
                     .line = 1,
                     .identifier = "a",
                     .type = type_get_int32(),
                 },
-                &(ParamNode){
-                    .kind = node_param,
+                &(VariableNode){
+                    .kind = node_variable,
                     .line = 1,
                     .identifier = "b",
                     .type = type_get_int32(),

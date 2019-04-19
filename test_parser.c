@@ -81,8 +81,8 @@ void test_parsing_identifier(void) {
         .index = 0,
     };
 
-    ParamNode *decl = &(ParamNode){
-        .kind = node_param,
+    VariableNode *decl = &(VariableNode){
+        .kind = node_variable,
         .line = 1,
         .identifier = "xyz",
         .type = type_get_int32(),
@@ -515,14 +515,14 @@ void test_parsing_if_else_stmt(void) {
 void test_parsing_parameter(void) {
     Vec *toks = preprocess("test_parsing_parameter", "int a", vec_new());
 
-    ParamNode *p = parse_param(&(ParserContext){
+    VariableNode *p = parse_param(&(ParserContext){
         .env = scope_stack_new(),
         .struct_env = scope_stack_new(),
         .tokens = (const Token **)toks->data,
         .index = 0,
     });
 
-    assert(p->kind == node_param);
+    assert(p->kind == node_variable);
     assert(p->line == 1);
     assert(strcmp(p->identifier, "a") == 0);
     assert(is_int32_type(p->type));
@@ -604,9 +604,9 @@ void test_parsing_function_param(void) {
     assert(t->num_params == 1);
     assert(is_int32_type(t->param_types[0]));
 
-    ParamNode *a = q->params[0];
+    VariableNode *a = q->params[0];
 
-    assert(a->kind == node_param);
+    assert(a->kind == node_variable);
     assert(a->line == 1);
     assert(strcmp(a->identifier, "a") == 0);
     assert(is_int32_type(a->type));
@@ -638,15 +638,15 @@ void test_parsing_function_params(void) {
     assert(is_int32_type(t->param_types[0]));
     assert(is_int32_type(t->param_types[1]));
 
-    ParamNode *a = q->params[0];
-    ParamNode *b = q->params[1];
+    VariableNode *a = q->params[0];
+    VariableNode *b = q->params[1];
 
-    assert(a->kind == node_param);
+    assert(a->kind == node_variable);
     assert(a->line == 1);
     assert(strcmp(a->identifier, "a") == 0);
     assert(is_int32_type(a->type));
 
-    assert(b->kind == node_param);
+    assert(b->kind == node_variable);
     assert(b->line == 1);
     assert(strcmp(b->identifier, "b") == 0);
     assert(is_int32_type(b->type));

@@ -442,7 +442,6 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     switch (p->declaration->kind) {
     case node_extern:
     case node_variable:
-    case node_param:
     case node_function:
         p->type = p->declaration->type;
         p->is_lvalue = true;
@@ -1649,15 +1648,15 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t) {
     return (DeclNode *)p;
 }
 
-ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
-    ParamNode *p;
+VariableNode *sema_param(ParserContext *ctx, Type *type, const Token *t) {
+    VariableNode *p;
 
     assert(ctx != NULL);
     assert(type != NULL);
     assert(t != NULL);
 
     p = malloc(sizeof(*p));
-    p->kind = node_param;
+    p->kind = node_variable;
     p->filename = str_dup(t->filename);
     p->line = t->line;
     p->identifier = str_dup(t->text);
@@ -1695,7 +1694,7 @@ void sema_function_enter_params(ParserContext *ctx) {
 }
 
 FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
-                                         const Token *t, ParamNode **params,
+                                         const Token *t, VariableNode **params,
                                          int num_params, bool var_args) {
     Type **param_types;
     Type *func_type;
@@ -1753,7 +1752,7 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     p->identifier = t->text;
     p->type = func_type;
     p->generated_location = NULL;
-    p->params = malloc(sizeof(ParamNode *) * num_params);
+    p->params = malloc(sizeof(VariableNode *) * num_params);
     p->num_params = num_params;
     p->var_args = var_args;
     p->body = NULL;

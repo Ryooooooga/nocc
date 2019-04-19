@@ -163,7 +163,6 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
 #define node_extern 22
 #define node_member 23
 #define node_variable 24
-#define node_param 25
 #define node_function 26
 
 typedef struct ExprNode ExprNode;
@@ -196,7 +195,6 @@ typedef struct TypedefNode TypedefNode;
 typedef struct ExternNode ExternNode;
 typedef struct MemberNode MemberNode;
 typedef struct VariableNode VariableNode;
-typedef struct ParamNode ParamNode;
 typedef struct FunctionNode FunctionNode;
 
 typedef struct TranslationUnitNode TranslationUnitNode;
@@ -447,15 +445,6 @@ struct VariableNode {
     LLVMValueRef generated_location;
 };
 
-struct ParamNode {
-    int kind;
-    char *filename;
-    int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
-};
-
 struct FunctionNode {
     int kind;
     char *filename;
@@ -463,7 +452,7 @@ struct FunctionNode {
     char *identifier;
     Type *type;
     LLVMValueRef generated_location;
-    ParamNode **params;
+    VariableNode **params;
     int num_params;
     bool var_args;
     StmtNode *body;
@@ -508,7 +497,7 @@ void parse_declarator_postfix(ParserContext *ctx, Type **type);
 void parse_declarator(ParserContext *ctx, Type **type, const Token **t);
 void parse_abstract_declarator(ParserContext *ctx, Type **type);
 DeclNode *parse_decl(ParserContext *ctx);
-ParamNode *parse_param(ParserContext *ctx);
+VariableNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src,
                            Vec *include_directories);
@@ -589,11 +578,11 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
 DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
                       const Token *identifier);
 DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t);
-ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
+VariableNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
 
 void sema_function_enter_params(ParserContext *ctx);
 FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
-                                         const Token *t, ParamNode **params,
+                                         const Token *t, VariableNode **params,
                                          int num_params, bool var_args);
 void sema_function_enter_body(ParserContext *ctx, FunctionNode *p);
 FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,

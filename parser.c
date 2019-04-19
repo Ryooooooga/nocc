@@ -1246,7 +1246,7 @@ DeclNode *parse_decl(ParserContext *ctx) {
     }
 }
 
-ParamNode *parse_param(ParserContext *ctx) {
+VariableNode *parse_param(ParserContext *ctx) {
     Type *type;
     const Token *t;
 
@@ -1374,7 +1374,7 @@ DeclNode *parse_function(ParserContext *ctx) {
 
     /* leave parameter scope and make node */
     p = sema_function_leave_params(ctx, return_type, t,
-                                   (ParamNode **)params->data, params->size,
+                                   (VariableNode **)params->data, params->size,
                                    var_args);
 
     /* ;? */
