@@ -1,4 +1,6 @@
-#include "nocc.h"
+#include "file.h"
+
+#include "std.h"
 
 char *read_file(const char *filename) {
     FILE *fp;

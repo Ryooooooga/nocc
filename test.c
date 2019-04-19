@@ -1,4 +1,6 @@
-#include "nocc.h"
+#include "std.h"
+
+#include "vec.h"
 
 void test_path(void);
 void test_vec(void);

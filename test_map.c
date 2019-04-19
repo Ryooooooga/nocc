@@ -1,4 +1,4 @@
-#include "nocc.h"
+#include "map.h"
 
 void test_map(void) {
     Map *m;

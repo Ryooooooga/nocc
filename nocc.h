@@ -1,273 +1,14 @@
 #ifndef INCLUDE_nocc_h
 #define INCLUDE_nocc_h
 
-#ifdef USE_STANDARD_HEADERS
+#include "llvm.h"
+#include "std.h"
 
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <llvm-c/Analysis.h>
-#include <llvm-c/Core.h>
-
-#else
-
-/* <assert.h> */
-void assert(int cond);
-
-/* <ctype.h> */
-int isspace(int c);
-int isdigit(int c);
-int isalpha(int c);
-int isalnum(int c);
-
-/* <errno.h> */
-#define ERANGE 34
-
-#ifdef __APPLE__
-#define errno (*__error())
-int *__error(void);
-#endif
-
-#ifdef __MINGW64__
-#define errno (*_errno())
-int *_errno(void);
-#endif
-
-/* <limits.h> */
-#define INT_MAX 2147483647
-
-/* <stdbool.h> */
-#define true 1
-#define false 0
-
-typedef int bool;
-
-/* <stddef.h> */
-#define NULL ((void *)0)
-
-typedef unsigned long size_t;
-typedef long intptr_t;
-
-/* <stdio.h> */
-typedef struct FILE FILE;
-
-#ifdef __APPLE__
-#define stderr __stderrp
-extern FILE *__stderrp;
-#endif
-
-#ifdef __MINGW64__
-#define stderr (__acrt_iob_func(2))
-FILE *__acrt_iob_func(int a);
-#endif
-
-#define SEEK_SET 0
-#define SEEK_END 2
-
-int printf(const char *format, ...);
-FILE *fopen(const char *path, const char *mode);
-int fclose(FILE *fp);
-int fseek(FILE *fp, long offset, int whence);
-long ftell(FILE *fp);
-size_t fread(void *ptr, size_t size, size_t nitems, FILE *fp);
-int fprintf(FILE *fp, const char *format, ...);
-
-/* <stdlib.h> */
-void exit(int code);
-void *malloc(size_t size);
-void *realloc(void *ptr, size_t size);
-long strtol(const char *str, char **end, int base);
-
-/* <string.h> */
-size_t strlen(const char *s);
-int strcmp(const char *a, const char *b);
-char *strncpy(char *dest, const char *src, size_t size);
-
-/* <llvm-c/Core.h> */
-#define LLVMIntEQ 32
-#define LLVMIntNE 33
-#define LLVMIntSGT 38
-#define LLVMIntSGE 39
-#define LLVMIntSLT 40
-#define LLVMIntSLE 41
-
-typedef struct LLVMOpaqueContext *LLVMContextRef;
-typedef struct LLVMOpaqueBuilder *LLVMBuilderRef;
-typedef struct LLVMOpaqueModule *LLVMModuleRef;
-typedef struct LLVMOpaqueBasicBlock *LLVMBasicBlockRef;
-typedef struct LLVMOpaqueValue *LLVMValueRef;
-typedef struct LLVMOpaqueType *LLVMTypeRef;
-
-LLVMModuleRef LLVMModuleCreateWithName(const char *module_id);
-LLVMContextRef LLVMGetModuleContext(LLVMModuleRef module);
-LLVMValueRef LLVMAddGlobal(LLVMModuleRef module, LLVMTypeRef type,
-                           const char *name);
-LLVMValueRef LLVMGetNamedGlobal(LLVMModuleRef module, const char *name);
-LLVMValueRef LLVMAddFunction(LLVMModuleRef module, const char *name,
-                             LLVMTypeRef func_type);
-LLVMValueRef LLVMGetNamedFunction(LLVMModuleRef module, const char *name);
-void LLVMDisposeModule(LLVMModuleRef module);
-
-LLVMBuilderRef LLVMCreateBuilder(void);
-void LLVMPositionBuilderAtEnd(LLVMBuilderRef b, LLVMBasicBlockRef bb);
-LLVMBasicBlockRef LLVMGetInsertBlock(LLVMBuilderRef b);
-void LLVMDisposeBuilder(LLVMBuilderRef b);
-LLVMValueRef LLVMBuildGlobalStringPtr(LLVMBuilderRef b, const char *str,
-                                      const char *name);
-LLVMValueRef LLVMConstInt(LLVMTypeRef type, unsigned long n, int sign_extend);
-LLVMValueRef LLVMConstNull(LLVMTypeRef type);
-LLVMValueRef LLVMBuildICmp(LLVMBuilderRef b, int op, LLVMValueRef left,
-                           LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildIsNull(LLVMBuilderRef b, LLVMValueRef val,
-                             const char *name);
-LLVMValueRef LLVMBuildIsNotNull(LLVMBuilderRef b, LLVMValueRef val,
-                                const char *name);
-LLVMValueRef LLVMBuildAdd(LLVMBuilderRef b, LLVMValueRef left,
-                          LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildSub(LLVMBuilderRef b, LLVMValueRef left,
-                          LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildMul(LLVMBuilderRef b, LLVMValueRef left,
-                          LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildSDiv(LLVMBuilderRef b, LLVMValueRef left,
-                           LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildSRem(LLVMBuilderRef b, LLVMValueRef left,
-                           LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildPtrDiff(LLVMBuilderRef b, LLVMValueRef left,
-                              LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildAnd(LLVMBuilderRef b, LLVMValueRef left,
-                          LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildOr(LLVMBuilderRef b, LLVMValueRef left,
-                         LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildXor(LLVMBuilderRef b, LLVMValueRef left,
-                          LLVMValueRef right, const char *name);
-LLVMValueRef LLVMBuildNeg(LLVMBuilderRef b, LLVMValueRef val, const char *name);
-LLVMValueRef LLVMBuildTrunc(LLVMBuilderRef b, LLVMValueRef val,
-                            LLVMTypeRef type, const char *name);
-LLVMValueRef LLVMBuildSExt(LLVMBuilderRef b, LLVMValueRef val, LLVMTypeRef type,
-                           const char *name);
-LLVMValueRef LLVMBuildZExt(LLVMBuilderRef b, LLVMValueRef val, LLVMTypeRef type,
-                           const char *name);
-LLVMValueRef LLVMBuildIntToPtr(LLVMBuilderRef b, LLVMValueRef val,
-                               LLVMTypeRef type, const char *name);
-LLVMValueRef LLVMBuildPtrToInt(LLVMBuilderRef b, LLVMValueRef val,
-                               LLVMTypeRef type, const char *name);
-LLVMValueRef LLVMBuildPointerCast(LLVMBuilderRef b, LLVMValueRef val,
-                                  LLVMTypeRef type, const char *name);
-LLVMValueRef LLVMBuildLoad(LLVMBuilderRef b, LLVMValueRef ptr,
-                           const char *name);
-LLVMValueRef LLVMBuildStore(LLVMBuilderRef b, LLVMValueRef val,
-                            LLVMValueRef ptr);
-LLVMValueRef LLVMBuildInBoundsGEP(LLVMBuilderRef b, LLVMValueRef ptr,
-                                  LLVMValueRef *indices,
-                                  unsigned int num_indices, const char *name);
-LLVMValueRef LLVMBuildInBoundsGEP(LLVMBuilderRef b, LLVMValueRef ptr,
-                                  LLVMValueRef *indices,
-                                  unsigned int num_indices, const char *name);
-LLVMValueRef LLVMBuildStructGEP(LLVMBuilderRef b, LLVMValueRef ptr,
-                                unsigned int index, const char *name);
-LLVMValueRef LLVMBuildExtractValue(LLVMBuilderRef b, LLVMValueRef val,
-                                   unsigned int index, const char *name);
-LLVMValueRef LLVMBuildCall(LLVMBuilderRef b, LLVMValueRef func,
-                           LLVMValueRef *args, unsigned int num_args,
-                           const char *name);
-LLVMValueRef LLVMBuildAlloca(LLVMBuilderRef b, LLVMTypeRef type,
-                             const char *name);
-
-LLVMValueRef LLVMBuildRetVoid(LLVMBuilderRef b);
-LLVMValueRef LLVMBuildRet(LLVMBuilderRef b, LLVMValueRef val);
-LLVMValueRef LLVMBuildBr(LLVMBuilderRef b, LLVMBasicBlockRef dest);
-LLVMValueRef LLVMBuildCondBr(LLVMBuilderRef b, LLVMValueRef if_,
-                             LLVMBasicBlockRef then, LLVMBasicBlockRef else_);
-LLVMValueRef LLVMBuildSwitch(LLVMBuilderRef b, LLVMValueRef value,
-                             LLVMBasicBlockRef default_,
-                             unsigned int num_cases);
-void LLVMAddCase(LLVMValueRef switch_, LLVMValueRef case_value,
-                 LLVMBasicBlockRef dest);
-
-LLVMValueRef LLVMBuildPhi(LLVMBuilderRef b, LLVMTypeRef type, const char *name);
-void LLVMAddIncoming(LLVMValueRef phi, LLVMValueRef *incoming_values,
-                     LLVMBasicBlockRef *incoming_blocks, unsigned int count);
-
-LLVMValueRef LLVMGetBasicBlockParent(LLVMBasicBlockRef bb);
-
-LLVMTypeRef LLVMTypeOf(LLVMValueRef val);
-void LLVMSetInitializer(LLVMValueRef global_var, LLVMValueRef constant_val);
-
-LLVMValueRef LLVMGetParam(LLVMValueRef func, unsigned int index);
-LLVMBasicBlockRef LLVMAppendBasicBlock(LLVMValueRef func, const char *name);
-
-LLVMTypeRef LLVMVoidType(void);
-LLVMTypeRef LLVMInt1Type(void);
-LLVMTypeRef LLVMInt8Type(void);
-LLVMTypeRef LLVMInt32Type(void);
-LLVMTypeRef LLVMPointerType(LLVMTypeRef element_type,
-                            unsigned int address_space);
-LLVMTypeRef LLVMArrayType(LLVMTypeRef element_type, unsigned int length);
-LLVMTypeRef LLVMStructCreateNamed(LLVMContextRef context, const char *name);
-LLVMTypeRef LLVMFunctionType(LLVMTypeRef return_type, LLVMTypeRef *param_types,
-                             unsigned int param_count, int is_var_arg);
-LLVMTypeRef LLVMGetElementType(LLVMTypeRef type);
-LLVMTypeRef LLVMGetReturnType(LLVMTypeRef func_type);
-unsigned int LLVMCountParamTypes(LLVMTypeRef func_type);
-void LLVMGetParamTypes(LLVMTypeRef func_type, LLVMTypeRef *dest);
-
-void LLVMStructSetBody(LLVMTypeRef struct_type, LLVMTypeRef *element_types,
-                       unsigned int element_count, int packed);
-
-char *LLVMPrintModuleToString(LLVMModuleRef module);
-char *LLVMPrintTypeToString(LLVMTypeRef type);
-
-void LLVMDisposeMessage(char *message);
-
-/* <llvm-c/Analysis.h> */
-#define LLVMReturnStatusAction 2
-
-int LLVMVerifyModule(LLVMModuleRef module, int action, char **message);
-
-#endif
-
-char *str_dup(const char *s);
-char *str_dup_n(const char *s, int length);
-char *str_cat_n(const char *s1, int len1, const char *s2, int len2);
-
-char *path_join(const char *directory, const char *filename);
-char *path_dir(const char *path);
-
-struct Vec {
-    int capacity;
-    int size;
-    void **data;
-};
-
-typedef struct Vec Vec;
-
-Vec *vec_new(void);
-void vec_reserve(Vec *v, int capacity);
-void vec_resize(Vec *v, int size);
-void *vec_back(Vec *v);
-void vec_push(Vec *v, void *value);
-void *vec_pop(Vec *v);
-
-struct Map {
-    Vec *keys;
-    Vec *values;
-};
-
-typedef struct Map Map;
-
-Map *map_new(void);
-int map_size(Map *m);
-bool map_contains(Map *m, const char *k);
-void *map_get(Map *m, const char *k);
-void map_add(Map *m, const char *k, void *v);
-
-char *read_file(const char *filename);
+#include "file.h"
+#include "map.h"
+#include "path.h"
+#include "util.h"
+#include "vec.h"
 
 #define token_number 256
 #define token_character 257
@@ -305,16 +46,14 @@ char *read_file(const char *filename);
 #define token_arrow 289
 #define token_var_args 290
 
-struct Token {
+typedef struct Token {
     int kind;
     char *text;
     const char *filename;
     int line;
     char *string;
     int len_string;
-};
-
-typedef struct Token Token;
+} Token;
 
 Vec *lex(const char *filename, const char *src);
 Vec *preprocess(const char *filename, const char *src,
@@ -328,36 +67,30 @@ Vec *preprocess(const char *filename, const char *src,
 #define type_function 5
 #define type_struct 6
 
-typedef struct Type Type;
-typedef struct PointerType PointerType;
-typedef struct ArrayType ArrayType;
-typedef struct FunctionType FunctionType;
-typedef struct StructType StructType;
-
-struct Type {
+typedef struct Type {
     int kind;
-};
+} Type;
 
-struct PointerType {
+typedef struct PointerType {
     int kind;
     Type *element_type;
-};
+} PointerType;
 
-struct ArrayType {
+typedef struct ArrayType {
     int kind;
     Type *element_type;
     int length;
-};
+} ArrayType;
 
-struct FunctionType {
+typedef struct FunctionType {
     int kind;
     Type *return_type;
     Type **param_types;
     int num_params;
     bool var_args;
-};
+} FunctionType;
 
-struct StructType {
+typedef struct StructType {
     int kind;
     char *filename;
     int line;
@@ -366,7 +99,7 @@ struct StructType {
     int num_members;
     bool is_incomplete;
     LLVMTypeRef generated_type;
-};
+} StructType;
 
 Type *type_get_void(void);
 Type *type_get_int8(void);
@@ -744,11 +477,9 @@ struct TranslationUnitNode {
     int num_decls;
 };
 
-struct ScopeStack {
+typedef struct ScopeStack {
     Vec *scopes;
-};
-
-typedef struct ScopeStack ScopeStack;
+} ScopeStack;
 
 ScopeStack *scope_stack_new(void);
 int scope_stack_depth(ScopeStack *s);
@@ -757,7 +488,7 @@ void scope_stack_pop(ScopeStack *s);
 void *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
 void scope_stack_register(ScopeStack *s, const char *name, void *value);
 
-struct ParserContext {
+typedef struct ParserContext {
     ScopeStack *env;
     ScopeStack *struct_env;
     FunctionNode *current_function;
@@ -765,9 +496,7 @@ struct ParserContext {
     Vec *flow_state;
     const Token **tokens;
     int index;
-};
-
-typedef struct ParserContext ParserContext;
+} ParserContext;
 
 Type *parse_type(ParserContext *ctx);
 ExprNode *parse_unary_expr(ParserContext *ctx);
@@ -876,14 +605,12 @@ TranslationUnitNode *sema_translation_unit_leave(ParserContext *ctx,
                                                  DeclNode **decls,
                                                  int num_decls);
 
-struct GeneratorContext {
+typedef struct GeneratorContext {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
     Vec *break_targets;
     Vec *continue_targets;
-};
-
-typedef struct GeneratorContext GeneratorContext;
+} GeneratorContext;
 
 LLVMTypeRef generate_type(GeneratorContext *ctx, Type *p);
 LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p);

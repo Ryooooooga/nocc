@@ -31,13 +31,13 @@ nocc_stage2: file-2.ll generator-2.ll lexer-2.ll map-2.ll parser-2.ll path-2.ll 
 nocc_stage3: file-3.ll generator-3.ll lexer-3.ll map-3.ll parser-3.ll path-3.ll preprocessor-3.ll sema-3.ll scope_stack-3.ll type-3.ll util-3.ll vec-3.ll main-3.ll
 	${CXX} ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
 
-%.o: %.c nocc.h
+%.o: %.c *.h
 	${CC} ${CFLAGS} -c -o $@ $<
 
-%-2.ll: %.c nocc.h nocc
+%-2.ll: %.c *.h nocc
 	./nocc $< > $@
 
-%-3.ll: %.c nocc.h nocc_stage2
+%-3.ll: %.c *.h nocc_stage2
 	./nocc_stage2 $< > $@
 
 clean:
