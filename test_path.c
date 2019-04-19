@@ -1,4 +1,6 @@
-#include "nocc.h"
+#include "path.h"
+
+#include "std.h"
 
 void test_path_join(const char *dir, const char *name, const char *expected) {
     char *path;

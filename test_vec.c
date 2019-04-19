@@ -1,4 +1,6 @@
-#include "nocc.h"
+#include "vec.h"
+
+#include "std.h"
 
 void test_vec(void) {
     Vec *v;

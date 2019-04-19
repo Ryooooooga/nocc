@@ -1,4 +1,6 @@
-#include "nocc.h"
+#include "map.h"
+
+#include "util.h"
 
 Map *map_new(void) {
     Map *m;

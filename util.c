@@ -1,4 +1,6 @@
-#include "nocc.h"
+#include "util.h"
+
+#include "std.h"
 
 #ifndef USE_STANDARD_HEADERS
 

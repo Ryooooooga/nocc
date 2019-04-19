@@ -1,6 +1,8 @@
 #ifndef INCLUDE_map_h
 #define INCLUDE_map_h
 
+#include "std.h"
+
 #include "vec.h"
 
 typedef struct Map {

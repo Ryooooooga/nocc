@@ -1,4 +1,8 @@
-#include "nocc.h"
+#include "path.h"
+
+#include "std.h"
+
+#include "util.h"
 
 char *path_join(const char *dir, const char *filename) {
     char *path;
