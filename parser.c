@@ -144,7 +144,7 @@ Type *parse_struct_type(ParserContext *ctx) {
     expect_token(ctx, '}');
 
     /* leave struct scope and make node */
-    return sema_struct_type_leave(ctx, type, (MemberNode **)members->data,
+    return sema_struct_type_leave(ctx, type, t, (MemberNode **)members->data,
                                   members->size);
 }
 

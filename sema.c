@@ -277,7 +277,6 @@ StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
 
     assert(ctx != NULL);
     assert(t != NULL);
-    assert(identifier != NULL);
 
     /* find type from symbol if exists */
     p = scope_stack_find(ctx->struct_env, identifier->text, search_recursively);
@@ -289,16 +288,20 @@ StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = type_struct;
-    p->filename = str_dup(t->filename);
-    p->line = t->line;
-    p->identifier = str_dup(identifier->text);
+    p->symbol = NULL;
     p->members = NULL;
     p->num_members = 0;
     p->is_incomplete = true;
     p->generated_type = NULL;
 
-    /* register struct type symbol */
-    scope_stack_register(ctx->struct_env, p->identifier, p);
+    if (identifier != NULL) {
+        /* make symbol */
+        p->symbol = type_symbol_new(identifier->filename, identifier->line,
+                                    identifier->text, (Type *)p);
+
+        /* register struct type symbol */
+        scope_stack_register(ctx->struct_env, p->symbol->identifier, p);
+    }
 
     return p;
 }
@@ -317,9 +320,9 @@ StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
 
     /* redefinition check */
     if (!p->is_incomplete) {
-        if (p->identifier) {
+        if (p->symbol->identifier) {
             fprintf(stderr, "error at %s(%d): redefinition of struct %s\n",
-                    t->filename, t->line, p->identifier);
+                    t->filename, t->line, p->symbol->identifier);
         } else {
             /* TODO: refactoring with conditional expression */
             fprintf(stderr, "error at %s(%d): redefinition of struct %s\n",
@@ -336,12 +339,14 @@ StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
 }
 
 Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
-                             MemberNode **members, int num_members) {
+                             const Token *t, MemberNode **members,
+                             int num_members) {
     int i;
 
     assert(ctx != NULL);
     assert(type != NULL);
     assert(type->is_incomplete);
+    assert(t != NULL);
     assert(members != NULL || num_members == 0);
     assert(num_members >= 0);
 
@@ -351,7 +356,7 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
     /* check the number of members */
     if (num_members == 0) {
         fprintf(stderr, "error at %s(%d): empty struct is not supported\n",
-                type->filename, type->line);
+                t->filename, t->line);
         exit(1);
     }
 

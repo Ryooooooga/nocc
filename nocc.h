@@ -92,9 +92,7 @@ typedef struct FunctionType {
 
 typedef struct StructType {
     int kind;
-    char *filename;
-    int line;
-    char *identifier;
+    struct Symbol *symbol;
     struct MemberNode **members;
     int num_members;
     bool is_incomplete;
@@ -135,6 +133,20 @@ int struct_type_count_members(Type *t);
 struct MemberNode *struct_type_member(Type *t, int index);
 struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
                                            int *index);
+
+#define symbol_variable 0
+#define symbol_type 1
+
+typedef struct Symbol {
+    int kind;
+    const char *filename;
+    int line;
+    const char *identifier;
+    Type *type;
+} Symbol;
+
+Symbol *type_symbol_new(const char *filename, int line, const char *identifier,
+                        Type *type);
 
 #define node_integer 0
 #define node_string 1
@@ -509,7 +521,8 @@ Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
 StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
                                    const Token *identifier);
 Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
-                             MemberNode **members, int num_members);
+                             const Token *t, MemberNode **members,
+                             int num_members);
 
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close);

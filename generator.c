@@ -84,7 +84,13 @@ LLVMTypeRef generate_struct_type(GeneratorContext *ctx, StructType *p) {
     }
 
     context = LLVMGetModuleContext(ctx->module);
-    p->generated_type = LLVMStructCreateNamed(context, p->identifier);
+
+    if (p->symbol != NULL) {
+        p->generated_type =
+            LLVMStructCreateNamed(context, p->symbol->identifier);
+    }else {
+        p->generated_type = LLVMStructCreateNamed(context, "");
+    }
 
     if (p->is_incomplete) {
         return p->generated_type;
