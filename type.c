@@ -310,7 +310,7 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
     for (*index = 0; struct_type_count_members(t); (*index)++) {
         member = struct_type_member(t, *index);
 
-        if (strcmp(member->identifier, member_name) == 0) {
+        if (strcmp(member->symbol->identifier, member_name) == 0) {
             return member;
         }
     }

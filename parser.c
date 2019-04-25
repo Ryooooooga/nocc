@@ -144,7 +144,7 @@ Type *parse_struct_type(ParserContext *ctx) {
     expect_token(ctx, '}');
 
     /* leave struct scope and make node */
-    return sema_struct_type_leave(ctx, type, (MemberNode **)members->data,
+    return sema_struct_type_leave(ctx, type, t, (MemberNode **)members->data,
                                   members->size);
 }
 
@@ -1246,7 +1246,7 @@ DeclNode *parse_decl(ParserContext *ctx) {
     }
 }
 
-ParamNode *parse_param(ParserContext *ctx) {
+VariableNode *parse_param(ParserContext *ctx) {
     Type *type;
     const Token *t;
 
@@ -1374,7 +1374,7 @@ DeclNode *parse_function(ParserContext *ctx) {
 
     /* leave parameter scope and make node */
     p = sema_function_leave_params(ctx, return_type, t,
-                                   (ParamNode **)params->data, params->size,
+                                   (VariableNode **)params->data, params->size,
                                    var_args);
 
     /* ;? */

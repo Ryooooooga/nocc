@@ -92,9 +92,7 @@ typedef struct FunctionType {
 
 typedef struct StructType {
     int kind;
-    char *filename;
-    int line;
-    char *identifier;
+    struct Symbol *symbol;
     struct MemberNode **members;
     int num_members;
     bool is_incomplete;
@@ -136,6 +134,31 @@ struct MemberNode *struct_type_member(Type *t, int index);
 struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
                                            int *index);
 
+#define symbol_variable 0
+#define symbol_type 1
+
+typedef struct Symbol {
+    int kind;
+    const char *filename;
+    int line;
+    const char *identifier;
+    Type *type;
+} Symbol;
+
+typedef struct VariableSymbol {
+    int kind;
+    const char *filename;
+    int line;
+    const char *identifier;
+    Type *type;
+    LLVMValueRef generated_location;
+} VariableSymbol;
+
+VariableSymbol *variable_symbol_new(const char *filename, int line,
+                                    const char *identifier, Type *type);
+Symbol *type_symbol_new(const char *filename, int line, const char *identifier,
+                        Type *type);
+
 #define node_integer 0
 #define node_string 1
 #define node_identifier 2
@@ -163,7 +186,6 @@ struct MemberNode *struct_type_find_member(Type *t, const char *member_name,
 #define node_extern 22
 #define node_member 23
 #define node_variable 24
-#define node_param 25
 #define node_function 26
 
 typedef struct ExprNode ExprNode;
@@ -196,7 +218,6 @@ typedef struct TypedefNode TypedefNode;
 typedef struct ExternNode ExternNode;
 typedef struct MemberNode MemberNode;
 typedef struct VariableNode VariableNode;
-typedef struct ParamNode ParamNode;
 typedef struct FunctionNode FunctionNode;
 
 typedef struct TranslationUnitNode TranslationUnitNode;
@@ -234,8 +255,7 @@ struct IdentifierNode {
     int line;
     Type *type;
     bool is_lvalue;
-    char *identifier;
-    DeclNode *declaration;
+    VariableSymbol *symbol;
 };
 
 struct PostfixNode {
@@ -406,64 +426,43 @@ struct DeclNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
+    Symbol *symbol;
 };
 
 struct TypedefNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location; /* unused */
+    Symbol *symbol;
 };
 
 struct ExternNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
+    Symbol *symbol;
 };
 
 struct MemberNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location; /* unused */
+    Symbol *symbol;
 };
 
 struct VariableNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
-};
-
-struct ParamNode {
-    int kind;
-    char *filename;
-    int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
+    Symbol *symbol;
 };
 
 struct FunctionNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
-    ParamNode **params;
+    Symbol *symbol;
+    VariableNode **params;
     int num_params;
     bool var_args;
     StmtNode *body;
@@ -491,7 +490,7 @@ void scope_stack_register(ScopeStack *s, const char *name, void *value);
 typedef struct ParserContext {
     ScopeStack *env;
     ScopeStack *struct_env;
-    FunctionNode *current_function;
+    VariableSymbol *current_function;
     Vec *locals;
     Vec *flow_state;
     const Token **tokens;
@@ -508,7 +507,7 @@ void parse_declarator_postfix(ParserContext *ctx, Type **type);
 void parse_declarator(ParserContext *ctx, Type **type, const Token **t);
 void parse_abstract_declarator(ParserContext *ctx, Type **type);
 DeclNode *parse_decl(ParserContext *ctx);
-ParamNode *parse_param(ParserContext *ctx);
+VariableNode *parse_param(ParserContext *ctx);
 DeclNode *parse_top_level(ParserContext *ctx);
 TranslationUnitNode *parse(const char *filename, const char *src,
                            Vec *include_directories);
@@ -520,7 +519,8 @@ Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
 StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
                                    const Token *identifier);
 Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
-                             MemberNode **members, int num_members);
+                             const Token *t, MemberNode **members,
+                             int num_members);
 
 ExprNode *sema_paren_expr(ParserContext *ctx, const Token *open, ExprNode *expr,
                           const Token *close);
@@ -588,12 +588,14 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
                        const Token *identifier);
 DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
                       const Token *identifier);
-DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t);
-ParamNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
+DeclNode *sema_var_decl(ParserContext *ctx, Type *type,
+                        const Token *identifier);
+VariableNode *sema_param(ParserContext *ctx, Type *type,
+                         const Token *identifier);
 
 void sema_function_enter_params(ParserContext *ctx);
 FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
-                                         const Token *t, ParamNode **params,
+                                         const Token *t, VariableNode **params,
                                          int num_params, bool var_args);
 void sema_function_enter_body(ParserContext *ctx, FunctionNode *p);
 FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
