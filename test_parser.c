@@ -84,8 +84,8 @@ void test_parsing_identifier(void) {
     VariableNode *decl = &(VariableNode){
         .kind = node_variable,
         .line = 1,
-        .symbol = variable_symbol_new("test_parsing_identifier", 1, "xyz",
-                                      type_get_int32()),
+        .symbol = (Symbol *)variable_symbol_new("test_parsing_identifier", 1,
+                                                "xyz", type_get_int32()),
     };
 
     scope_stack_register(ctx->env, decl->symbol->identifier, decl);
@@ -94,7 +94,7 @@ void test_parsing_identifier(void) {
 
     assert(p->kind == node_identifier);
     assert(is_int32_type(p->type));
-    assert(p->declaration == (DeclNode *)decl);
+    assert((Symbol *)p->symbol == decl->symbol);
 }
 
 void test_parsing_call(void) {
@@ -110,7 +110,7 @@ void test_parsing_call(void) {
     FunctionNode *decl = &(FunctionNode){
         .kind = node_function,
         .line = 1,
-        .symbol = variable_symbol_new(
+        .symbol = (Symbol *)variable_symbol_new(
             "test_parsing_call", 1, "f",
             function_type_new(type_get_int32(), NULL, 0, false)),
         .params = NULL,
@@ -132,7 +132,8 @@ void test_parsing_call(void) {
     assert(is_function_pointer_type(callee->type));
 
     assert(callee->operand->kind == node_identifier);
-    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
+    assert(strcmp(((IdentifierNode *)callee->operand)->symbol->identifier,
+                  "f") == 0);
 }
 
 void test_parsing_call_arg(void) {
@@ -148,12 +149,13 @@ void test_parsing_call_arg(void) {
     FunctionNode *decl = &(FunctionNode){
         .kind = node_function,
         .line = 1,
-        .symbol = variable_symbol_new("test_parsing_call_arg", 1, "f",
-                                      function_type_new(type_get_int32(),
-                                                        (Type *[]){
-                                                            type_get_int32(),
-                                                        },
-                                                        1, false)),
+        .symbol = (Symbol *)variable_symbol_new(
+            "test_parsing_call_arg", 1, "f",
+            function_type_new(type_get_int32(),
+                              (Type *[]){
+                                  type_get_int32(),
+                              },
+                              1, false)),
         .params = NULL,
         .num_params = 0,
         .var_args = false,
@@ -173,7 +175,8 @@ void test_parsing_call_arg(void) {
     assert(is_function_pointer_type(callee->type));
 
     assert(callee->operand->kind == node_identifier);
-    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
+    assert(strcmp(((IdentifierNode *)callee->operand)->symbol->identifier,
+                  "f") == 0);
 }
 
 void test_parsing_call_args(void) {
@@ -189,14 +192,15 @@ void test_parsing_call_args(void) {
     FunctionNode *decl = &(FunctionNode){
         .kind = node_function,
         .line = 1,
-        .symbol = variable_symbol_new("test_parsing_call_args", 1, "f",
-                                      function_type_new(type_get_int32(),
-                                                        (Type *[]){
-                                                            type_get_int32(),
-                                                            type_get_int32(),
-                                                            type_get_int32(),
-                                                        },
-                                                        3, false)),
+        .symbol = (Symbol *)variable_symbol_new(
+            "test_parsing_call_args", 1, "f",
+            function_type_new(type_get_int32(),
+                              (Type *[]){
+                                  type_get_int32(),
+                                  type_get_int32(),
+                                  type_get_int32(),
+                              },
+                              3, false)),
         .params = NULL,
         .num_params = 0,
         .var_args = false,
@@ -216,7 +220,8 @@ void test_parsing_call_args(void) {
     assert(is_function_pointer_type(callee->type));
 
     assert(callee->operand->kind == node_identifier);
-    assert(strcmp(((IdentifierNode *)callee->operand)->identifier, "f") == 0);
+    assert(strcmp(((IdentifierNode *)callee->operand)->symbol->identifier,
+                  "f") == 0);
 }
 
 void test_parsing_negative(void) {

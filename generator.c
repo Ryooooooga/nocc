@@ -170,14 +170,9 @@ LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
                                       IdentifierNode *p) {
-    VariableSymbol *symbol;
+    assert(p->symbol->generated_location != NULL);
 
-    symbol = (VariableSymbol *)p->declaration->symbol;
-
-    assert(symbol->kind == symbol_variable);
-    assert(symbol->generated_location != NULL);
-
-    return LLVMBuildLoad(ctx->builder, symbol->generated_location, "load");
+    return LLVMBuildLoad(ctx->builder, p->symbol->generated_location, "load");
 }
 
 LLVMValueRef generate_postfix_expr(GeneratorContext *ctx, PostfixNode *p) {
@@ -670,16 +665,11 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
 LLVMValueRef generate_identifier_expr_addr(GeneratorContext *ctx,
                                            IdentifierNode *p) {
-    VariableSymbol *symbol;
-
-    symbol = (VariableSymbol *)p->declaration->symbol;
-
-    assert(symbol->kind == symbol_variable);
-    assert(symbol->generated_location != NULL);
+    assert(p->symbol->generated_location != NULL);
 
     (void)ctx;
 
-    return symbol->generated_location;
+    return p->symbol->generated_location;
 }
 
 LLVMValueRef generate_unary_expr_addr(GeneratorContext *ctx, UnaryNode *p) {

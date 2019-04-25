@@ -245,7 +245,8 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     p->kind = node_member;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol = variable_symbol_new(t->filename, t->line, t->text, type);
+    p->symbol =
+        (Symbol *)variable_symbol_new(t->filename, t->line, t->text, type);
 
     /* type check */
     if (is_incomplete_type(p->symbol->type)) {
@@ -423,38 +424,32 @@ ExprNode *sema_string_expr(ParserContext *ctx, const Token *t,
 
 ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     IdentifierNode *p;
+    Symbol *symbol;
 
     assert(ctx != NULL);
     assert(t != NULL);
+
+    symbol = ((DeclNode *)scope_stack_find(ctx->env, t->text, true))->symbol;
+
+    if (symbol == NULL) {
+        fprintf(stderr, "error at %s(%d): undeclared symbol %s\n", t->filename,
+                t->line, t->text);
+        exit(1);
+    }
+
+    if (symbol->kind != symbol_variable) {
+        fprintf(stderr, "error at %s(%d): symbol %s is not a variable\n",
+                t->filename, t->line, t->text);
+        exit(1);
+    }
 
     p = malloc(sizeof(*p));
     p->kind = node_identifier;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->type = NULL;
-    p->is_lvalue = false;
-    p->identifier = str_dup(t->text);
-    p->declaration = scope_stack_find(ctx->env, p->identifier, true);
-
-    if (p->declaration == NULL) {
-        fprintf(stderr, "error at %s(%d): undeclared symbol %s\n", p->filename,
-                p->line, p->identifier);
-        exit(1);
-    }
-
-    switch (p->declaration->kind) {
-    case node_extern:
-    case node_variable:
-    case node_function:
-        p->type = p->declaration->symbol->type;
-        p->is_lvalue = true;
-        break;
-
-    default:
-        fprintf(stderr, "error at %s(%d): symbol %s is not a variable: %d\n",
-                p->filename, p->line, p->identifier, p->declaration->kind);
-        exit(1);
-    }
+    p->type = symbol->type;
+    p->is_lvalue = true;
+    p->symbol = (VariableSymbol *)symbol;
 
     return (ExprNode *)p;
 }
@@ -1543,8 +1538,8 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
     p->kind = node_typedef;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol = variable_symbol_new(identifier->filename, identifier->line,
-                                    identifier->text, type);
+    p->symbol = (Symbol *)variable_symbol_new(
+        identifier->filename, identifier->line, identifier->text, type);
 
     /* redefinition check */
     if (scope_stack_find(ctx->env, p->symbol->identifier, false)) {
@@ -1574,8 +1569,8 @@ DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
     p->kind = node_extern;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol = variable_symbol_new(identifier->filename, identifier->line,
-                                    identifier->text, type);
+    p->symbol = (Symbol *)variable_symbol_new(
+        identifier->filename, identifier->line, identifier->text, type);
 
     /* redeclaration check */
     decl = scope_stack_find(ctx->env, p->symbol->identifier, false);
@@ -1613,8 +1608,8 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type,
     p->kind = node_variable;
     p->filename = str_dup(identifier->filename);
     p->line = identifier->line;
-    p->symbol = variable_symbol_new(identifier->filename, identifier->line,
-                                    identifier->text, type);
+    p->symbol = (Symbol *)variable_symbol_new(
+        identifier->filename, identifier->line, identifier->text, type);
 
     /* type check */
     if (is_incomplete_type(p->symbol->type)) {
@@ -1662,8 +1657,8 @@ VariableNode *sema_param(ParserContext *ctx, Type *type,
     p->kind = node_variable;
     p->filename = str_dup(identifier->filename);
     p->line = identifier->line;
-    p->symbol = variable_symbol_new(identifier->text, identifier->line,
-                                    identifier->text, type);
+    p->symbol = (Symbol *)variable_symbol_new(
+        identifier->text, identifier->line, identifier->text, type);
 
     /* type check */
     if (is_incomplete_type(type)) {
@@ -1751,7 +1746,8 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     p->kind = node_function;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol = variable_symbol_new(t->filename, t->line, t->text, func_type);
+    p->symbol =
+        (Symbol *)variable_symbol_new(t->filename, t->line, t->text, func_type);
     p->params = malloc(sizeof(VariableNode *) * num_params);
     p->num_params = num_params;
     p->var_args = var_args;
@@ -1774,8 +1770,9 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
 
     assert(ctx != NULL);
     assert(p != NULL);
+    assert(p->symbol->kind == symbol_variable);
 
-    ctx->current_function = p->symbol;
+    ctx->current_function = (VariableSymbol *)p->symbol;
     ctx->locals = vec_new();
 
     /* enter parameter scope */

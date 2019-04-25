@@ -57,19 +57,12 @@ void test_generating_identifier(void) {
         .builder = LLVMCreateBuilder(),
     };
 
-    VariableNode *decl = &(VariableNode){
-        .kind = node_variable,
-        .line = 1,
-        .symbol = variable_symbol_new("", 1, "a", type_get_int32()),
-    };
-
     IdentifierNode *p = &(IdentifierNode){
         .kind = node_identifier,
         .line = 1,
         .type = type_get_int32(),
         .is_lvalue = true,
-        .identifier = "a",
-        .declaration = (DeclNode *)decl,
+        .symbol = variable_symbol_new("", 1, "a", type_get_int32()),
     };
 
     LLVMValueRef func = LLVMAddFunction(
@@ -77,7 +70,7 @@ void test_generating_identifier(void) {
     LLVMBasicBlockRef block = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(ctx->builder, block);
 
-    ((VariableSymbol *)decl->symbol)->generated_location =
+    p->symbol->generated_location =
         LLVMBuildAlloca(ctx->builder, LLVMInt32Type(), "a");
     LLVMValueRef v = generate_expr(ctx, (ExprNode *)p);
 
@@ -335,7 +328,7 @@ void test_generating_function_prototype(void) {
     FunctionNode *p = &(FunctionNode){
         .kind = node_function,
         .line = 1,
-        .symbol = variable_symbol_new(
+        .symbol = (Symbol *)variable_symbol_new(
             "", 1, "f", function_type_new(type_get_int32(), NULL, 0, false)),
         .params = NULL,
         .num_params = 0,
@@ -365,7 +358,7 @@ void test_generating_function(void) {
     FunctionNode *p = &(FunctionNode){
         .kind = node_function,
         .line = 1,
-        .symbol = variable_symbol_new(
+        .symbol = (Symbol *)variable_symbol_new(
             "", 1, "f", function_type_new(type_get_void(), NULL, 0, false)),
         .params = NULL,
         .num_params = 0,
@@ -404,7 +397,7 @@ void test_generating_function_with_param(void) {
     FunctionNode *p = &(FunctionNode){
         .kind = node_function,
         .line = 1,
-        .symbol = variable_symbol_new(
+        .symbol = (Symbol *)variable_symbol_new(
             "", 1, "g",
             function_type_new(type_get_void(), (Type *[]){type_get_int32()}, 1,
                               false)),
@@ -413,7 +406,8 @@ void test_generating_function_with_param(void) {
                 &(VariableNode){
                     .kind = node_variable,
                     .line = 1,
-                    .symbol = variable_symbol_new("", 1, "a", type_get_int32()),
+                    .symbol = (Symbol *)variable_symbol_new("", 1, "a",
+                                                            type_get_int32()),
                 },
             },
         .num_params = 1,
@@ -454,7 +448,7 @@ void test_generating_function_with_params(void) {
     FunctionNode *p = &(FunctionNode){
         .kind = node_function,
         .line = 1,
-        .symbol = variable_symbol_new(
+        .symbol = (Symbol *)variable_symbol_new(
             "", 1, "g",
             function_type_new(type_get_void(),
                               (Type *[]){type_get_int32(), type_get_int32()}, 2,
@@ -464,12 +458,14 @@ void test_generating_function_with_params(void) {
                 &(VariableNode){
                     .kind = node_variable,
                     .line = 1,
-                    .symbol = variable_symbol_new("", 1, "a", type_get_int32()),
+                    .symbol = (Symbol *)variable_symbol_new("", 1, "a",
+                                                            type_get_int32()),
                 },
                 &(VariableNode){
                     .kind = node_variable,
                     .line = 1,
-                    .symbol = variable_symbol_new("", 1, "b", type_get_int32()),
+                    .symbol = (Symbol *)variable_symbol_new("", 1, "b",
+                                                            type_get_int32()),
                 },
             },
         .num_params = 2,

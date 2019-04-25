@@ -154,8 +154,8 @@ typedef struct VariableSymbol {
     LLVMValueRef generated_location;
 } VariableSymbol;
 
-Symbol *variable_symbol_new(const char *filename, int line,
-                            const char *identifier, Type *type);
+VariableSymbol *variable_symbol_new(const char *filename, int line,
+                                    const char *identifier, Type *type);
 Symbol *type_symbol_new(const char *filename, int line, const char *identifier,
                         Type *type);
 
@@ -255,8 +255,7 @@ struct IdentifierNode {
     int line;
     Type *type;
     bool is_lvalue;
-    char *identifier;
-    DeclNode *declaration;
+    VariableSymbol *symbol;
 };
 
 struct PostfixNode {
@@ -491,7 +490,7 @@ void scope_stack_register(ScopeStack *s, const char *name, void *value);
 typedef struct ParserContext {
     ScopeStack *env;
     ScopeStack *struct_env;
-    Symbol *current_function;
+    VariableSymbol *current_function;
     Vec *locals;
     Vec *flow_state;
     const Token **tokens;

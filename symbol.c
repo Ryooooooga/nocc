@@ -1,7 +1,7 @@
 #include "nocc.h"
 
-Symbol *variable_symbol_new(const char *filename, int line,
-                            const char *identifier, Type *type) {
+VariableSymbol *variable_symbol_new(const char *filename, int line,
+                                    const char *identifier, Type *type) {
     VariableSymbol *p;
 
     assert(filename != NULL);
@@ -16,7 +16,7 @@ Symbol *variable_symbol_new(const char *filename, int line,
     p->type = type;
     p->generated_location = NULL;
 
-    return (Symbol *)p;
+    return p;
 }
 
 Symbol *type_symbol_new(const char *filename, int line, const char *identifier,
