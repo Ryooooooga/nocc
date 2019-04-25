@@ -88,7 +88,7 @@ LLVMTypeRef generate_struct_type(GeneratorContext *ctx, StructType *p) {
     if (p->symbol != NULL) {
         p->generated_type =
             LLVMStructCreateNamed(context, p->symbol->identifier);
-    }else {
+    } else {
         p->generated_type = LLVMStructCreateNamed(context, "");
     }
 
@@ -99,7 +99,7 @@ LLVMTypeRef generate_struct_type(GeneratorContext *ctx, StructType *p) {
     element_types = malloc(sizeof(LLVMTypeRef) * p->num_members);
 
     for (i = 0; i < p->num_members; i++) {
-        element_types[i] = generate_type(ctx, p->members[i]->type);
+        element_types[i] = generate_type(ctx, p->members[i]->symbol->type);
     }
 
     LLVMStructSetBody(p->generated_type, element_types, p->num_members, false);
@@ -170,10 +170,14 @@ LLVMValueRef generate_string_expr(GeneratorContext *ctx, StringNode *p) {
 
 LLVMValueRef generate_identifier_expr(GeneratorContext *ctx,
                                       IdentifierNode *p) {
-    assert(p->declaration->generated_location != NULL);
+    VariableSymbol *symbol;
 
-    return LLVMBuildLoad(ctx->builder, p->declaration->generated_location,
-                         "load");
+    symbol = (VariableSymbol *)p->declaration->symbol;
+
+    assert(symbol->kind == symbol_variable);
+    assert(symbol->generated_location != NULL);
+
+    return LLVMBuildLoad(ctx->builder, symbol->generated_location, "load");
 }
 
 LLVMValueRef generate_postfix_expr(GeneratorContext *ctx, PostfixNode *p) {
@@ -666,11 +670,16 @@ LLVMValueRef generate_expr(GeneratorContext *ctx, ExprNode *p) {
 
 LLVMValueRef generate_identifier_expr_addr(GeneratorContext *ctx,
                                            IdentifierNode *p) {
-    assert(p->declaration->generated_location != NULL);
+    VariableSymbol *symbol;
+
+    symbol = (VariableSymbol *)p->declaration->symbol;
+
+    assert(symbol->kind == symbol_variable);
+    assert(symbol->generated_location != NULL);
 
     (void)ctx;
 
-    return p->declaration->generated_location;
+    return symbol->generated_location;
 }
 
 LLVMValueRef generate_unary_expr_addr(GeneratorContext *ctx, UnaryNode *p) {
@@ -1100,36 +1109,47 @@ bool generate_stmt(GeneratorContext *ctx, StmtNode *p) {
 }
 
 void generate_extern_variable(GeneratorContext *ctx, ExternNode *p) {
+    VariableSymbol *symbol;
     LLVMTypeRef type;
 
-    type = generate_type(ctx, p->type);
+    symbol = (VariableSymbol *)p->symbol;
+    type = generate_type(ctx, symbol->type);
 
     /* find global variable */
-    p->generated_location = LLVMGetNamedGlobal(ctx->module, p->identifier);
+    symbol->generated_location =
+        LLVMGetNamedGlobal(ctx->module, symbol->identifier);
 
-    if (p->generated_location == NULL) {
+    if (symbol->generated_location == NULL) {
         /* create global variable */
-        p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
+        symbol->generated_location =
+            LLVMAddGlobal(ctx->module, type, symbol->identifier);
     }
 }
 
 void generate_global_variable(GeneratorContext *ctx, VariableNode *p) {
+    VariableSymbol *symbol;
     LLVMTypeRef type;
 
-    type = generate_type(ctx, p->type);
+    assert(p->symbol->kind == symbol_variable);
+
+    symbol = (VariableSymbol *)p->symbol;
+    type = generate_type(ctx, symbol->type);
 
     /* find global variable */
-    p->generated_location = LLVMGetNamedGlobal(ctx->module, p->identifier);
+    symbol->generated_location =
+        LLVMGetNamedGlobal(ctx->module, symbol->identifier);
 
-    if (p->generated_location == NULL) {
+    if (symbol->generated_location == NULL) {
         /* create global variable */
-        p->generated_location = LLVMAddGlobal(ctx->module, type, p->identifier);
+        symbol->generated_location =
+            LLVMAddGlobal(ctx->module, type, symbol->identifier);
     }
 
-    LLVMSetInitializer(p->generated_location, LLVMConstNull(type));
+    LLVMSetInitializer(symbol->generated_location, LLVMConstNull(type));
 }
 
 LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
+    VariableSymbol *symbol;
     LLVMTypeRef func_type;
     LLVMTypeRef return_type;
     LLVMTypeRef *param_types;
@@ -1141,28 +1161,31 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
 
     assert(ctx != NULL);
     assert(p != NULL);
-    assert(is_function_type(p->type));
+    assert(p->symbol->kind == symbol_variable);
+    assert(is_function_type(p->symbol->type));
+
+    symbol = (VariableSymbol *)p->symbol;
 
     /* build LLVM function type */
-    func_type = generate_type(ctx, p->type);
+    func_type = generate_type(ctx, symbol->type);
     return_type = LLVMGetReturnType(func_type);
     param_types = malloc(sizeof(LLVMTypeRef) * LLVMCountParamTypes(func_type));
     LLVMGetParamTypes(func_type, param_types);
 
     /* find function */
-    function = LLVMGetNamedFunction(ctx->module, p->identifier);
+    function = LLVMGetNamedFunction(ctx->module, symbol->identifier);
 
     if (function == NULL) {
         /* create function if not found */
-        function = LLVMAddFunction(ctx->module, p->identifier, func_type);
+        function = LLVMAddFunction(ctx->module, symbol->identifier, func_type);
     }
 
     if (LLVMGetElementType(LLVMTypeOf(function)) != func_type) {
-        fprintf(stderr, "type mismatch of function %s\n", p->identifier);
+        fprintf(stderr, "type mismatch of function %s\n", symbol->identifier);
         exit(1);
     }
 
-    p->generated_location = function;
+    symbol->generated_location = function;
 
     if (p->body == NULL) {
         return function;
@@ -1174,20 +1197,28 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
 
     /* prologue */
     for (i = 0; i < p->num_params; i++) {
+        VariableSymbol *param_symbol;
+
+        param_symbol = (VariableSymbol *)p->params[i]->symbol;
+
         /* allocate parameter location */
-        p->params[i]->generated_location = LLVMBuildAlloca(
-            ctx->builder, param_types[i], p->params[i]->identifier);
+        param_symbol->generated_location = LLVMBuildAlloca(
+            ctx->builder, param_types[i], param_symbol->identifier);
 
         /* store parameter */
         LLVMBuildStore(ctx->builder, LLVMGetParam(function, i),
-                       p->params[i]->generated_location);
+                       param_symbol->generated_location);
     }
 
     for (i = 0; i < p->num_locals; i++) {
+        VariableSymbol *local_symbol;
+
+        local_symbol = (VariableSymbol *)p->locals[i]->symbol;
+
         /* allocate local location */
-        p->locals[i]->generated_location = LLVMBuildAlloca(
-            ctx->builder, generate_type(ctx, p->locals[i]->type),
-            p->locals[i]->identifier);
+        local_symbol->generated_location = LLVMBuildAlloca(
+            ctx->builder, generate_type(ctx, local_symbol->type),
+            local_symbol->identifier);
     }
 
     /* body */

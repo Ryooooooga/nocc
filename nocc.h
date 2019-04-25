@@ -145,6 +145,17 @@ typedef struct Symbol {
     Type *type;
 } Symbol;
 
+typedef struct VariableSymbol {
+    int kind;
+    const char *filename;
+    int line;
+    const char *identifier;
+    Type *type;
+    LLVMValueRef generated_location;
+} VariableSymbol;
+
+Symbol *variable_symbol_new(const char *filename, int line,
+                            const char *identifier, Type *type);
 Symbol *type_symbol_new(const char *filename, int line, const char *identifier,
                         Type *type);
 
@@ -416,54 +427,42 @@ struct DeclNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
+    Symbol *symbol;
 };
 
 struct TypedefNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location; /* unused */
+    Symbol *symbol;
 };
 
 struct ExternNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
+    Symbol *symbol;
 };
 
 struct MemberNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location; /* unused */
+    Symbol *symbol;
 };
 
 struct VariableNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
+    Symbol *symbol;
 };
 
 struct FunctionNode {
     int kind;
     char *filename;
     int line;
-    char *identifier;
-    Type *type;
-    LLVMValueRef generated_location;
+    Symbol *symbol;
     VariableNode **params;
     int num_params;
     bool var_args;
@@ -492,7 +491,7 @@ void scope_stack_register(ScopeStack *s, const char *name, void *value);
 typedef struct ParserContext {
     ScopeStack *env;
     ScopeStack *struct_env;
-    FunctionNode *current_function;
+    Symbol *current_function;
     Vec *locals;
     Vec *flow_state;
     const Token **tokens;
@@ -590,8 +589,10 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
                        const Token *identifier);
 DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
                       const Token *identifier);
-DeclNode *sema_var_decl(ParserContext *ctx, Type *type, const Token *t);
-VariableNode *sema_param(ParserContext *ctx, Type *type, const Token *t);
+DeclNode *sema_var_decl(ParserContext *ctx, Type *type,
+                        const Token *identifier);
+VariableNode *sema_param(ParserContext *ctx, Type *type,
+                         const Token *identifier);
 
 void sema_function_enter_params(ParserContext *ctx);
 FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
