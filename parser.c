@@ -49,7 +49,7 @@ const Token *expect_token(ParserContext *ctx, int expected_token_kind) {
 }
 
 bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
-    DeclNode *symbol;
+    Symbol *symbol;
 
     assert(ctx != NULL);
     assert(t != NULL);
@@ -67,7 +67,7 @@ bool is_type_specifier_token(ParserContext *ctx, const Token *t) {
     case token_identifier:
         symbol = scope_stack_find(ctx->env, t->text, true);
 
-        return symbol && symbol->kind == node_typedef;
+        return symbol && symbol->kind == symbol_type;
 
     default:
         return false;

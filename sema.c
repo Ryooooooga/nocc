@@ -209,28 +209,28 @@ bool default_argument_promotion(ExprNode **expr) {
 }
 
 Type *sema_identifier_type(ParserContext *ctx, const Token *t) {
-    DeclNode *p;
+    Symbol *symbol;
 
     assert(ctx != NULL);
     assert(t != NULL);
 
     /* find symbol */
-    p = scope_stack_find(ctx->env, t->text, true);
+    symbol = scope_stack_find(ctx->env, t->text, true);
 
-    if (p == NULL) {
+    if (symbol == NULL) {
         fprintf(stderr, "error at %s(%d): type %s not found in this scope\n",
                 t->filename, t->line, t->text);
         exit(1);
     }
 
     /* check the symbol kind */
-    if (p->kind != node_typedef) {
+    if (symbol->kind != symbol_type) {
         fprintf(stderr, "error at %s(%d): symbol %s is not a type\n",
                 t->filename, t->line, t->text);
         exit(1);
     }
 
-    return ((TypedefNode *)p)->symbol->type;
+    return symbol->type;
 }
 
 MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
@@ -264,7 +264,7 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     }
 
     /* register member symbol */
-    scope_stack_register(ctx->env, p->symbol->identifier, p);
+    scope_stack_register(ctx->env, p->symbol);
 
     return (MemberNode *)p;
 }
@@ -299,7 +299,7 @@ StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
                                     identifier->text, (Type *)p);
 
         /* register struct type symbol */
-        scope_stack_register(ctx->struct_env, p->symbol->identifier, p);
+        scope_stack_register(ctx->struct_env, (Symbol *)p->symbol);
     }
 
     return p;
@@ -1549,7 +1549,7 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
     }
 
     /* register type symbol */
-    scope_stack_register(ctx->env, p->symbol->identifier, p);
+    scope_stack_register(ctx->env, p->symbol);
 
     return (DeclNode *)p;
 }
@@ -1590,7 +1590,7 @@ DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
     }
 
     /* register symbol */
-    scope_stack_register(ctx->env, p->symbol->identifier, p);
+    scope_stack_register(ctx->env, p->symbol);
 
     return (DeclNode *)p;
 }
@@ -1633,7 +1633,7 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type,
     }
 
     /* register symbol */
-    scope_stack_register(ctx->env, p->symbol->identifier, p);
+    scope_stack_register(ctx->env, p->symbol);
 
     if (ctx->current_function) {
         /* local variable */
@@ -1678,7 +1678,7 @@ VariableNode *sema_param(ParserContext *ctx, Type *type,
     }
 
     /* register symbol */
-    scope_stack_register(ctx->env, p->symbol->identifier, p);
+    scope_stack_register(ctx->env, p->symbol);
 
     return p;
 }
@@ -1760,7 +1760,7 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     }
 
     /* register symbol */
-    scope_stack_register(ctx->env, p->symbol->identifier, p);
+    scope_stack_register(ctx->env, p->symbol);
 
     return p;
 }
@@ -1780,8 +1780,7 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
 
     /* register parameters */
     for (i = 0; i < p->num_params; i++) {
-        scope_stack_register(ctx->env, p->params[i]->symbol->identifier,
-                             p->params[i]);
+        scope_stack_register(ctx->env, p->params[i]->symbol);
     }
 }
 

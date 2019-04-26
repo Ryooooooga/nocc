@@ -30,8 +30,8 @@ void scope_stack_pop(ScopeStack *s) {
     vec_pop(s->scopes);
 }
 
-void *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
-    void *value;
+Symbol *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
+    Symbol *value;
     int i;
 
     assert(s != NULL);
@@ -51,11 +51,10 @@ void *scope_stack_find(ScopeStack *s, const char *name, bool recursive) {
     return NULL;
 }
 
-void scope_stack_register(ScopeStack *s, const char *name, void *value) {
+void scope_stack_register(ScopeStack *s, Symbol *symbol) {
     assert(s != NULL);
     assert(s->scopes->size > 0);
-    assert(name != NULL);
-    assert(value != NULL);
+    assert(symbol != NULL);
 
-    map_add(vec_back(s->scopes), name, value);
+    map_add(vec_back(s->scopes), symbol->identifier, symbol);
 }

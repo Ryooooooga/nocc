@@ -492,8 +492,8 @@ ScopeStack *scope_stack_new(void);
 int scope_stack_depth(ScopeStack *s);
 void scope_stack_push(ScopeStack *s);
 void scope_stack_pop(ScopeStack *s);
-void *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
-void scope_stack_register(ScopeStack *s, const char *name, void *value);
+Symbol *scope_stack_find(ScopeStack *s, const char *name, bool recursive);
+void scope_stack_register(ScopeStack *s, Symbol *symbol);
 
 typedef struct ParserContext {
     ScopeStack *env;
