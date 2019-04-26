@@ -1187,28 +1187,20 @@ LLVMValueRef generate_function(GeneratorContext *ctx, FunctionNode *p) {
 
     /* prologue */
     for (i = 0; i < p->num_params; i++) {
-        VariableSymbol *param_symbol;
-
-        param_symbol = (VariableSymbol *)p->params[i]->symbol;
-
         /* allocate parameter location */
-        param_symbol->generated_location = LLVMBuildAlloca(
-            ctx->builder, param_types[i], param_symbol->identifier);
+        p->params[i]->generated_location = LLVMBuildAlloca(
+            ctx->builder, param_types[i], p->params[i]->identifier);
 
         /* store parameter */
         LLVMBuildStore(ctx->builder, LLVMGetParam(function, i),
-                       param_symbol->generated_location);
+                       p->params[i]->generated_location);
     }
 
     for (i = 0; i < p->num_locals; i++) {
-        VariableSymbol *local_symbol;
-
-        local_symbol = (VariableSymbol *)p->locals[i]->symbol;
-
         /* allocate local location */
-        local_symbol->generated_location = LLVMBuildAlloca(
-            ctx->builder, generate_type(ctx, local_symbol->type),
-            local_symbol->identifier);
+        p->locals[i]->generated_location = LLVMBuildAlloca(
+            ctx->builder, generate_type(ctx, p->locals[i]->type),
+            p->locals[i]->identifier);
     }
 
     /* body */

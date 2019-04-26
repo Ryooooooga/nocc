@@ -434,35 +434,34 @@ struct DeclNode {
     int kind;
     char *filename;
     int line;
-    Symbol *symbol;
 };
 
 struct TypedefNode {
     int kind;
     char *filename;
     int line;
-    Symbol *symbol;
+    TypeSymbol *symbol;
 };
 
 struct ExternNode {
     int kind;
     char *filename;
     int line;
-    Symbol *symbol;
+    VariableSymbol *symbol;
 };
 
 struct MemberNode {
     int kind;
     char *filename;
     int line;
-    Symbol *symbol;
+    VariableSymbol *symbol;
 };
 
 struct VariableNode {
     int kind;
     char *filename;
     int line;
-    Symbol *symbol;
+    VariableSymbol *symbol;
 };
 
 struct FunctionNode {
@@ -470,11 +469,11 @@ struct FunctionNode {
     char *filename;
     int line;
     Symbol *symbol;
-    VariableNode **params;
+    VariableSymbol **params;
     int num_params;
     bool var_args;
     StmtNode *body;
-    DeclNode **locals;
+    VariableSymbol **locals;
     int num_locals;
 };
 

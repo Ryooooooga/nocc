@@ -245,8 +245,7 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     p->kind = node_member;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol =
-        (Symbol *)variable_symbol_new(t->filename, t->line, t->text, type);
+    p->symbol = variable_symbol_new(t->filename, t->line, t->text, type);
 
     /* type check */
     if (is_incomplete_type(p->symbol->type)) {
@@ -264,7 +263,7 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     }
 
     /* register member symbol */
-    scope_stack_register(ctx->env, p->symbol);
+    scope_stack_register(ctx->env, (Symbol *)p->symbol);
 
     return (MemberNode *)p;
 }
@@ -272,17 +271,20 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
 StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
                                              const Token *identifier,
                                              bool search_recursively) {
-    StructType *p;
+    TypeSymbol *symbol;
 
     assert(ctx != NULL);
     assert(t != NULL);
 
     /* find type from symbol if exists */
-    p = scope_stack_find(ctx->struct_env, identifier->text, search_recursively);
+    symbol = (TypeSymbol *)scope_stack_find(ctx->struct_env, identifier->text,
+                                            search_recursively);
 
-    if (p != NULL) {
-        return p;
+    if (symbol != NULL) {
+        return symbol;
     }
+
+    assert(symbol->kind == symbol_type);
 
     /* make node */
     p = malloc(sizeof(*p));
@@ -429,7 +431,7 @@ ExprNode *sema_identifier_expr(ParserContext *ctx, const Token *t) {
     assert(ctx != NULL);
     assert(t != NULL);
 
-    symbol = ((DeclNode *)scope_stack_find(ctx->env, t->text, true))->symbol;
+    symbol = scope_stack_find(ctx->env, t->text, true);
 
     if (symbol == NULL) {
         fprintf(stderr, "error at %s(%d): undeclared symbol %s\n", t->filename,
