@@ -246,6 +246,7 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     p->filename = str_dup(t->filename);
     p->line = t->line;
     p->symbol = variable_symbol_new(t->filename, t->line, t->text, type);
+    p->symbol->is_defined = true;
 
     /* type check */
     if (is_incomplete_type(p->symbol->type)) {
@@ -268,9 +269,10 @@ MemberNode *sema_struct_member(ParserContext *ctx, Type *type, const Token *t) {
     return (MemberNode *)p;
 }
 
-StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
-                                             const Token *identifier,
-                                             bool search_recursively) {
+StructType *sema_struct_type_get_or_new(ParserContext *ctx, const Token *t,
+                                        const Token *identifier,
+                                        bool search_recursively) {
+    StructType *type;
     TypeSymbol *symbol;
 
     assert(ctx != NULL);
@@ -281,35 +283,36 @@ StructType *sema_struct_type_register_or_new(ParserContext *ctx, const Token *t,
                                             search_recursively);
 
     if (symbol != NULL) {
-        return symbol;
+        assert(symbol->kind == symbol_type);
+        assert(is_struct_type(symbol->type));
+
+        return (StructType *)symbol->type;
     }
 
-    assert(symbol->kind == symbol_type);
-
     /* make node */
-    p = malloc(sizeof(*p));
-    p->kind = type_struct;
-    p->symbol = NULL;
-    p->members = NULL;
-    p->num_members = 0;
-    p->is_incomplete = true;
-    p->generated_type = NULL;
+    type = malloc(sizeof(*type));
+    type->kind = type_struct;
+    type->symbol = NULL;
+    type->members = NULL;
+    type->num_members = 0;
+    type->is_incomplete = true;
+    type->generated_type = NULL;
 
     if (identifier != NULL) {
         /* make symbol */
-        p->symbol = type_symbol_new(identifier->filename, identifier->line,
-                                    identifier->text, (Type *)p);
+        type->symbol = type_symbol_new(identifier->filename, identifier->line,
+                                       identifier->text, (Type *)type);
 
         /* register struct type symbol */
-        scope_stack_register(ctx->struct_env, (Symbol *)p->symbol);
+        scope_stack_register(ctx->struct_env, (Symbol *)type->symbol);
     }
 
-    return p;
+    return type;
 }
 
 Type *sema_struct_type_without_body(ParserContext *ctx, const Token *t,
                                     const Token *identifier) {
-    return (Type *)sema_struct_type_register_or_new(ctx, t, identifier, true);
+    return (Type *)sema_struct_type_get_or_new(ctx, t, identifier, true);
 }
 
 StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
@@ -317,7 +320,7 @@ StructType *sema_struct_type_enter(ParserContext *ctx, const Token *t,
     StructType *p;
 
     /* find type from symbol if exists */
-    p = sema_struct_type_register_or_new(ctx, t, identifier, false);
+    p = sema_struct_type_get_or_new(ctx, t, identifier, false);
 
     /* redefinition check */
     if (!p->is_incomplete) {
@@ -362,12 +365,12 @@ Type *sema_struct_type_leave(ParserContext *ctx, StructType *type,
     }
 
     /* fix struct type */
-    type->members = malloc(sizeof(MemberNode *) * num_members);
+    type->members = malloc(sizeof(VariableSymbol *) * num_members);
     type->num_members = num_members;
     type->is_incomplete = false;
 
     for (i = 0; i < num_members; i++) {
-        type->members[i] = members[i];
+        type->members[i] = members[i]->symbol;
     }
 
     return (Type *)type;
@@ -1540,8 +1543,8 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
     p->kind = node_typedef;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol = (Symbol *)type_symbol_new(
-        identifier->filename, identifier->line, identifier->text, type);
+    p->symbol = type_symbol_new(identifier->filename, identifier->line,
+                                identifier->text, type);
 
     /* redefinition check */
     if (scope_stack_find(ctx->env, p->symbol->identifier, false)) {
@@ -1551,7 +1554,7 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
     }
 
     /* register type symbol */
-    scope_stack_register(ctx->env, p->symbol);
+    scope_stack_register(ctx->env, (Symbol *)p->symbol);
 
     return (DeclNode *)p;
 }
@@ -1559,40 +1562,45 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
 DeclNode *sema_extern(ParserContext *ctx, const Token *t, Type *type,
                       const Token *identifier) {
     ExternNode *p;
-    DeclNode *decl;
+    Symbol *symbol;
 
     assert(ctx != NULL);
     assert(t != NULL);
     assert(type != NULL);
     assert(identifier != NULL);
 
+    /* redeclaration check */
+    symbol = scope_stack_find(ctx->env, identifier->text, false);
+
+    if (symbol != NULL) {
+        if (symbol->kind != symbol_variable) {
+            fprintf(stderr, "error at %s(%d): redeclaration of symbol %s\n",
+                    identifier->filename, identifier->line, identifier->text);
+            exit(1);
+        }
+
+        if (!type_equals(symbol->type, type)) {
+            fprintf(stderr, "error at %s(%d): conflicting type for %s\n",
+                    identifier->filename, identifier->line, identifier->text);
+            exit(1);
+        }
+    }
+
     /* make node */
     p = malloc(sizeof(*p));
     p->kind = node_extern;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol = (Symbol *)variable_symbol_new(
-        identifier->filename, identifier->line, identifier->text, type);
 
-    /* redeclaration check */
-    decl = scope_stack_find(ctx->env, p->symbol->identifier, false);
+    if (symbol == NULL) {
+        /* create the symbol and register it */
+        p->symbol = variable_symbol_new(identifier->filename, identifier->line,
+                                        identifier->text, type);
 
-    if (decl != NULL) {
-        if (decl->kind != node_extern && decl->kind != node_variable) {
-            fprintf(stderr, "error at %s(%d): redeclaration of symbol %s\n",
-                    p->filename, p->line, p->symbol->identifier);
-            exit(1);
-        }
-
-        if (!type_equals(decl->symbol->type, p->symbol->type)) {
-            fprintf(stderr, "error at %s(%d): conflicting type for %s\n",
-                    p->filename, p->line, p->symbol->identifier);
-            exit(1);
-        }
+        scope_stack_register(ctx->env, (Symbol *)p->symbol);
+    } else {
+        p->symbol = (VariableSymbol *)symbol;
     }
-
-    /* register symbol */
-    scope_stack_register(ctx->env, p->symbol);
 
     return (DeclNode *)p;
 }
@@ -1610,8 +1618,9 @@ DeclNode *sema_var_decl(ParserContext *ctx, Type *type,
     p->kind = node_variable;
     p->filename = str_dup(identifier->filename);
     p->line = identifier->line;
-    p->symbol = (Symbol *)variable_symbol_new(
-        identifier->filename, identifier->line, identifier->text, type);
+    p->symbol = variable_symbol_new(identifier->filename, identifier->line,
+                                    identifier->text, type);
+    p->symbol->is_defined = true;
 
     /* type check */
     if (is_incomplete_type(p->symbol->type)) {
@@ -1659,8 +1668,9 @@ VariableNode *sema_param(ParserContext *ctx, Type *type,
     p->kind = node_variable;
     p->filename = str_dup(identifier->filename);
     p->line = identifier->line;
-    p->symbol = (Symbol *)variable_symbol_new(
-        identifier->text, identifier->line, identifier->text, type);
+    p->symbol = variable_symbol_new(identifier->text, identifier->line,
+                                    identifier->text, type);
+    p->symbol->is_defined = true;
 
     /* type check */
     if (is_incomplete_type(type)) {
@@ -1748,9 +1758,9 @@ FunctionNode *sema_function_leave_params(ParserContext *ctx, Type *return_type,
     p->kind = node_function;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol =
-        (Symbol *)variable_symbol_new(t->filename, t->line, t->text, func_type);
-    p->params = malloc(sizeof(VariableNode *) * num_params);
+    p->symbol = variable_symbol_new(t->filename, t->line, t->text, func_type);
+    p->symbol->is_defined = false;
+    p->params = malloc(sizeof(VariableSymbol *) * num_params);
     p->num_params = num_params;
     p->var_args = var_args;
     p->body = NULL;
@@ -1774,7 +1784,7 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
     assert(p != NULL);
     assert(p->symbol->kind == symbol_variable);
 
-    ctx->current_function = (VariableSymbol *)p->symbol;
+    ctx->current_function = p->symbol;
     ctx->locals = vec_new();
 
     /* enter parameter scope */
@@ -1782,7 +1792,7 @@ void sema_function_enter_body(ParserContext *ctx, FunctionNode *p) {
 
     /* register parameters */
     for (i = 0; i < p->num_params; i++) {
-        scope_stack_register(ctx->env, p->params[i]->symbol);
+        scope_stack_register(ctx->env, p->params[i]);
     }
 }
 
@@ -1796,8 +1806,9 @@ FunctionNode *sema_function_leave_body(ParserContext *ctx, FunctionNode *p,
     assert(body != NULL);
 
     p->body = body;
+    p->symbol->is_defined = true;
 
-    p->locals = malloc(sizeof(DeclNode *) * ctx->locals->size);
+    p->locals = malloc(sizeof(VariableSymbol *) * ctx->locals->size);
     p->num_locals = ctx->locals->size;
 
     for (i = 0; i < p->num_locals; i++) {

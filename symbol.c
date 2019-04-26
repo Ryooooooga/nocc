@@ -14,6 +14,7 @@ VariableSymbol *variable_symbol_new(const char *filename, int line,
     p->line = line;
     p->identifier = str_dup(identifier);
     p->type = type;
+    p->is_defined = false;
     p->generated_location = NULL;
 
     return p;

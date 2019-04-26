@@ -99,7 +99,7 @@ LLVMTypeRef generate_struct_type(GeneratorContext *ctx, StructType *p) {
     element_types = malloc(sizeof(LLVMTypeRef) * p->num_members);
 
     for (i = 0; i < p->num_members; i++) {
-        element_types[i] = generate_type(ctx, p->members[i]->symbol->type);
+        element_types[i] = generate_type(ctx, p->members[i]->type);
     }
 
     LLVMStructSetBody(p->generated_type, element_types, p->num_members, false);

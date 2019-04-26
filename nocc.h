@@ -93,7 +93,7 @@ typedef struct FunctionType {
 typedef struct StructType {
     int kind;
     struct TypeSymbol *symbol;
-    struct MemberNode **members;
+    struct VariableSymbol **members;
     int num_members;
     bool is_incomplete;
     LLVMTypeRef generated_type;
@@ -151,6 +151,7 @@ typedef struct VariableSymbol {
     int line;
     const char *identifier;
     Type *type;
+    bool is_defined;
     LLVMValueRef generated_location;
 } VariableSymbol;
 
@@ -468,7 +469,7 @@ struct FunctionNode {
     int kind;
     char *filename;
     int line;
-    Symbol *symbol;
+    VariableSymbol *symbol;
     VariableSymbol **params;
     int num_params;
     bool var_args;
