@@ -19,9 +19,9 @@ VariableSymbol *variable_symbol_new(const char *filename, int line,
     return p;
 }
 
-Symbol *type_symbol_new(const char *filename, int line, const char *identifier,
-                        Type *type) {
-    Symbol *p;
+TypeSymbol *type_symbol_new(const char *filename, int line,
+                            const char *identifier, Type *type) {
+    TypeSymbol *p;
 
     assert(filename != NULL);
     assert(identifier != NULL);

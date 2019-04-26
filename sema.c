@@ -1538,7 +1538,7 @@ DeclNode *sema_typedef(ParserContext *ctx, const Token *t, Type *type,
     p->kind = node_typedef;
     p->filename = str_dup(t->filename);
     p->line = t->line;
-    p->symbol = (Symbol *)variable_symbol_new(
+    p->symbol = (Symbol *)type_symbol_new(
         identifier->filename, identifier->line, identifier->text, type);
 
     /* redefinition check */

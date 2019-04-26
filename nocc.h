@@ -92,7 +92,7 @@ typedef struct FunctionType {
 
 typedef struct StructType {
     int kind;
-    struct Symbol *symbol;
+    struct TypeSymbol *symbol;
     struct MemberNode **members;
     int num_members;
     bool is_incomplete;
@@ -154,10 +154,18 @@ typedef struct VariableSymbol {
     LLVMValueRef generated_location;
 } VariableSymbol;
 
+typedef struct TypeSymbol {
+    int kind;
+    const char *filename;
+    int line;
+    const char *identifier;
+    Type *type;
+} TypeSymbol;
+
 VariableSymbol *variable_symbol_new(const char *filename, int line,
                                     const char *identifier, Type *type);
-Symbol *type_symbol_new(const char *filename, int line, const char *identifier,
-                        Type *type);
+TypeSymbol *type_symbol_new(const char *filename, int line,
+                            const char *identifier, Type *type);
 
 #define node_integer 0
 #define node_string 1
